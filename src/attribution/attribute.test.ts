@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { attributeFromNews } from "./attribute";
+import { attributeFromNews, mentionsInstrument } from "./attribute";
 import { SimulatedAttributor } from "./simulated";
 import type { NewsItem } from "./types";
 
@@ -111,6 +111,55 @@ describe("attributeFromNews — grounded, or nothing (§7)", () => {
     const c = attributeFromNews(input, [item({ headline: long, source: "Reuters" })], NOW);
     expect(c!.text.length).toBeLessThan(160);
     expect(c!.text).toMatch(/…$/);
+  });
+
+  it("keeps only the first sentence, dropping a clickbait question", () => {
+    const c = attributeFromNews(
+      input,
+      [item({ headline: "Supply deal signed for advanced chips. Is it heading higher?" })],
+      NOW,
+    );
+    expect(c!.text).toContain("Supply deal signed for advanced chips");
+    expect(c!.text).not.toMatch(/heading higher/i);
+  });
+
+  it("strips a trailing clickbait clause after a dash", () => {
+    const c = attributeFromNews(
+      input,
+      [item({ headline: "Guidance lifted on strong demand — here's why it matters" })],
+      NOW,
+    );
+    expect(c!.text).toContain("Guidance lifted on strong demand");
+    expect(c!.text).not.toMatch(/here'?s why/i);
+  });
+
+  it("stays silent when a headline cleans down to nothing usable", () => {
+    // The only item is punctuation/fragment — better nothing than a broken clause.
+    expect(attributeFromNews(input, [item({ headline: " — " })], NOW)).toBeNull();
+  });
+});
+
+describe("mentionsInstrument — company relevance (live filter)", () => {
+  const nvda = { symbol: "NVDA", name: "NVIDIA" };
+  const dal = { symbol: "DAL", name: "Delta Air Lines" };
+
+  it("matches on the company name", () => {
+    expect(mentionsInstrument("Nvidia unveils a new GPU line", nvda)).toBe(true);
+  });
+
+  it("matches on the ticker", () => {
+    expect(mentionsInstrument("Analysts lift NVDA price target", nvda)).toBe(true);
+  });
+
+  it("rejects a round-up that headlines a different company", () => {
+    expect(
+      mentionsInstrument("Iovance Biotherapeutics Stock Soars After Strong Q2", nvda),
+    ).toBe(false);
+  });
+
+  it("matches a distinctive token of a multi-word name", () => {
+    expect(mentionsInstrument("Delta cancels hundreds of flights", dal)).toBe(true);
+    expect(mentionsInstrument("United raises checked-bag fees", dal)).toBe(false);
   });
 });
 

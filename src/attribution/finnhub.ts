@@ -1,6 +1,6 @@
 import type { Cause } from "../agent/types";
 import type { Attributor, AttributionInput, NewsItem } from "./types";
-import { attributeFromNews } from "./attribute";
+import { attributeFromNews, mentionsInstrument } from "./attribute";
 
 /*
  * The real attributor (Finnhub company-news).
@@ -44,7 +44,12 @@ export class FinnhubNewsAttributor implements Attributor {
           source: r.source ?? "unknown",
           url: r.url,
           publishedAt: (r.datetime as number) * 1000,
-        }));
+        }))
+        // Only news that actually names this company. Finnhub's company-news
+        // includes aggregator round-ups tagged to a symbol whose headline is
+        // about someone else entirely — attaching those would misattribute the
+        // move, so we drop them and let silence be the answer.
+        .filter((n) => mentionsInstrument(n.headline, input));
 
       return attributeFromNews(input, items, now);
     } catch {

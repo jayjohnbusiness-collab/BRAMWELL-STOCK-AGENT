@@ -27,6 +27,8 @@ type Agreement = "aligned" | "neutral" | "conflict";
 // Look back far enough to catch the story behind a same-day move, not stale news.
 const LOOKBACK_MS = 48 * 60 * 60 * 1000;
 const MAX_HEADLINE = 96;
+// Below this, whatever survived cleaning is too thin to be a real cause.
+const MIN_HEADLINE = 10;
 
 // Major wires and papers of record. A hit here is reportable; anything else is
 // treated as unconfirmed, never as an invented certainty.
@@ -47,9 +49,13 @@ export function attributeFromNews(
     .filter((i) => i.headline?.trim() && i.publishedAt >= now - LOOKBACK_MS)
     .map((i) => ({
       item: i,
+      clean: cleanHeadline(i.headline),
       major: isMajor(i.source),
       agreement: agreementOf(headlineSentiment(i.headline), moveSign),
-    }));
+    }))
+    // A headline that cleans down to nothing usable (pure clickbait, a fragment)
+    // is dropped — better silence than a broken half-sentence.
+    .filter((s): s is Scored => s.clean !== null);
 
   // Refuse to attribute a headline that contradicts the move — silence over a
   // misleading cause.
@@ -67,7 +73,7 @@ export function attributeFromNews(
 
   const best = eligible[0];
   const source = cleanSource(best.item.source);
-  const headline = trimHeadline(best.item.headline);
+  const headline = best.clean;
 
   if (best.major) {
     return {
@@ -101,8 +107,76 @@ function cleanSource(source: string): string {
   return source.trim().replace(/\s+/g, " ");
 }
 
-function trimHeadline(headline: string): string {
-  const h = headline.trim().replace(/\s+/g, " ").replace(/[.\s]+$/, "");
-  if (h.length <= MAX_HEADLINE) return h;
-  return `${h.slice(0, MAX_HEADLINE - 1).trimEnd()}…`;
+type Scored = {
+  item: NewsItem;
+  clean: string;
+  major: boolean;
+  agreement: Agreement;
+};
+
+// Clickbait tails a real cause never needs — everything from the match on is
+// dropped, so "…lifts guidance — here's why it matters" becomes the fact alone.
+const CLICKBAIT =
+  /\b(here'?s why|here is why|what to know|what it means|what to watch|should you (buy|sell|hold)|is it (a )?(buy|sell|time|still|heading|worth)|is this (a )?|why it matters|why this|and (more|why)|explained|time to buy|buy or sell|is now the time)\b/i;
+
+/**
+ * Reduce a raw headline to a single clean clause fit to speak: keep only the
+ * first sentence, strip a trailing clickbait tail, cut on a word boundary if
+ * it's long, and return null when nothing substantive is left (prefer silence).
+ */
+function cleanHeadline(headline: string): string | null {
+  let h = headline.replace(/\s+/g, " ").trim();
+  if (!h) return null;
+
+  // Keep only the first sentence — clickbait titles pile a question on the fact.
+  h = h.split(/(?<=[.!?])\s+(?=["'“(]?[A-Z0-9])/)[0] ?? h;
+
+  // Drop a trailing clickbait clause (only when there's real text before it).
+  const at = h.search(CLICKBAIT);
+  if (at > 0) h = h.slice(0, at);
+
+  h = h.replace(/[\s.,:;—–-]+$/, "").trim();
+  if (h.length < MIN_HEADLINE) return null;
+
+  if (h.length > MAX_HEADLINE) {
+    const cut = h.slice(0, MAX_HEADLINE);
+    const sp = cut.lastIndexOf(" ");
+    h = `${(sp > 40 ? cut.slice(0, sp) : cut).replace(/[\s.,:;—–-]+$/, "")}…`;
+  }
+  return h;
+}
+
+// Generic corporate words that don't identify a specific company.
+const NAME_STOP = new Set([
+  "the", "inc", "incorporated", "corp", "corporation", "co", "company",
+  "companies", "ltd", "limited", "plc", "llc", "lp", "group", "holdings",
+  "holding", "international", "global", "technologies", "technology", "systems",
+  "industries", "enterprises", "solutions", "motors", "pharmaceuticals",
+  "pharmaceutical", "pharma", "biotherapeutics", "therapeutics", "biosciences",
+  "biotech", "laboratories", "labs", "air", "lines", "airlines", "class",
+  "and", "of", "ag", "sa", "se", "nv", "oyj", "spa",
+]);
+
+function companyTokens(name: string): string[] {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter((t) => t.length >= 3 && !NAME_STOP.has(t));
+}
+
+/**
+ * Does a headline actually reference this instrument (by ticker or a
+ * distinctive company-name token)? Used by the live attributor to refuse
+ * aggregator round-ups that headline a *different* company while merely
+ * tagging this symbol — the "Iovance news on NVDA" failure.
+ */
+export function mentionsInstrument(
+  headline: string,
+  ref: { symbol: string; name: string },
+): boolean {
+  const hay = ` ${headline.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim()} `;
+  const sym = ref.symbol.toLowerCase();
+  if (sym.length >= 2 && hay.includes(` ${sym} `)) return true;
+  return companyTokens(ref.name).some((tok) => hay.includes(` ${tok} `));
 }
