@@ -52,7 +52,9 @@ items; on screen the figures are exact and tabular. Try the suggestion chips:
 - **"What about the losers?"** then **"Just the ones I hold."** — follow-ups
   resolve against the held subject without restatement.
 - **"How's NVDA?"** then **"And yesterday?"** — resolve-out-loud (he says
-  "NVIDIA"), then a day-shift on the same name.
+  "NVIDIA"), then a day-shift on the same name. By voice you can also spell a
+  ticker ("N-V-D-A", "en-vee-dee-ay") or mis-say a name ("broad com") and still
+  be understood — see ticker recognition below.
 - **"How's Moderna?"** — a real move with no established cause. He says so; he
   never invents one.
 - **"Should I buy Tesla?"** — declined in character, then the facts handed back.
@@ -104,6 +106,26 @@ Voice lives in `src/speech/`: a pure, tested wake-word detector
 synthesis; `src/hooks/useVoice.ts` composes them (wake → command, barge-in,
 spoken replies). The UI (`src/components/`, `src/brand/`) and the design system
 (`src/styles/`) render all of it under the brand rules.
+
+### Ticker recognition
+
+Speech recognition mangles tickers — letter strings are acoustically thin and
+mishears split or distort names — so `src/agent/resolver.ts` is a pure recovery
+ladder, tried in decreasing certainty (spec §5):
+
+1. An explicit symbol token (`AAPL`, `$NVDA`), or any token that *is* a symbol
+   in any case (`avgo`).
+2. A **spelled-out ticker** — typed or phonetic letters that assemble into a
+   real symbol (`n v d a`, `en vee dee ay` → NVDA). It only accepts an assembled
+   string that exists in the registry, so it can't fire on ordinary speech.
+3. A **name**, including word-split (`broad com` → Broadcom) and lightly
+   distorted (`tessla` → Tesla) forms, via squashed n-grams + edit-distance.
+4. Genuine collisions are **proposed, never guessed** ("Delta Air Lines, or
+   Delta Apparel?"); saying the fuller name resolves it. Below the confidence
+   floor Bramwell says he has nothing by that name rather than guess wrong — and
+   for a lowercase voice transcript that was *close* to a name, he echoes it
+   ("I heard 'Tesler'"), reserving "that's outside what I follow" for queries
+   that weren't names at all.
 
 ### Cause attribution
 

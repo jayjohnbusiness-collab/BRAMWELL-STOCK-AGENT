@@ -1,6 +1,9 @@
 import type { Instrument } from "./types";
 import type { Quote } from "../feed/types";
 import { SEED } from "./seed";
+import { resolveReference, type Resolution } from "./resolver";
+
+export type { Resolution };
 
 /*
  * The market read-model.
@@ -11,11 +14,6 @@ import { SEED } from "./seed";
  * hydrates it via applyQuotes(). Swapping the Feed swaps the data source
  * without the brain or this class changing.
  */
-
-export type Resolution =
-  | { status: "ok"; instrument: Instrument }
-  | { status: "ambiguous"; heard: string; options: Instrument[] }
-  | { status: "none"; heard: string };
 
 export class Market {
   private instruments: Instrument[];
@@ -151,43 +149,12 @@ export class Market {
   }
 
   /**
-   * Resolve a spoken/typed reference to an instrument.
-   * Prefers an exact symbol, then a unique name/alias match, and returns
-   * `ambiguous` when a word maps to more than one live instrument — Bramwell
-   * proposes rather than silently guessing between two names.
+   * Resolve a spoken/typed reference to an instrument. The recovery ladder —
+   * symbols, spelled-out tickers, word-split and fuzzy names, ambiguity — lives
+   * in the resolver so it can be tested without audio (see resolver.ts).
    */
   resolve(text: string): Resolution {
-    const raw = text.trim();
-    const lower = raw.toLowerCase();
-
-    // 1) Exact ticker symbol as an uppercase token, e.g. "AAPL", "$NVDA".
-    const symbolMatch = raw
-      .replace(/\$/g, "")
-      .match(/\b[A-Z]{2,5}\b/g);
-    if (symbolMatch) {
-      for (const tok of symbolMatch) {
-        const hit = this.bySymbol(tok);
-        if (hit) return { status: "ok", instrument: hit };
-      }
-    }
-
-    // 2) Company name or alias.
-    const nameHits = this.instruments.filter((i) => {
-      const name = i.name.toLowerCase().replace(/^the\s+/, "");
-      if (lower.includes(name)) return true;
-      return (i.aliases ?? []).some((a) => matchesWord(lower, a));
-    });
-
-    // Collapse a redundant multi-hit that is really one instrument.
-    const uniqueSymbols = new Set(nameHits.map((i) => i.symbol));
-    if (uniqueSymbols.size === 1) {
-      return { status: "ok", instrument: nameHits[0] };
-    }
-    if (uniqueSymbols.size > 1) {
-      return { status: "ambiguous", heard: raw, options: nameHits };
-    }
-
-    return { status: "none", heard: raw };
+    return resolveReference(text, this.instruments);
   }
 
   /**
@@ -206,9 +173,4 @@ export class Market {
       if (q.cause !== undefined) i.cause = q.cause;
     }
   }
-}
-
-/** A word-boundary match so "delta" doesn't fire inside "deltas" incidentally. */
-function matchesWord(haystack: string, word: string): boolean {
-  return new RegExp(`\\b${word}\\b`, "i").test(haystack);
 }

@@ -108,6 +108,12 @@ describe("failure and scope states (§10)", () => {
     const r = mk().respond("How's Meridian?");
     expect(r.spoken).toContain('I heard "Meridian."');
   });
+
+  it("echoes a lowercase voice mishear that's close to a name", () => {
+    // No capital to key off — the resolver's near-miss drives the echo.
+    const r = mk().respond("how's biocrop");
+    expect(r.spoken).toContain('I heard "Biocrop."');
+  });
 });
 
 describe("the wake word is acknowledged silently (§2)", () => {

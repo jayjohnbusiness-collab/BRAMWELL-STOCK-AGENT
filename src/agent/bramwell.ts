@@ -1,5 +1,5 @@
 import type { Instrument, Reply, Session, Subject } from "./types";
-import { Market } from "./market";
+import { Market, type Resolution } from "./market";
 import { parse, type Day, type Intent, type Metric } from "./nlu";
 import {
   direction,
@@ -115,7 +115,7 @@ export class Bramwell {
     const res = this.market.resolve(text);
     if (res.status === "ok") return this.quoteReply(res.instrument.symbol, "today");
     if (res.status === "ambiguous") return this.ask(res.options);
-    return this.notUnderstood(text);
+    return this.notUnderstood(text, res);
   }
 
   // --- Reply builders -----------------------------------------------------
@@ -279,7 +279,7 @@ export class Bramwell {
         screen: { kind: "none" },
       };
     }
-    if (res.status !== "ok") return this.notUnderstood(text);
+    if (res.status !== "ok") return this.notUnderstood(text, res);
 
     const i = res.instrument;
     if (add) {
@@ -327,8 +327,13 @@ export class Bramwell {
     };
   }
 
-  private notUnderstood(text: string): Reply {
-    const heard = properNoun(text);
+  private notUnderstood(text: string, res?: Resolution): Reply {
+    // Prefer a capitalized proper noun; for a lowercase voice transcript, fall
+    // back to the resolver's near-miss subject ("how's tesler" → "Tesler").
+    let heard = properNoun(text);
+    if (!heard && res?.status === "none" && res.nearMiss && res.heard) {
+      heard = cap(res.heard);
+    }
     if (heard) {
       // Repeat what was heard; don't ask them to repeat themselves (§10).
       return {
