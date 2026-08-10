@@ -1,0 +1,45 @@
+/*
+ * Bramwell design tokens.
+ * The reference is a private club or a good library — not a trading terminal.
+ * No dark mode at launch: the parchment ground is the identity.
+ */
+:root {
+  /* Surfaces & text */
+  --ground: #efebe1; /* parchment, page background */
+  --paper: #f7f4ec; /* raised surfaces, cards */
+  --ink: #16202e; /* primary text, near-black navy */
+  --ink-soft: #4a5563; /* secondary text, labels */
+  --rule: #d6cfc0; /* hairlines, dividers, borders */
+
+  /* The single accent — aged brass, not gold, not orange. */
+  --brass: #a8853e;
+  --oxblood: #6b2b2b; /* rare emphasis only; ~once per screen */
+
+  /*
+   * Data colors — reserved. Red and green appear ONLY on numbers that
+   * represent change. Never on buttons, links, icons, backgrounds, toasts,
+   * or error states. If buttons are green, a green number means nothing.
+   */
+  --data-up: #2f6b4f; /* deep green, positive change only */
+  --data-down: #9b3232; /* deep red, negative change only */
+
+  /* Geometry — nearly square, never pill-shaped. */
+  --radius: 2px;
+  --hairline: 1px;
+
+  /* Spacing scale — generous whitespace; density is the competitor's language. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Focus — 2px brass outline, always visible. */
+  --focus: 0 0 0 2px var(--ground), 0 0 0 4px var(--brass);
+
+  /* Motion — minimal. Prices cross-fade rather than flash. */
+  --fade: 240ms ease;
+}

@@ -1,0 +1,190 @@
+/* Layout for the scaffold. Generous whitespace; hairlines, never boxes. */
+
+.app-shell {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-8);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.tagline {
+  margin-left: auto;
+  max-width: 32ch;
+  text-align: right;
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  align-items: start;
+  margin-top: var(--space-5);
+}
+
+.conv-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+}
+
+/* The screen sits on paper; the conversation sits on the parchment ground. */
+.screen-pane {
+  position: sticky;
+  top: var(--space-5);
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  flex: 1;
+  padding: var(--space-2) 0 var(--space-5);
+}
+
+.msg {
+  max-width: 46ch;
+}
+
+.msg-bramwell .msg-who,
+.msg-user .msg-who {
+  margin-bottom: var(--space-1);
+}
+
+.msg-user {
+  align-self: flex-end;
+  text-align: right;
+}
+
+.msg-bramwell {
+  align-self: flex-start;
+}
+
+.msg-body {
+  font-family: var(--font-body);
+  font-size: var(--step-body);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.msg-user .msg-body {
+  color: var(--ink-soft);
+}
+
+/* The working state: quiet, wordless. A butler does not narrate his errand. */
+.working {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.working span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  opacity: 0.5;
+  animation: breathe 1.4s ease-in-out infinite;
+}
+.working span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.working span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.composer {
+  border-top: var(--hairline) solid var(--rule);
+  padding-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.composer-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+.composer input {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: var(--step-body);
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+}
+.composer input::placeholder {
+  color: var(--ink-soft);
+}
+
+.btn {
+  font-family: var(--font-body);
+  font-size: var(--step-small);
+  color: var(--paper);
+  background: var(--ink);
+  border: var(--hairline) solid var(--ink);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-5);
+}
+.btn:hover {
+  background: #0f1926;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.chip {
+  font-family: var(--font-body);
+  font-size: var(--step-small);
+  color: var(--ink);
+  background: transparent;
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+}
+.chip:hover {
+  border-color: var(--ink-soft);
+}
+
+.state-note {
+  color: var(--ink-soft);
+}
+
+@media (max-width: 860px) {
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+  .screen-pane {
+    position: static;
+    order: -1;
+  }
+  .tagline {
+    display: none;
+  }
+}

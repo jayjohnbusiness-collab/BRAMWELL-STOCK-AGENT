@@ -1,0 +1,63 @@
+@import "./tokens.css";
+@import "./typography.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Hairline rules over boxes. 1px --rule, no drop shadows. */
+.rule {
+  border: 0;
+  border-top: var(--hairline) solid var(--rule);
+  margin: 0;
+}
+
+/* Buttons are ink and brass — never data colors. Radius 2px, never a pill. */
+button {
+  font-family: var(--font-body);
+  font-size: var(--step-small);
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-radius: var(--radius);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brass) 28%, transparent);
+}
+
+/* Motion is minimal, and reduced motion is respected everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
