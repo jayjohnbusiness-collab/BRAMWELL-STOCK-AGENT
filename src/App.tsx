@@ -252,9 +252,7 @@ export default function App() {
       <header className="app-header">
         <Bell size={30} tone="brass" />
         <span className="wordmark">Bramwell</span>
-        <span className="tagline small state-note">
-          You'll hear from Bramwell when it matters.
-        </span>
+        <span className="tagline small state-note">Your market, kept in order.</span>
         <div className="header-right">
           {liveDetail ? (
             <span
