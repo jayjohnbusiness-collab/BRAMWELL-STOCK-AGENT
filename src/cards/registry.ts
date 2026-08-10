@@ -68,6 +68,18 @@ export const CARD_META: Record<CardType, CardMeta> = {
     blurb: "Get told when a name crosses a price or moves.",
     defaultSize: "md",
   },
+  portfolio: {
+    type: "portfolio",
+    title: "Portfolio",
+    blurb: "Your positions valued live, with P/L.",
+    defaultSize: "lg",
+  },
+  allocation: {
+    type: "allocation",
+    title: "Allocation",
+    blurb: "How your book's value is weighted.",
+    defaultSize: "sm",
+  },
 };
 
 export const ALL_CARD_TYPES: CardType[] = [
@@ -80,4 +92,6 @@ export const ALL_CARD_TYPES: CardType[] = [
   "clock",
   "events",
   "triggers",
+  "portfolio",
+  "allocation",
 ];

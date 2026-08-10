@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Bramwell } from "./agent/bramwell";
 import { Market } from "./agent/market";
-import { parse, parseTrigger, watchTarget } from "./agent/nlu";
+import { isPortfolioValueQuery, parse, parsePosition, parseTrigger, watchTarget } from "./agent/nlu";
 import type { Instrument, ScreenPayload } from "./agent/types";
 import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
@@ -12,6 +12,9 @@ import { hasToken } from "./feed/token";
 import { TriggerStore } from "./triggers/store";
 import { firedLine, type Trigger, type TriggerKind } from "./triggers/types";
 import { fireNotification, notifyState, requestNotify } from "./notify";
+import { PortfolioStore } from "./portfolio/store";
+import { valuePosition, portfolioTotals } from "./portfolio/types";
+import { money } from "./components/cards/parts";
 import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
@@ -68,6 +71,11 @@ export default function App() {
   const triggerStore = triggerStoreRef.current;
   const triggerFireRef = useRef<(fired: Trigger[]) => void>(() => {});
 
+  // The book of positions, built once.
+  const portfolioStoreRef = useRef<PortfolioStore | null>(null);
+  if (portfolioStoreRef.current === null) portfolioStoreRef.current = new PortfolioStore();
+  const portfolioStore = portfolioStoreRef.current;
+
   const { alert, ack, feedStatus } = useMarketFeed(
     market,
     feedRef.current,
@@ -110,6 +118,19 @@ export default function App() {
     const trig = parseTrigger(text);
     if (trig) {
       void setTriggerFromChat(trig);
+      return;
+    }
+
+    // A portfolio value/P&L question.
+    if (isPortfolioValueQuery(text)) {
+      answerPortfolio();
+      return;
+    }
+
+    // Recording a position ("I own 100 NVDA at 150").
+    const pos = parsePosition(text);
+    if (pos) {
+      void setPositionFromChat(pos);
       return;
     }
 
@@ -192,6 +213,63 @@ export default function App() {
     voice.speak(line);
     setScreen({ kind: "quote", instrument: inst });
     forceRender((n) => n + 1);
+  }
+
+  function say(text: string) {
+    setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text }]);
+    voice.speak(text);
+  }
+
+  // Record a position from chat, resolving/tracking the name first. A missing
+  // cost defaults to the current price, so P/L starts at zero.
+  async function setPositionFromChat(spec: {
+    namePhrase: string;
+    shares: number;
+    cost: number;
+  }) {
+    setWorking(true);
+    const r = await addName(spec.namePhrase);
+    setWorking(false);
+    const inst = r.instrument;
+    if (!inst) {
+      say(r.ok ? "I couldn't place that name." : r.message);
+      return;
+    }
+    const price = market.bySymbol(inst.symbol)?.basePrice ?? 0;
+    const cost = spec.cost > 0 ? spec.cost : price;
+    portfolioStore.set(inst.symbol, spec.shares, cost);
+    forceRender((n) => n + 1);
+
+    const value = spec.shares * price;
+    const basis = spec.cost > 0 ? ` at ${spec.cost.toFixed(2)}` : "";
+    say(
+      `Noted — ${trimShares(spec.shares)} ${cap(inst.name)}${basis}, worth ${money(value)} now.`,
+    );
+    setScreen({ kind: "quote", instrument: inst });
+  }
+
+  // Answer "what's my portfolio worth / how am I doing".
+  function answerPortfolio() {
+    const values = portfolioStore.all().map((p) => {
+      const i = market.bySymbol(p.symbol);
+      return valuePosition(p, {
+        price: i?.basePrice ?? 0,
+        changePct: i?.changePct ?? 0,
+        name: i?.name ?? p.symbol,
+      });
+    });
+    if (values.length === 0) {
+      say("You've no positions recorded. Tell me what you hold — say, \"100 NVDA at 150\".");
+      return;
+    }
+    const t = portfolioTotals(values);
+    const overall = t.hasBasis
+      ? ` It's ${t.plAbs >= 0 ? "up" : "down"} ${money(Math.abs(t.plAbs))} overall, ${
+          t.plPct >= 0 ? "up" : "down"
+        } ${Math.abs(t.plPct).toFixed(1)} percent.`
+      : "";
+    const today = ` Today it's ${t.dayAbs >= 0 ? "up" : "down"} ${money(Math.abs(t.dayAbs))}.`;
+    say(`Your book is worth ${money(t.marketValue)}.${overall}${today}`);
   }
 
   // The shared add engine. Known names resolve through the registry; an unknown
@@ -380,6 +458,17 @@ export default function App() {
                 notifyState: notifyState(),
                 requestNotify: () => requestNotify().then(() => forceRender((n) => n + 1)),
               },
+              portfolio: {
+                all: () => portfolioStore.all(),
+                set: (symbol, shares, cost) => {
+                  portfolioStore.set(symbol, shares, cost);
+                  forceRender((n) => n + 1);
+                },
+                remove: (symbol) => {
+                  portfolioStore.remove(symbol);
+                  forceRender((n) => n + 1);
+                },
+              },
               version: feedStatus?.at ?? 0,
             }}
           />
@@ -409,4 +498,9 @@ function symbolCandidate(text: string): string | null {
 /** Capitalize the first letter, leaving the rest of the name as-is. */
 function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** "100" or "12.5" shares — drop a trailing ".0". */
+function trimShares(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(4)));
 }

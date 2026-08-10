@@ -166,6 +166,59 @@ export function parseTrigger(input: string): TriggerSpec | null {
   return { namePhrase, kind, value };
 }
 
+/*
+ * Position phrasing: "I own 100 shares of NVDA at 150", "hold 50 Tesla at 250",
+ * "bought 10 AAPL @ 180". Returns the name, share count, and cost (0 when the
+ * user didn't state a price — the app fills the current price as the basis).
+ */
+export interface PositionSpec {
+  namePhrase: string;
+  shares: number;
+  cost: number;
+}
+
+const POS_VERB = /\b(own|owns|hold|holds|holding|have|has|bought|buy|purchased|got)\b/i;
+const POS_COST =
+  /(?:\bat\b|@|\bfor\b|\beach\b|\bcost(?:s|ing)?\b|\bpaid\b|\baround\b|\bavg\b|\baverage\b)\s*\$?\s*(-?\d+(?:\.\d+)?)/i;
+
+export function parsePosition(input: string): PositionSpec | null {
+  const text = input.trim();
+  if (!POS_VERB.test(text)) return null;
+
+  // Pull the cost first, then remove it so the remaining number is the shares.
+  let rest = text;
+  const at = text.match(POS_COST);
+  const cost = at ? Math.abs(parseFloat(at[1])) : 0;
+  if (at && at.index != null) {
+    rest = `${rest.slice(0, at.index)} ${rest.slice(at.index + at[0].length)}`;
+  }
+
+  const sh = rest.match(/(-?\d+(?:\.\d+)?)/);
+  const shares = sh ? Math.abs(parseFloat(sh[1])) : NaN;
+  if (!Number.isFinite(shares) || shares <= 0) return null;
+
+  const namePhrase = rest
+    .replace(POS_VERB, " ")
+    .replace(/(-?\d+(?:\.\d+)?)/g, " ")
+    .replace(/\b(shares?|units?|of|the|a|an|at|for|each|stock|my|i|to)\b/gi, " ")
+    .replace(/[^\w.\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!namePhrase) return null;
+
+  return { namePhrase, shares, cost };
+}
+
+const PF_SUBJECT = /\b(portfolio|holdings?|positions?|book)\b/i;
+const PF_ASK =
+  /\b(worth|value|valued|balance|how much|p\s*&?\s*l|pnl|profit|gain|gains|loss|losses|net|total)\b/i;
+
+/** "what's my portfolio worth", "how much am I up", "my holdings p&l". */
+export function isPortfolioValueQuery(input: string): boolean {
+  const t = input.trim();
+  return PF_SUBJECT.test(t) && PF_ASK.test(t);
+}
+
 export function parse(input: string): Intent {
   const text = input.trim();
   const stripped = text.replace(WAKE, "").trim();

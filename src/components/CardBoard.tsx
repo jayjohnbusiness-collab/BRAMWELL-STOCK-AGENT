@@ -9,6 +9,8 @@ import { SpotlightCard, AlertsCard, MoversCard, BreadthCard, CausesCard } from "
 import { ClockCard } from "./cards/ClockCard";
 import { EventsCard } from "./cards/EventsCard";
 import { TriggersCard } from "./cards/TriggersCard";
+import { PortfolioCard } from "./cards/PortfolioCard";
+import { AllocationCard } from "./cards/AllocationCard";
 
 /*
  * The board: a grid of cards the user composes. Add via the picker, remove via
@@ -210,6 +212,10 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
       return <EventsCard market={ctx.market} earnings={ctx.earnings} size={size} />;
     case "triggers":
       return <TriggersCard ctx={ctx} size={size} />;
+    case "portfolio":
+      return <PortfolioCard ctx={ctx} size={size} />;
+    case "allocation":
+      return <AllocationCard ctx={ctx} size={size} />;
     default:
       return null;
   }

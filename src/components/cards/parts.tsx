@@ -20,3 +20,17 @@ export function ChangePill({ pct }: { pct: number }) {
   const dir = pct > 0.005 ? "up" : pct < -0.005 ? "down" : "flat";
   return <span className={`chg ${dir}`}>{exactPercent(pct)}</span>;
 }
+
+/** "$1,234.56" (whole dollars once it's four figures). */
+export function money(n: number): string {
+  return n.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: Math.abs(n) >= 1000 ? 0 : 2,
+  });
+}
+
+/** "+$1,234" / "−$1,234", using a real minus sign. */
+export function signedMoney(n: number): string {
+  return `${n >= 0 ? "+" : "−"}${money(Math.abs(n))}`;
+}

@@ -700,6 +700,127 @@
   box-shadow: var(--focus);
 }
 
+/* Portfolio card */
+.pf-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  padding-bottom: var(--space-2);
+}
+.pf-total {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pf-total-num {
+  font-family: var(--font-display, var(--font-body));
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.pf-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: var(--hairline) solid var(--rule);
+}
+.pf-row:first-child {
+  border-top: 0;
+}
+.pf-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.pf-name:hover .label {
+  color: var(--brass);
+}
+.pf-figures {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+.pf-x {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  cursor: pointer;
+}
+.pf-add {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.pf-add select,
+.pf-add input {
+  font-family: var(--font-body);
+  font-size: var(--step-small);
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+}
+.pf-add input {
+  width: 6em;
+  min-width: 0;
+}
+.pf-add select:focus-visible,
+.pf-add input:focus-visible {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: var(--focus);
+}
+
+/* Allocation card */
+.alloc-bar {
+  display: flex;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--ground);
+}
+.alloc-seg {
+  min-width: 2px;
+}
+.alloc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+.alloc-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.alloc-val {
+  margin-left: auto;
+}
+.alloc-pct {
+  min-width: 3.5ch;
+  text-align: right;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 860px) {
   .card-board {
     grid-template-columns: 1fr;

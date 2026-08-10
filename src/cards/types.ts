@@ -2,6 +2,7 @@ import type { Market } from "../agent/market";
 import type { Alert, ScreenPayload } from "../agent/types";
 import type { MarketEvent } from "../feed/types";
 import type { Trigger, TriggerKind } from "../triggers/types";
+import type { Position } from "../portfolio/types";
 import type { NotifyState } from "../notify";
 
 /*
@@ -22,7 +23,9 @@ export type CardType =
   | "causes"
   | "clock"
   | "events"
-  | "triggers";
+  | "triggers"
+  | "portfolio"
+  | "allocation";
 
 export type CardSize = "sm" | "md" | "lg";
 
@@ -50,6 +53,12 @@ export interface CardContext {
     rearm: (id: string) => void;
     notifyState: NotifyState;
     requestNotify: () => void;
+  };
+  /** Portfolio positions: list, set (add/replace), remove. */
+  portfolio: {
+    all: () => Position[];
+    set: (symbol: string, shares: number, cost: number) => void;
+    remove: (symbol: string) => void;
   };
   /** Bumps whenever the live loop mutates the market, to pull fresh reads. */
   version: number;

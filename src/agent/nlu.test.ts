@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parse, parseTrigger, watchTarget } from "./nlu";
+import { isPortfolioValueQuery, parse, parsePosition, parseTrigger, watchTarget } from "./nlu";
 
 /*
  * The command layer: conversational "add / watch" phrasings must classify as a
@@ -76,5 +76,41 @@ describe("parseTrigger — setting an alert", () => {
     expect(parseTrigger("how's NVDA?")).toBeNull();
     expect(parseTrigger("what about the losers?")).toBeNull();
     expect(parseTrigger("is NVDA up 5%?")).toBeNull(); // a move needs an alert verb
+  });
+});
+
+describe("parsePosition — recording a holding", () => {
+  it("parses shares and cost", () => {
+    expect(parsePosition("I own 100 shares of NVDA at 150")).toEqual({
+      namePhrase: "NVDA",
+      shares: 100,
+      cost: 150,
+    });
+    expect(parsePosition("bought 10 AAPL @ 180")).toEqual({
+      namePhrase: "AAPL",
+      shares: 10,
+      cost: 180,
+    });
+  });
+
+  it("allows an omitted cost (basis filled later)", () => {
+    expect(parsePosition("I hold 50 Tesla")).toEqual({
+      namePhrase: "Tesla",
+      shares: 50,
+      cost: 0,
+    });
+  });
+
+  it("ignores non-position sentences", () => {
+    expect(parsePosition("how's NVDA?")).toBeNull();
+    expect(parsePosition("I have a question about Tesla")).toBeNull(); // no share count
+  });
+});
+
+describe("isPortfolioValueQuery", () => {
+  it("matches value/P&L questions, not the status read", () => {
+    expect(isPortfolioValueQuery("what's my portfolio worth?")).toBe(true);
+    expect(isPortfolioValueQuery("how much is my book up?")).toBe(true);
+    expect(isPortfolioValueQuery("how are my holdings?")).toBe(false);
   });
 });
