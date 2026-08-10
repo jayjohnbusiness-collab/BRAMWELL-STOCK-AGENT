@@ -42,7 +42,9 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  /* The chat needs only a comfortable reading width; the rest goes to the
+     market cards so two card columns sit fully inside the viewport. */
+  grid-template-columns: minmax(320px, 0.72fr) 1.6fr;
   grid-template-rows: 1fr;
   gap: var(--space-6);
   margin-top: var(--space-4);
