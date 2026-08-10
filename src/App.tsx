@@ -130,30 +130,35 @@ export default function App() {
       return "";
     }
 
-    // Not a known name — try to look it up as a live ticker.
-    const candidate = symbolCandidate(text);
+    // Not a known name — look it up live: first as a ticker, then by company
+    // name (e.g. "Amazon" → AMZN).
     const feed = feedRef.current;
-    if (candidate && feed.lookup) {
-      const found = await feed.lookup(candidate);
-      if (found) {
-        market.add({
-          symbol: found.symbol,
-          name: found.name,
-          kind: "equity",
-          basePrice: found.price,
-          changePct: found.changePct,
-          prevChangePct: 0,
-          cause: null,
-        });
-        market.watch(found.symbol);
-        persist();
-        return "";
-      }
-      return hasToken()
-        ? `I couldn't find a live quote for "${candidate}".`
-        : `Connect live data to add "${candidate}".`;
+    if (!feed.lookup) return "I don't have anything by that name.";
+
+    const candidate = symbolCandidate(text);
+    let found = candidate ? await feed.lookup(candidate) : null;
+    if (!found && feed.search) {
+      const hit = await feed.search(text);
+      if (hit) found = await feed.lookup(hit.symbol);
     }
-    return "I don't have anything by that name.";
+
+    if (found) {
+      market.add({
+        symbol: found.symbol,
+        name: found.name,
+        kind: "equity",
+        basePrice: found.price,
+        changePct: found.changePct,
+        prevChangePct: 0,
+        cause: null,
+      });
+      market.watch(found.symbol);
+      persist();
+      return "";
+    }
+    return hasToken()
+      ? `I couldn't find anything for "${text.trim()}".`
+      : `Connect live data to add "${text.trim()}".`;
   }
 
   function handleRemove(symbol: string) {

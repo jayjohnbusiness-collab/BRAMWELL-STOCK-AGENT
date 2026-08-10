@@ -54,4 +54,9 @@ export interface Feed {
    * user can add any symbol the feed covers. Returns null if it isn't found.
    */
   lookup?(symbol: string): Promise<LookupResult | null>;
+  /**
+   * Find a ticker by company name (e.g. "Amazon" → AMZN). Returns the best
+   * match's symbol and name, or null.
+   */
+  search?(query: string): Promise<{ symbol: string; name: string } | null>;
 }

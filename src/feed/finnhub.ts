@@ -90,6 +90,34 @@ export class FinnhubFeed implements Feed {
     }
   }
 
+  /** Find a ticker by company name via Finnhub symbol search. */
+  async search(query: string): Promise<{ symbol: string; name: string } | null> {
+    try {
+      const res = await fetch(
+        `${BASE}/search?q=${encodeURIComponent(query.trim())}&token=${this.token}`,
+      );
+      if (!res.ok) return null;
+      const d = (await res.json()) as {
+        result?: Array<{ symbol?: string; description?: string; type?: string }>;
+      };
+      const results = Array.isArray(d?.result) ? d.result : [];
+      // Prefer a plain US common-stock symbol (no exchange suffix).
+      const best =
+        results.find(
+          (r) => r.symbol && !r.symbol.includes(".") && r.type === "Common Stock",
+        ) ??
+        results.find((r) => r.symbol && !r.symbol.includes(".")) ??
+        results[0];
+      if (!best?.symbol) return null;
+      return {
+        symbol: best.symbol.toUpperCase(),
+        name: (best.description ?? best.symbol).trim(),
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private async one(symbol: string): Promise<{ quote: Quote | null; error?: string }> {
     try {
       const url = `${BASE}/quote?symbol=${encodeURIComponent(symbol)}&token=${this.token}`;

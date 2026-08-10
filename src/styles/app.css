@@ -249,6 +249,26 @@
   color: var(--ink-soft);
 }
 
+/* The live indicator breathes with an expanding ring — a quiet "on air". */
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--data-up);
+  animation: live-pulse 1.8s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(31, 122, 77, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(31, 122, 77, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(31, 122, 77, 0);
+  }
+}
+
 @media (max-width: 860px) {
   /* On narrow screens, fall back to one natural, page-scrolling column. */
   .app-shell {

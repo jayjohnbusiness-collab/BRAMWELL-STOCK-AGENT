@@ -24,6 +24,16 @@ export class SimulatedFeed implements Feed {
       : null;
   }
 
+  async search(query: string): Promise<{ symbol: string; name: string } | null> {
+    const q = query.trim().toLowerCase();
+    const i = this.book.find(
+      (x) =>
+        x.symbol.toLowerCase() === q ||
+        x.name.toLowerCase().replace(/^the\s+/, "").includes(q),
+    );
+    return i ? { symbol: i.symbol, name: i.name } : null;
+  }
+
   async quotes(symbols: string[]): Promise<Quote[]> {
     this.step += 1;
     const want = new Set(symbols);

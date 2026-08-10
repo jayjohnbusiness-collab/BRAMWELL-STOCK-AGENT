@@ -21,10 +21,7 @@ export function LiveDataControl() {
           color: "var(--ink-soft)",
         }}
       >
-        <span
-          aria-hidden="true"
-          style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--data-up)" }}
-        />
+        <span className="live-dot" aria-hidden="true" />
         Live data
       </span>
     );
