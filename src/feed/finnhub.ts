@@ -20,7 +20,8 @@ const BASE = "https://finnhub.io/api/v1";
 
 export class FinnhubFeed implements Feed {
   readonly name = "finnhub";
-  readonly pollMs = 20_000;
+  // ~11 symbols per poll → ~44 calls/min, under Finnhub's free 60/min ceiling.
+  readonly pollMs = 15_000;
 
   constructor(private readonly token: string) {}
 

@@ -13,6 +13,7 @@ import { Composer } from "./components/Composer";
 import { ScreenPanel } from "./components/ScreenPanel";
 import { WatchlistManager } from "./components/WatchlistManager";
 import { VoiceOverlay } from "./components/VoiceOverlay";
+import { LiveDataControl } from "./components/LiveDataControl";
 import "./styles/global.css";
 import "./styles/app.css";
 
@@ -121,9 +122,12 @@ export default function App() {
       <header className="app-header">
         <Bell size={30} tone="brass" />
         <span className="wordmark">Bramwell</span>
-        <p className="tagline small state-note">
-          You'll hear from Bramwell when it matters.
-        </p>
+        <div className="header-right">
+          <span className="tagline small state-note">
+            You'll hear from Bramwell when it matters.
+          </span>
+          <LiveDataControl />
+        </div>
       </header>
       <hr className="rule" />
 

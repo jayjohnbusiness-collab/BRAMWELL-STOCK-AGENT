@@ -21,8 +21,14 @@
   line-height: 1;
 }
 
-.tagline {
+.header-right {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.tagline {
   max-width: 32ch;
   text-align: right;
 }
