@@ -61,6 +61,12 @@ export class Bramwell {
         return this.watchReply(intent.text, true);
       case "unwatch":
         return this.watchReply(intent.text, false);
+      case "brief":
+        return this.briefingReply();
+      case "compare":
+        return this.compareReply(intent.text);
+      case "why":
+        return this.whyReply(intent.text);
       case "query":
         return this.handleQuery(intent);
       case "unknown":
@@ -317,6 +323,94 @@ export class Bramwell {
     };
   }
 
+  /** The session briefing — breadth, the standout mover each way, with cause. */
+  private briefingReply(): Reply {
+    const held = this.market.held();
+    if (held.length === 0) {
+      return {
+        spoken: "Nothing on your watch yet — add a few names and I'll keep the book.",
+        screen: { kind: "none" },
+      };
+    }
+    const ups = held.filter((i) => i.changePct > 0.05);
+    const downs = held.filter((i) => i.changePct < -0.05);
+    const topUp = [...ups].sort((a, b) => b.changePct - a.changePct)[0];
+    const topDown = [...downs].sort((a, b) => a.changePct - b.changePct)[0];
+
+    const parts: string[] = [];
+    parts.push(
+      `Of the ${numberToWords(held.length)} names you follow, ${numberToWords(ups.length)} ${
+        ups.length === 1 ? "is" : "are"
+      } up and ${numberToWords(downs.length)} down.`,
+    );
+    if (topUp) {
+      parts.push(
+        `${shortName(topUp)} leads, ${spokenChange(topUp.changePct)}${
+          topUp.cause ? ` — ${topUp.cause.text}` : ""
+        }.`,
+      );
+    }
+    if (topDown && topDown.symbol !== topUp?.symbol) {
+      parts.push(
+        `${shortName(topDown)} is the weakest, ${spokenChange(topDown.changePct)}${
+          topDown.cause ? ` — ${topDown.cause.text}` : ""
+        }.`,
+      );
+    }
+    if (!topUp && !topDown) {
+      parts.push("It's flat across your names — nothing pulling either way.");
+    }
+
+    this.session.subject = { universe: "watchlist", metric: "status", day: "today" };
+    return { spoken: parts.join(" "), screen: { kind: "table", title: "Your holdings", rows: held } };
+  }
+
+  /** Two names, side by side, with who has the better of the day. */
+  private compareReply(text: string): Reply {
+    const resolved: Instrument[] = [];
+    for (const n of splitCompare(text)) {
+      const r = this.market.resolve(n);
+      if (r.status === "ok" && !resolved.find((x) => x.symbol === r.instrument.symbol)) {
+        resolved.push(r.instrument);
+      }
+      if (resolved.length === 2) break;
+    }
+    if (resolved.length < 2) {
+      return {
+        spoken: "Name two I follow and I'll set them side by side.",
+        screen: { kind: "none" },
+      };
+    }
+    const [a, b] = resolved;
+    const stronger = a.changePct >= b.changePct ? a : b;
+    const gap = Math.abs(a.changePct - b.changePct);
+    const tail = gap >= 0.1 ? `, by ${percentInWords(gap)}` : "";
+    return {
+      spoken: `${shortName(a)} is ${spokenChange(a.changePct)}; ${shortName(b)} is ${spokenChange(
+        b.changePct,
+      )}. ${shortName(stronger)} has the better of it today${tail}.`,
+      screen: { kind: "table", title: `${a.symbol} vs ${b.symbol}`, rows: [a, b] },
+    };
+  }
+
+  /** "Why?" — resolved against a named instrument, else the held subject. */
+  private whyReply(text: string): Reply {
+    const res = this.market.resolve(text);
+    if (res.status === "ok" && res.instrument.kind === "equity") {
+      return this.quoteReply(res.instrument.symbol, "today");
+    }
+    const s = this.session.subject;
+    if (s?.symbol) return this.quoteReply(s.symbol, "today");
+    if (s) {
+      const metric = s.metric === "losers" ? "losers" : "gainers";
+      return this.moversReply(s.universe, metric, s.day);
+    }
+    return {
+      spoken: "About which name? Tell me and I'll give you the reason I have.",
+      screen: { kind: "none" },
+    };
+  }
+
   private helpReply(): Reply {
     return {
       spoken:
@@ -365,6 +459,16 @@ export class Bramwell {
 
 function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Split a compare utterance into candidate names ("NVDA vs AMD" → [NVDA, AMD]). */
+function splitCompare(text: string): string[] {
+  return text
+    .replace(/\b(compared? (to|with|against)|versus|vs\.?|against)\b/gi, " | ")
+    .replace(/\b(compare|how'?s|how are|what about|the|between)\b/gi, " ")
+    .split(/\||\band\b|\bor\b|&|,|\//i)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** The first two distinct instruments (by symbol) from a hit list. */

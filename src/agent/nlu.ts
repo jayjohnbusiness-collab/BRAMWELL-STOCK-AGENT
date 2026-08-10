@@ -13,7 +13,17 @@ export type Universe = "nasdaq" | "watchlist";
 export type Day = "today" | "yesterday";
 
 export interface Intent {
-  kind: "wake" | "advice" | "help" | "query" | "watch" | "unwatch" | "unknown";
+  kind:
+    | "wake"
+    | "advice"
+    | "help"
+    | "query"
+    | "watch"
+    | "unwatch"
+    | "brief"
+    | "compare"
+    | "why"
+    | "unknown";
   metric?: Metric;
   universe?: Universe;
   day?: Day;
@@ -219,6 +229,17 @@ export function isPortfolioValueQuery(input: string): boolean {
   return PF_SUBJECT.test(t) && PF_ASK.test(t);
 }
 
+// A request for the session summary.
+const BRIEF =
+  /\b(catch me up|catch up|brief me|briefing|the rundown|rundown|fill me in|what'?s the story|state of play|where (do|does) (things|we|it) stand|how'?s everything|how are things|give me the (rundown|summary|picture)|summar(y|ise|ize)|the picture|bring me up to speed)\b/i;
+
+// "vs / versus / compare X and Y" — a head-to-head.
+const COMPARE = /\b(vs\.?|versus|compared? (to|with|against)|compare)\b/i;
+
+// A bare "why" follow-up ("why?", "what's driving it?", "how come?").
+const WHY =
+  /\b(why|why'?s|what'?s (driving|behind|going on with|causing)|how come|what happened (to|with)?)\b/i;
+
 export function parse(input: string): Intent {
   const text = input.trim();
   const stripped = text.replace(WAKE, "").trim();
@@ -230,10 +251,14 @@ export function parse(input: string): Intent {
 
   const body = stripped.length ? stripped : text;
 
+  if (BRIEF.test(body)) return { kind: "brief", explicit: false, text: body };
+  if (COMPARE.test(body)) return { kind: "compare", explicit: false, text: body };
   if (ADVICE.test(body)) return { kind: "advice", explicit: false, text: body };
   if (HELP.test(body)) return { kind: "help", explicit: false, text: body };
   if (UNWATCH.test(body)) return { kind: "unwatch", explicit: false, text: body };
   if (WATCH.test(body)) return { kind: "watch", explicit: false, text: body };
+  // "Why?" and its kin — resolved against the current subject (or a named one).
+  if (WHY.test(body)) return { kind: "why", explicit: false, text: body };
 
   let metric: Metric | undefined = GAINERS.test(body)
     ? "gainers"

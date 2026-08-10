@@ -92,6 +92,41 @@ describe("day-shift follow-up (§6)", () => {
   });
 });
 
+describe("conversational depth (category 3)", () => {
+  it("catches me up: breadth plus the standout mover each way, with cause", () => {
+    const r = mk().respond("catch me up");
+    expect(r.spoken.toLowerCase()).toContain("names you follow");
+    // SUN is held and up 8% with a Reuters cause; AUTO is held and down 4%.
+    expect(r.spoken).toContain("Sunrise Micro");
+    expect(r.spoken).toContain("Autohaus");
+    expect(r.screen?.kind).toBe("table");
+  });
+
+  it("compares two names side by side, naming the stronger", () => {
+    const r = mk().respond("Sunrise Micro vs Autohaus");
+    expect(r.spoken).toContain("Sunrise Micro");
+    expect(r.spoken).toContain("Autohaus");
+    expect(r.spoken).toMatch(/better of it/i);
+    // SUN (+8%) beats AUTO (−4%).
+    expect(r.spoken).toMatch(/Sunrise Micro has the better of it/i);
+    expect(r.screen?.kind).toBe("table");
+  });
+
+  it("answers a bare 'why?' against the held subject", () => {
+    const b = mk();
+    b.respond("How's SUN?"); // subject becomes SUN
+    const why = b.respond("why?");
+    expect(why.spoken).toContain("Sunrise Micro");
+    expect(why.spoken.toLowerCase()).toContain("supply agreement"); // its cause
+  });
+
+  it("answers 'why is X down?' by naming that instrument's cause", () => {
+    const r = mk().respond("why is Autohaus down?");
+    expect(r.spoken).toContain("Autohaus");
+    expect(r.spoken.toLowerCase()).toContain("delivery"); // autos cause
+  });
+});
+
 describe("uncertainty is stated, never invented (§7)", () => {
   it("admits it has no cause for a notable move", () => {
     const r = mk().respond("How's Biocorp?");
