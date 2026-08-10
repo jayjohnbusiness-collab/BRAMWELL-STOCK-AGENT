@@ -7,6 +7,7 @@ import { createAttributor } from "./attribution";
 import { useMarketFeed } from "./hooks/useMarketFeed";
 import { useVoice } from "./hooks/useVoice";
 import { loadWatchlist, saveWatchlist } from "./watchlist/storage";
+import { hasToken } from "./feed/token";
 import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
@@ -43,7 +44,11 @@ export default function App() {
 
   const feedRef = useRef(createFeed());
   const attributorRef = useRef(createAttributor());
-  const { alert, ack } = useMarketFeed(market, feedRef.current, attributorRef.current);
+  const { alert, ack, feedStatus } = useMarketFeed(
+    market,
+    feedRef.current,
+    attributorRef.current,
+  );
 
   const idRef = useRef(1);
   const [messages, setMessages] = useState<ChatMessage[]>([INTRO]);
@@ -130,6 +135,29 @@ export default function App() {
         </div>
       </header>
       <hr className="rule" />
+
+      {hasToken() ? (
+        <p
+          className="small"
+          style={{
+            margin: "var(--space-3) 0 0",
+            color:
+              feedStatus && feedStatus.ok === 0 && feedStatus.failed > 0
+                ? "var(--data-down)"
+                : "var(--ink-soft)",
+          }}
+        >
+          {feedStatus == null
+            ? "Live data — connecting…"
+            : feedStatus.ok > 0
+              ? `Live data · ${feedStatus.ok} symbols updating${
+                  feedStatus.sample
+                    ? ` — ${feedStatus.sample.symbol} at ${feedStatus.sample.price.toFixed(2)}`
+                    : ""
+                }.`
+              : `Live data received no prices — ${feedStatus.error ?? "request failed"}. Prices shown are placeholders.`}
+        </p>
+      ) : null}
 
       <div className="app-grid">
         <section className="conv-pane" aria-label="Conversation">

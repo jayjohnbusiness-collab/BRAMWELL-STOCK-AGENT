@@ -2,8 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import type { Market } from "../agent/market";
 import { leadAlert } from "../agent/alerts";
 import type { Alert } from "../agent/types";
-import type { Feed } from "../feed/types";
+import type { Feed, FeedDiagnostics } from "../feed/types";
 import type { Attributor } from "../attribution/types";
+
+export interface FeedStatus extends FeedDiagnostics {
+  /** Epoch ms of the last completed poll. */
+  at: number;
+}
 
 // Only look for a cause once a move is worth explaining, and don't re-ask the
 // wire more than once per name in this window (a later story can still upgrade
@@ -22,6 +27,7 @@ const ATTRIBUTE_RETRY_MS = 5 * 60 * 1000;
  */
 export function useMarketFeed(market: Market, feed: Feed, attributor: Attributor) {
   const [alert, setAlert] = useState<Alert | null>(null);
+  const [feedStatus, setFeedStatus] = useState<FeedStatus | null>(null);
   const [, setVersion] = useState(0);
   const dismissed = useRef<Set<string>>(new Set());
   const armed = useRef(false);
@@ -70,6 +76,8 @@ export function useMarketFeed(market: Market, feed: Feed, attributor: Attributor
         const quotes = await feed.quotes(market.symbols());
         if (cancelled) return;
         market.applyQuotes(quotes);
+        const diag = feed.lastDiagnostics?.();
+        if (diag) setFeedStatus({ ...diag, at: Date.now() });
         setVersion((v) => v + 1);
         attributionPass();
         evaluateAlert();
@@ -97,5 +105,5 @@ export function useMarketFeed(market: Market, feed: Feed, attributor: Attributor
     setAlert(null);
   }
 
-  return { alert, ack };
+  return { alert, ack, feedStatus };
 }

@@ -26,6 +26,13 @@ export interface Quote {
   cause?: Cause | null;
 }
 
+export interface FeedDiagnostics {
+  ok: number;
+  failed: number;
+  error?: string;
+  sample?: { symbol: string; price: number };
+}
+
 export interface Feed {
   /** For diagnostics and the "which feed am I on" surface. */
   readonly name: string;
@@ -33,4 +40,6 @@ export interface Feed {
   readonly pollMs: number;
   /** Quotes for the requested symbols. Unknown/failed symbols are omitted. */
   quotes(symbols: string[]): Promise<Quote[]>;
+  /** How the most recent poll went, when the feed tracks it. */
+  lastDiagnostics?(): FeedDiagnostics;
 }
