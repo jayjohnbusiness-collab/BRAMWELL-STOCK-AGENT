@@ -3,10 +3,8 @@ import { InstrumentRow } from "./InstrumentRow";
 
 /*
  * "The screen." The same answer is delivered twice, differently: spoken it is
- * rounded and capped at three; here it is exact, tabular, and complete.
- * The unprompted alert, when there is one, sits at the top behind a single
- * brass rule — the one brass accent on this side. The watchlist itself lives
- * in the manager below; here, at rest, the screen is simply quiet.
+ * rounded and capped at three; here it is exact, tabular, and complete —
+ * each block a rounded card. The unprompted alert sits on a soft accent tint.
  */
 export function ScreenPanel({
   payload,
@@ -21,20 +19,20 @@ export function ScreenPanel({
   return (
     <section
       aria-label="Ledger"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-6)",
-      }}
+      style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}
     >
       {alert ? <AlertBlock alert={alert} onAck={onAck} /> : null}
 
       {payload.kind === "table" ? (
-        <Ledger title={payload.title} rows={payload.rows} />
+        <div className="card">
+          <Ledger title={payload.title} rows={payload.rows} />
+        </div>
       ) : payload.kind === "quote" ? (
-        <Quote instrument={payload.instrument} />
+        <div className="card">
+          <Quote instrument={payload.instrument} />
+        </div>
       ) : showResting ? (
-        <div>
+        <div className="card">
           <span className="label">Now</span>
           <p className="body" style={{ margin: "var(--space-2) 0 0", color: "var(--ink-soft)" }}>
             Nothing worth reporting.
@@ -48,25 +46,21 @@ export function ScreenPanel({
 function AlertBlock({ alert, onAck }: { alert: Alert; onAck?: () => void }) {
   return (
     <div
+      className="card"
       style={{
-        // Alerts are ink; brass marks it as the one thing worth surfacing.
-        // A single brass rule, no red, no box.
-        borderTop: "2px solid var(--brass)",
-        paddingTop: "var(--space-3)",
+        background: "var(--accent-tint)",
+        borderColor: "var(--accent-line)",
         display: "flex",
         flexDirection: "column",
         gap: "var(--space-2)",
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <span className="label">Worth an interruption</span>
+        <span className="label" style={{ color: "var(--brass)" }}>
+          Worth an interruption
+        </span>
         {onAck ? (
-          <button
-            type="button"
-            className="chip"
-            onClick={onAck}
-            style={{ padding: "2px 8px" }}
-          >
+          <button type="button" className="chip" onClick={onAck} style={{ padding: "2px 12px" }}>
             Acknowledge
           </button>
         ) : null}
@@ -100,7 +94,7 @@ function Ledger({
           {empty ?? "Nothing to show."}
         </p>
       ) : (
-        <div style={{ borderBottom: "var(--hairline) solid var(--rule)" }}>
+        <div>
           {rows.map((r) => (
             <InstrumentRow key={r.symbol} instrument={r} />
           ))}
@@ -117,7 +111,7 @@ function Quote({ instrument }: { instrument: Instrument }) {
         {cap(instrument.name)}
       </h2>
       <span className="label">{instrument.symbol}</span>
-      <div style={{ marginTop: "var(--space-4)", borderBottom: "var(--hairline) solid var(--rule)" }}>
+      <div style={{ marginTop: "var(--space-4)" }}>
         <InstrumentRow instrument={instrument} />
       </div>
       {instrument.cause ? (
@@ -134,7 +128,12 @@ function Quote({ instrument }: { instrument: Instrument }) {
             <p className="small" style={{ color: "var(--ink-soft)", margin: "var(--space-1) 0 0" }}>
               Source:{" "}
               {instrument.cause.url ? (
-                <a href={instrument.cause.url} target="_blank" rel="noreferrer" style={{ color: "var(--ink)" }}>
+                <a
+                  href={instrument.cause.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: "var(--brass)" }}
+                >
                   {instrument.cause.source}
                 </a>
               ) : (

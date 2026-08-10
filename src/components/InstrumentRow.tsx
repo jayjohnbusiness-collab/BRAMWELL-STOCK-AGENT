@@ -13,7 +13,7 @@ export function InstrumentRow({
     <div
       style={{
         display: "flex",
-        alignItems: "baseline",
+        alignItems: "center",
         justifyContent: "space-between",
         gap: "var(--space-4)",
         padding: "var(--space-3) 0",

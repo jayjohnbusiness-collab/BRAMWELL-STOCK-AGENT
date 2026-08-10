@@ -5,21 +5,24 @@ import { exactPercent, formatPrice } from "../agent/format";
 /*
  * A single price + change, on screen and exact.
  *   - Tabular figures, so digits hold position as they tick.
- *   - Prices cross-fade rather than flash; nothing pulses or counts up.
- *   - Change carries a written sign (+/−) as well as a data color, so it
- *     survives for colorblind users. Green/red live ONLY here.
+ *   - Prices cross-fade rather than flash.
+ *   - The change is a tinted pill carrying a written sign (+/−) as well as
+ *     color, so it survives for colorblind users. Green/red live only here.
  */
-export function PriceCell({ instrument, day = "today" }: { instrument: Instrument; day?: "today" | "yesterday" }) {
+export function PriceCell({
+  instrument,
+  day = "today",
+}: {
+  instrument: Instrument;
+  day?: "today" | "yesterday";
+}) {
   const change = day === "yesterday" ? instrument.prevChangePct : instrument.changePct;
-  const color =
-    change > 0 ? "var(--data-up)" : change < 0 ? "var(--data-down)" : "var(--ink-soft)";
+  const tone = change > 0 ? "up" : change < 0 ? "down" : "flat";
 
   return (
-    <span style={{ display: "inline-flex", alignItems: "baseline", gap: "var(--space-3)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-3)" }}>
       <CrossfadePrice value={instrument.basePrice} />
-      <span className="price tabular" style={{ color, minWidth: "5.5ch", textAlign: "right" }}>
-        {exactPercent(change)}
-      </span>
+      <span className={`chg ${tone}`}>{exactPercent(change)}</span>
     </span>
   );
 }

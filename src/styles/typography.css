@@ -1,19 +1,18 @@
 /*
- * Typography.
- * Display: Newsreader (transitional serif) — wordmark and headlines only.
- * Body/UI + Data: Archivo (neutral grotesque). Data is always tabular.
- * Scale is a 1.25 ratio on a 16px base.
+ * Typography — all-sans (Archivo), clean hierarchy.
+ * The "Clarity" direction drops the display serif; the name carries itself in a
+ * tightly-tracked grotesque. Data is always tabular.
  */
-@import "@fontsource-variable/newsreader";
 @import "@fontsource-variable/archivo";
 
 :root {
-  --font-display: "Newsreader Variable", Georgia, "Times New Roman", serif;
-  --font-body: "Archivo Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Archivo Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  --step-display: 44px;
-  --step-h1: 32px;
-  --step-h2: 24px;
+  --step-display: 40px;
+  --step-h1: 30px;
+  --step-h2: 22px;
   --step-price: 20px;
   --step-body: 16px;
   --step-small: 14px;
@@ -28,28 +27,29 @@
 
 .display {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 600;
   font-size: var(--step-display);
   line-height: 1.1;
-  letter-spacing: -0.01em; /* a touch of negative tracking */
+  letter-spacing: -0.02em;
 }
 
 h1,
 .h1 {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 600;
   font-size: var(--step-h1);
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
 h2,
 .h2 {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 600;
   font-size: var(--step-h2);
   line-height: 1.3;
+  letter-spacing: -0.01em;
   margin: 0;
 }
 
@@ -69,17 +69,17 @@ h2,
 
 .label {
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 600;
   font-size: var(--step-label);
   line-height: 1.4;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
 
 .price {
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 600;
   font-size: var(--step-price);
   line-height: 1.2;
   font-variant-numeric: tabular-nums;

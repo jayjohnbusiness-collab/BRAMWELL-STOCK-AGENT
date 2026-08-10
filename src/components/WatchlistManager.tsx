@@ -30,7 +30,7 @@ export function WatchlistManager({
   }
 
   return (
-    <section aria-label="Watchlist" style={{ marginTop: "var(--space-2)" }}>
+    <section aria-label="Watchlist" className="card">
       <h2 className="h2" style={{ marginBottom: "var(--space-3)" }}>
         The names you follow
       </h2>
@@ -40,27 +40,27 @@ export function WatchlistManager({
           Nothing on the watch yet. Add a name and I'll keep an eye on it.
         </p>
       ) : (
-        <div style={{ borderBottom: "var(--hairline) solid var(--rule)", marginBottom: "var(--space-4)" }}>
+        <div style={{ marginBottom: "var(--space-4)" }}>
           {watched.map((i) => (
             <div
               key={i.symbol}
               style={{
                 display: "flex",
-                alignItems: "baseline",
+                alignItems: "center",
                 justifyContent: "space-between",
                 gap: "var(--space-4)",
                 padding: "var(--space-3) 0",
                 borderTop: "var(--hairline) solid var(--rule)",
               }}
             >
-              <span style={{ minWidth: 0, display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
+              <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                 <button
                   type="button"
                   className="chip"
                   aria-label={`Stop watching ${i.name}`}
                   title={`Stop watching ${i.name}`}
                   onClick={() => onRemove(i.symbol)}
-                  style={{ padding: "0 8px", lineHeight: 1.6 }}
+                  style={{ padding: "0 10px", lineHeight: 1.7 }}
                 >
                   ×
                 </button>

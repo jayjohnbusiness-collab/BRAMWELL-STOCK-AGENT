@@ -1,33 +1,39 @@
 /*
- * Bramwell design tokens.
- * The reference is a private club or a good library — not a trading terminal.
- * No dark mode at launch: the parchment ground is the identity.
+ * Bramwell design tokens — "Clarity" direction.
+ *
+ * A clean, open look: a cool off-white workspace, white rounded cards with a
+ * soft shadow, one confident slate-blue accent, and change values as tinted
+ * pills. Less exclusive, more approachable — the name carries the prestige.
  */
 :root {
   /* Surfaces & text */
-  --ground: #efebe1; /* parchment, page background */
-  --paper: #f7f4ec; /* raised surfaces, cards */
-  --ink: #16202e; /* primary text, near-black navy */
-  --ink-soft: #4a5563; /* secondary text, labels */
-  --rule: #d6cfc0; /* hairlines, dividers, borders */
+  --ground: #f4f6f8; /* cool grey workspace (page) */
+  --paper: #ffffff; /* raised surfaces — the cards */
+  --ink: #1b2430; /* primary text */
+  --ink-soft: #5b6672; /* secondary text, labels */
+  --rule: #e4e9ef; /* hairlines, dividers, card borders */
 
-  /* The single accent — aged brass, not gold, not orange. */
-  --brass: #a8853e;
-  --oxblood: #6b2b2b; /* rare emphasis only; ~once per screen */
+  /* The single accent — a calm slate-blue. Used freely now, not rationed. */
+  --brass: #2563a8; /* (token name kept; value is the new accent) */
+  --brass-strong: #1f5493; /* hover / pressed */
+  --accent-tint: #eaf1f9; /* soft accent wash for the alert card */
+  --accent-line: #cfe0f2; /* accent-tinted border */
+  --oxblood: #7a2e2e; /* rare deep emphasis */
 
-  /*
-   * Data colors — reserved. Red and green appear ONLY on numbers that
-   * represent change. Never on buttons, links, icons, backgrounds, toasts,
-   * or error states. If buttons are green, a green number means nothing.
-   */
-  --data-up: #2f6b4f; /* deep green, positive change only */
-  --data-down: #9b3232; /* deep red, negative change only */
+  /* Data colors — on change values only, now shown as pills. */
+  --data-up: #1f7a4d;
+  --data-down: #b23b3b;
+  --up-tint: #e7f2ec;
+  --down-tint: #f8ebeb;
+  --flat-tint: #eef1f4;
 
-  /* Geometry — nearly square, never pill-shaped. */
-  --radius: 2px;
+  /* Geometry — soft, rounded, friendly. */
+  --radius: 10px; /* buttons, inputs */
+  --radius-card: 14px; /* cards */
+  --radius-pill: 999px; /* chips, change badges */
   --hairline: 1px;
 
-  /* Spacing scale — generous whitespace; density is the competitor's language. */
+  /* Spacing scale — generous whitespace. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -37,9 +43,12 @@
   --space-7: 48px;
   --space-8: 64px;
 
-  /* Focus — 2px brass outline, always visible. */
+  /* Soft card shadow. */
+  --shadow-card: 0 1px 2px rgba(20, 28, 40, 0.04), 0 8px 24px rgba(20, 28, 40, 0.06);
+
+  /* Focus — 2px accent outline, always visible. */
   --focus: 0 0 0 2px var(--ground), 0 0 0 4px var(--brass);
 
-  /* Motion — minimal. Prices cross-fade rather than flash. */
+  /* Motion — prices cross-fade rather than flash. */
   --fade: 240ms ease;
 }

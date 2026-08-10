@@ -149,7 +149,6 @@ export default function App() {
             alert={alert}
             onAck={alert ? () => ack(alert.id) : undefined}
           />
-          <hr className="rule" style={{ margin: "var(--space-5) 0" }} />
           <WatchlistManager
             watched={market.held()}
             onAdd={handleAdd}

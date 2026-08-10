@@ -1,9 +1,9 @@
-/* Layout for the scaffold. Generous whitespace; hairlines, never boxes. */
+/* Layout — open, card-based, generous whitespace. */
 
 .app-shell {
   max-width: 1160px;
   margin: 0 auto;
-  padding: var(--space-6) var(--space-5) var(--space-8);
+  padding: var(--space-7) var(--space-5) var(--space-8);
 }
 
 .app-header {
@@ -15,8 +15,9 @@
 
 .wordmark {
   font-family: var(--font-display);
-  font-size: 28px;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  font-size: 26px;
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 
@@ -28,7 +29,7 @@
 
 .app-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.1fr 1fr;
   gap: var(--space-6);
   align-items: start;
   margin-top: var(--space-5);
@@ -40,10 +41,11 @@
   min-height: 60vh;
 }
 
-/* The screen sits on paper; the conversation sits on the parchment ground. */
+/* The right column is a stack of cards on the grey workspace. */
 .screen-pane {
-  background: var(--paper);
-  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
 .messages {
@@ -83,7 +85,7 @@
   color: var(--ink-soft);
 }
 
-/* The working state: quiet, wordless. A butler does not narrate his errand. */
+/* The working state: quiet, wordless. */
 .working {
   display: inline-flex;
   gap: 5px;
@@ -127,25 +129,25 @@
   gap: var(--space-3);
 }
 
-/* The mic is ink furniture at rest; brass marks it only while listening —
-   the one moment it is the most important thing on the screen. */
 .mic {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   color: var(--ink);
-  background: transparent;
+  background: var(--paper);
   border: var(--hairline) solid var(--rule);
   border-radius: var(--radius);
   padding: 0;
 }
 .mic:hover:not(:disabled) {
-  border-color: var(--ink-soft);
+  border-color: var(--brass);
+  color: var(--brass);
 }
 .mic.on {
-  border-color: var(--ink);
+  border-color: var(--brass);
+  color: var(--brass);
 }
 .mic.listening {
   box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--brass);
@@ -177,17 +179,20 @@
   color: var(--ink-soft);
 }
 
+/* Primary action — accent-filled. */
 .btn {
   font-family: var(--font-body);
   font-size: var(--step-small);
-  color: var(--paper);
-  background: var(--ink);
-  border: var(--hairline) solid var(--ink);
+  font-weight: 600;
+  color: #fff;
+  background: var(--brass);
+  border: var(--hairline) solid var(--brass);
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-5);
 }
 .btn:hover {
-  background: #0f1926;
+  background: var(--brass-strong);
+  border-color: var(--brass-strong);
 }
 
 .chips {
@@ -199,13 +204,14 @@
   font-family: var(--font-body);
   font-size: var(--step-small);
   color: var(--ink);
-  background: transparent;
+  background: var(--paper);
   border: var(--hairline) solid var(--rule);
-  border-radius: var(--radius);
-  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
 }
 .chip:hover {
-  border-color: var(--ink-soft);
+  border-color: var(--brass);
+  color: var(--brass);
 }
 
 .state-note {
@@ -217,7 +223,6 @@
     grid-template-columns: 1fr;
   }
   .screen-pane {
-    position: static;
     order: -1;
   }
   .tagline {
