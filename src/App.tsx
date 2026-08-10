@@ -4,6 +4,7 @@ import { Market } from "./agent/market";
 import type { ScreenPayload } from "./agent/types";
 import { createFeed } from "./feed";
 import { useMarketFeed } from "./hooks/useMarketFeed";
+import { useVoice } from "./hooks/useVoice";
 import { loadWatchlist, saveWatchlist } from "./watchlist/storage";
 import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
@@ -47,6 +48,12 @@ export default function App() {
   const [awaitingChoice, setAwaitingChoice] = useState(false);
   const [, forceRender] = useState(0);
 
+  // Voice dispatches spoken commands through the same pipeline as typing.
+  // A ref breaks the definition cycle (the hook needs the handler, the handler
+  // needs the hook's speak/cancel).
+  const dispatchRef = useRef<(text: string) => void>(() => {});
+  const voice = useVoice((text) => dispatchRef.current(text));
+
   function nextId(): string {
     idRef.current += 1;
     return `m${idRef.current}`;
@@ -59,6 +66,7 @@ export default function App() {
   }
 
   function handleSend(text: string) {
+    voice.cancel(); // a new request stops Bramwell mid-word
     setMessages((prev) => [...prev, { id: nextId(), from: "user", text }]);
     setWorking(true);
 
@@ -71,6 +79,7 @@ export default function App() {
           ...prev,
           { id: nextId(), from: "bramwell", text: reply.spoken },
         ]);
+        voice.speak(reply.spoken); // spoken aloud only when voice is on
       }
       if (reply.screen && reply.screen.kind !== "none") {
         setScreen(reply.screen);
@@ -79,6 +88,7 @@ export default function App() {
       persist(); // Bramwell may have edited the watchlist ("watch Tesla")
     }, 650);
   }
+  dispatchRef.current = handleSend;
 
   // The watchlist editor resolves through the same brain, reporting in voice.
   function handleAdd(text: string): string {
@@ -115,7 +125,17 @@ export default function App() {
       <div className="app-grid">
         <section className="conv-pane" aria-label="Conversation">
           <Conversation messages={messages} working={working} />
-          <Composer onSend={handleSend} awaitingChoice={awaitingChoice} />
+          <Composer
+            onSend={handleSend}
+            awaitingChoice={awaitingChoice}
+            voice={{
+              available: voice.available,
+              enabled: voice.enabled,
+              listening: voice.listening,
+              speaking: voice.speaking,
+              onToggle: voice.toggle,
+            }}
+          />
         </section>
 
         <div className="screen-pane">

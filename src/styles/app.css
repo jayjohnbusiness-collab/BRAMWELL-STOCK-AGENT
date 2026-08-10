@@ -121,6 +121,42 @@
   gap: var(--space-3);
 }
 
+.voicebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The mic is ink furniture at rest; brass marks it only while listening —
+   the one moment it is the most important thing on the screen. */
+.mic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--ink);
+  background: transparent;
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0;
+}
+.mic:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+}
+.mic.on {
+  border-color: var(--ink);
+}
+.mic.listening {
+  box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--brass);
+  border-color: var(--brass);
+}
+.mic:disabled {
+  color: var(--ink-soft);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .composer-row {
   display: flex;
   gap: var(--space-3);

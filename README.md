@@ -63,6 +63,18 @@ Shortly after load, one **unprompted alert** appears — the only kind that
 clears the bar: a real move *with* a probable cause attached. Most of the time
 that panel is quiet, and that is Bramwell working correctly.
 
+### Voice
+
+Toggle the mic (top-left of the composer) and Bramwell listens for the wake
+word **"Hey Bramwell"** — or a bare "Bramwell"; "Bram" alone is rejected.
+Acknowledgement is silent: no chime, just the mic ring turning brass. After an
+exchange a short follow-up window stays open, so "and yesterday?" works without
+saying his name again. Replies are read aloud (unhurried, low), and **barge-in**
+stops him mid-word the instant you speak. Recognition uses the browser Web
+Speech API; where it isn't available the mic disables itself and the typed
+composer carries on. The watchlist is editable by voice too — "watch Tesla",
+"stop watching Apple."
+
 ## Architecture
 
 The agent brain (`src/agent/`) contains no React and no transport. It takes an
@@ -84,8 +96,14 @@ Data comes through a `Feed` (`src/feed/`): the `Market` holds a synchronous
 snapshot, and a feed hydrates it via `applyQuotes()`. `SimulatedFeed` is the
 default; `FinnhubFeed` is a real adapter — same brain, different data source.
 `src/hooks/useMarketFeed.ts` owns the live loop (poll → overlay → re-evaluate
-the alert). The UI (`src/components/`, `src/brand/`) and the design system
-(`src/styles/`) render that logic under the brand rules.
+the alert). The watchlist is real user state, persisted to localStorage
+(`src/watchlist/`) and editable by click or by voice.
+
+Voice lives in `src/speech/`: a pure, tested wake-word detector
+(`wakeword.ts`), plus thin wrappers over the browser's speech recognition and
+synthesis; `src/hooks/useVoice.ts` composes them (wake → command, barge-in,
+spoken replies). The UI (`src/components/`, `src/brand/`) and the design system
+(`src/styles/`) render all of it under the brand rules.
 
 ### Tests
 
