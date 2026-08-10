@@ -88,6 +88,12 @@ export function resolveReference(text: string, instruments: Instrument[]): Resol
     return ok(best.i);
   }
 
+  // 6) Consonant-skeleton recovery: a vowel-dropped name/ticker, e.g. typing
+  //    "PLNTR" for Palantir. Only a unique, ≥4-consonant exact match is taken,
+  //    so it can't misfire on ordinary short words.
+  const skel = skeletonMatch(windows, instruments);
+  if (skel) return ok(skel);
+
   // Nothing resolved. If it was close to a name, it was likely a mis-heard name
   // attempt — echo it. If it wasn't close to anything, it's out of scope.
   return {
@@ -95,6 +101,30 @@ export function resolveReference(text: string, instruments: Instrument[]): Resol
     heard: subjectPhrase(raw),
     nearMiss: (best?.score ?? 0) >= NEAR,
   };
+}
+
+/** Drop the vowels: "palantir" → "plntr", so a vowel-light input can match. */
+function consonants(s: string): string {
+  return s.toLowerCase().replace(/[^a-z]/g, "").replace(/[aeiou]/g, "");
+}
+
+function skeletonMatch(windows: string[], instruments: Instrument[]): Instrument | null {
+  // Only fire when the *input itself* is vowel-free — i.e. the user dropped the
+  // vowels ("plntr"). A full misspelled word ("biocrop") keeps its vowels and
+  // is left to fuzzy/near-miss, so this can't hijack ordinary typos.
+  const input = new Set(
+    windows.filter((w) => w.length >= 4 && !/[aeiou]/.test(w)),
+  );
+  if (input.size === 0) return null;
+  const hits: Instrument[] = [];
+  for (const i of instruments) {
+    const skels = formsOf(i).map(consonants);
+    const symSkel = consonants(i.symbol.toLowerCase());
+    if (symSkel.length >= 4) skels.push(symSkel);
+    if (skels.some((s) => s.length >= 4 && input.has(s))) hits.push(i);
+  }
+  const uniq = dedupe(hits);
+  return uniq.length === 1 ? uniq[0] : null;
 }
 
 function ok(instrument: Instrument): Resolution {

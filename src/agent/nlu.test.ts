@@ -25,6 +25,16 @@ describe("parse — watch intent", () => {
     expect(parse("stop watching Apple").kind).toBe("unwatch");
     expect(parse("remove Tesla from my list").kind).toBe("unwatch");
   });
+
+  it("classifies briefing, compare, and why", () => {
+    expect(parse("catch me up").kind).toBe("brief");
+    expect(parse("NVDA vs AMD").kind).toBe("compare");
+    expect(parse("why?").kind).toBe("why");
+  });
+
+  it("reads 'now' as today, so 'how about now?' is a follow-up", () => {
+    expect(parse("how about now?").day).toBe("today");
+  });
 });
 
 describe("watchTarget — name extraction", () => {

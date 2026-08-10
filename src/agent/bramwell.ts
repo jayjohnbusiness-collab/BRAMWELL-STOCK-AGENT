@@ -399,6 +399,21 @@ export class Bramwell {
     if (res.status === "ok" && res.instrument.kind === "equity") {
       return this.quoteReply(res.instrument.symbol, "today");
     }
+    if (res.status === "ambiguous") return this.ask(res.options);
+
+    // Did the user name a specific thing ("PLNTR why?") that didn't resolve?
+    // Answer honestly rather than falling back to a movers list.
+    const named = whySubject(text);
+    if (named) {
+      const r2 = this.market.resolve(named);
+      if (r2.status === "ok" && r2.instrument.kind === "equity") {
+        return this.quoteReply(r2.instrument.symbol, "today");
+      }
+      if (r2.status === "ambiguous") return this.ask(r2.options);
+      return this.notUnderstood(named, r2);
+    }
+
+    // A bare "why" — resolved against whatever we were just discussing.
     const s = this.session.subject;
     if (s?.symbol) return this.quoteReply(s.symbol, "today");
     if (s) {
@@ -459,6 +474,18 @@ export class Bramwell {
 
 function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Strip the "why" scaffolding to whatever name (if any) was asked about. */
+function whySubject(text: string): string {
+  return text
+    .replace(
+      /\b(why'?s?|what'?s|what|is|are|was|were|driving|behind|going on with|causing|caused|how come|happened|to|with|the|a|an|it|that|this|now|today|up|down|so|then|about|doing|move|moving|moved)\b/gi,
+      " ",
+    )
+    .replace(/[^\w.\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** Split a compare utterance into candidate names ("NVDA vs AMD" → [NVDA, AMD]). */

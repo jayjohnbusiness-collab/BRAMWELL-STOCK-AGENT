@@ -125,6 +125,38 @@ describe("conversational depth (category 3)", () => {
     expect(r.spoken).toContain("Autohaus");
     expect(r.spoken.toLowerCase()).toContain("delivery"); // autos cause
   });
+
+  it("a named 'why' resolves the name even vowel-dropped, never a leaderboard", () => {
+    const b = mk();
+    b.respond("What's moving on the Nasdaq today?"); // leaves a list subject
+    const r = b.respond("bcrp why?"); // Biocorp, vowels dropped
+    expect(r.spoken).toContain("Biocorp");
+    expect(r.spoken).not.toMatch(/carrying it/i); // not the movers list
+  });
+
+  it("a named 'why' that can't resolve is answered honestly, not with a list", () => {
+    const b = mk();
+    b.respond("What's moving on the Nasdaq today?");
+    const r = b.respond("why is Xyzzy down?");
+    expect(r.spoken).not.toMatch(/carrying it/i);
+    expect(r.spoken.toLowerCase()).toMatch(/don't have anything|outside what/);
+  });
+
+  it("'how about now?' re-quotes the held single-name subject", () => {
+    const b = mk();
+    b.respond("How's SUN?");
+    const r = b.respond("how about now?");
+    expect(r.spoken).toContain("Sunrise Micro");
+    expect(r.screen?.kind).toBe("quote");
+  });
+
+  it("'how about now?' re-runs a held list subject", () => {
+    const b = mk();
+    b.respond("What's moving on the Nasdaq today?");
+    const r = b.respond("how about now?");
+    expect(r.screen?.kind).toBe("table");
+    expect(r.spoken).toContain("Sunrise Micro"); // the leader again
+  });
 });
 
 describe("uncertainty is stated, never invented (§7)", () => {

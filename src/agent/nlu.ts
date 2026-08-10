@@ -67,7 +67,7 @@ const PORTFOLIO =
 const NASDAQ = /\b(nasdaq|the market|overall|broadly|today'?s market)\b/i;
 
 const YESTERDAY = /\b(yesterday|prior session|last session|day before)\b/i;
-const TODAY = /\b(today|so far|this session|right now)\b/i;
+const TODAY = /\b(today|now|currently|at the moment|right now|so far|this session)\b/i;
 
 const MARKETY =
   /\b(up|down|percent|%|move|moving|movers?|price|trading|stock|shares?|index|indices|ticker|market|holdings?|portfolio|performers?)\b/i;

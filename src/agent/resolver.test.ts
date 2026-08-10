@@ -18,6 +18,25 @@ describe("symbols (§5.2 — resolve out loud)", () => {
   });
 });
 
+describe("vowel-dropped recovery (§5 — 'plntr' → Palantir)", () => {
+  it("recovers a single-word name with its vowels dropped", () => {
+    // Biocorp → 'bcrp'; Wheelworks → 'whlwrks'.
+    expect(r("bcrp").status === "ok" && (r("bcrp") as { instrument: { symbol: string } }).instrument.symbol).toBe("BIO");
+    const w = r("whlwrks");
+    expect(w.status === "ok" && w.instrument.symbol).toBe("WHEEL");
+  });
+
+  it("still recovers when trailing words are present", () => {
+    const res = r("bcrp why?");
+    expect(res.status === "ok" && res.instrument.symbol).toBe("BIO");
+  });
+
+  it("won't misfire on a short vowel-light word", () => {
+    // 'ths' is under the four-consonant floor — not a match.
+    expect(r("ths").status).not.toBe("ok");
+  });
+});
+
 describe("spelled-out tickers (§5 — the hard case)", () => {
   it("assembles typed letters: 's t a r' → STAR", () => {
     const res = r("how's s t a r");
