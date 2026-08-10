@@ -47,4 +47,22 @@ describe("SimulatedFeed", () => {
     expect(first.changePct).toBe(second.changePct); // the story doesn't move
     expect(second.price).not.toBe(first.price); // the digits do
   });
+
+  it("suggests a symbol prefix ahead of a name match", async () => {
+    const feed = new SimulatedFeed();
+    const hits = await feed.suggest("nv");
+    expect(hits[0].symbol).toBe("NVDA"); // symbol prefix wins
+  });
+
+  it("suggests by company name too", async () => {
+    const feed = new SimulatedFeed();
+    const hits = await feed.suggest("apple");
+    expect(hits.map((h) => h.symbol)).toContain("AAPL");
+  });
+
+  it("returns nothing for a blank query and caps the list", async () => {
+    const feed = new SimulatedFeed();
+    expect(await feed.suggest("   ")).toEqual([]);
+    expect((await feed.suggest("a")).length).toBeLessThanOrEqual(6);
+  });
 });

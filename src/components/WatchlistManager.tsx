@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Instrument } from "../agent/types";
 import { PriceCell } from "./PriceCell";
+
+type Suggestion = { symbol: string; name: string };
 
 /*
  * The watchlist — the one piece of real user state. Editable here or by asking
@@ -11,26 +13,76 @@ export function WatchlistManager({
   watched,
   onAdd,
   onRemove,
+  onSuggest,
 }: {
   watched: Instrument[];
   /** Returns a message to show (empty on success). May look a ticker up live. */
   onAdd: (text: string) => Promise<string>;
   onRemove: (symbol: string) => void;
+  /** Live typeahead: closest matching tickers for a partial query. */
+  onSuggest?: (query: string) => Promise<Suggestion[]>;
 }) {
   const [value, setValue] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  // The single best live match, shown inline in the field (no dropdown).
+  const [top, setTop] = useState<Suggestion | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Guards against out-of-order responses: only the latest query's results win.
+  const seq = useRef(0);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const t = value.trim();
+  // Debounced best-match as the user types (min 2 chars, ~200ms quiet).
+  useEffect(() => {
+    const q = value.trim();
+    if (!onSuggest || q.length < 2) {
+      setTop(null);
+      return;
+    }
+    const mine = ++seq.current;
+    const timer = window.setTimeout(async () => {
+      const hits = await onSuggest(q);
+      if (mine !== seq.current) return; // a newer keystroke has superseded this
+      setTop(hits[0] ?? null);
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [value, onSuggest]);
+
+  // When the match's symbol continues what's typed, offer the rest as ghost
+  // text in the field (e.g. "nv" → "nvDA"). Preserve the user's own casing.
+  const trimmed = value.trim();
+  const completion =
+    top && trimmed.length > 0 && top.symbol.toUpperCase().startsWith(trimmed.toUpperCase())
+      ? top.symbol.slice(trimmed.length)
+      : "";
+  // A name-only match (symbol isn't a prefix, e.g. "apple" → AAPL) shows the
+  // ticker as a quiet hint at the right edge instead.
+  const hint = top && !completion && trimmed.length > 0 ? top.symbol : "";
+
+  function acceptCompletion() {
+    if (!completion) return false;
+    setValue(value + completion);
+    setTop(null);
+    return true;
+  }
+
+  async function add(text: string) {
+    const t = text.trim();
     if (!t || busy) return;
+    seq.current++; // cancel any in-flight suggestion for the old text
+    setTop(null);
     setBusy(true);
     setNote("Looking it up…");
     const message = await onAdd(t);
     setBusy(false);
     setNote(message);
     if (!message) setValue("");
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    // Enter takes the best match when there is one, so the ticker the field is
+    // hinting at is exactly what gets added.
+    await add(top ? top.symbol : value);
   }
 
   return (
@@ -84,15 +136,44 @@ export function WatchlistManager({
       )}
 
       <form onSubmit={submit} className="composer-row">
-        <input
-          aria-label="Add a name to the watchlist"
-          placeholder="Add a name or symbol…"
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value);
-            if (note) setNote("");
-          }}
-        />
+        <div className="typeahead">
+          {/* Ghost layer behind the (transparent) input: the typed text is
+              invisible here, the completion trails it in muted ink. */}
+          <div className="field-ghost" aria-hidden="true">
+            <span className="ghost-typed">{value}</span>
+            <span className="ghost-rest">{completion}</span>
+          </div>
+          {hint ? (
+            <span className="field-hint" aria-hidden="true">
+              {hint}
+            </span>
+          ) : null}
+          <input
+            ref={inputRef}
+            aria-label="Add a name to the watchlist"
+            aria-autocomplete="inline"
+            placeholder="Add a name or symbol…"
+            value={value}
+            disabled={busy}
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(e) => {
+              setValue(e.target.value);
+              if (note) setNote("");
+            }}
+            onKeyDown={(e) => {
+              // Tab / → (caret at the end) accept the inline completion.
+              const el = e.currentTarget;
+              const atEnd = el.selectionStart === value.length && el.selectionEnd === value.length;
+              if (completion && (e.key === "Tab" || (e.key === "ArrowRight" && atEnd))) {
+                e.preventDefault();
+                acceptCompletion();
+              } else if (e.key === "Escape") {
+                setTop(null);
+              }
+            }}
+          />
+        </div>
         <button type="submit" className="btn" disabled={busy}>
           {busy ? "…" : "Add"}
         </button>

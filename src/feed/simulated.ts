@@ -34,6 +34,18 @@ export class SimulatedFeed implements Feed {
     return i ? { symbol: i.symbol, name: i.name } : null;
   }
 
+  async suggest(query: string): Promise<{ symbol: string; name: string }[]> {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const scored = this.book
+      .map((i) => ({ i, rank: rankMatch(i.symbol, i.name, q) }))
+      .filter((s) => s.rank < Infinity)
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, 6)
+      .map((s) => ({ symbol: s.i.symbol, name: s.i.name }));
+    return scored;
+  }
+
   async quotes(symbols: string[]): Promise<Quote[]> {
     this.step += 1;
     const want = new Set(symbols);
@@ -54,6 +66,21 @@ export class SimulatedFeed implements Feed {
         };
       });
   }
+}
+
+/**
+ * A lower rank is a closer match. Symbol prefix beats name prefix beats a
+ * name-substring hit; anything else is not a match (Infinity).
+ */
+function rankMatch(symbol: string, name: string, q: string): number {
+  const sym = symbol.toLowerCase();
+  const nm = name.toLowerCase().replace(/^the\s+/, "");
+  if (sym === q) return 0;
+  if (sym.startsWith(q)) return 1;
+  if (nm.startsWith(q)) return 2;
+  if (nm.split(/\s+/).some((w) => w.startsWith(q))) return 3;
+  if (nm.includes(q)) return 4;
+  return Infinity;
 }
 
 /**

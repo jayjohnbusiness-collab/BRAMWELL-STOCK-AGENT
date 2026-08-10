@@ -161,6 +161,13 @@ export default function App() {
       : `Connect live data to add "${text.trim()}".`;
   }
 
+  // Typeahead: closest matching tickers for a partial query, best-effort.
+  async function handleSuggest(query: string): Promise<{ symbol: string; name: string }[]> {
+    const feed = feedRef.current;
+    if (!feed.suggest) return [];
+    return feed.suggest(query);
+  }
+
   function handleRemove(symbol: string) {
     market.unwatch(symbol);
     // A user-added ticker is dropped entirely so it isn't re-fetched.
@@ -233,6 +240,7 @@ export default function App() {
             watched={market.held()}
             onAdd={handleAdd}
             onRemove={handleRemove}
+            onSuggest={handleSuggest}
           />
         </div>
       </div>

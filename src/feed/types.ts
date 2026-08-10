@@ -59,4 +59,8 @@ export interface Feed {
    * match's symbol and name, or null.
    */
   search?(query: string): Promise<{ symbol: string; name: string } | null>;
+  /**
+   * Typeahead: the closest matching tickers for a partial query, best first.
+   */
+  suggest?(query: string): Promise<{ symbol: string; name: string }[]>;
 }

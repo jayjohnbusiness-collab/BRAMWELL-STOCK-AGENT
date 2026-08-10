@@ -118,6 +118,39 @@ export class FinnhubFeed implements Feed {
     }
   }
 
+  /** Typeahead: the closest US-listed matches for a partial name or symbol. */
+  async suggest(query: string): Promise<{ symbol: string; name: string }[]> {
+    const q = query.trim();
+    if (q.length < 1) return [];
+    try {
+      const res = await fetch(
+        `${BASE}/search?q=${encodeURIComponent(q)}&token=${this.token}`,
+      );
+      if (!res.ok) return [];
+      const d = (await res.json()) as {
+        result?: Array<{ symbol?: string; description?: string; type?: string }>;
+      };
+      const results = Array.isArray(d?.result) ? d.result : [];
+      const seen = new Set<string>();
+      const out: { symbol: string; name: string }[] = [];
+      // Plain US common-stock tickers first (no exchange suffix), best-effort.
+      const ordered = [
+        ...results.filter((r) => r.symbol && !r.symbol.includes(".") && r.type === "Common Stock"),
+        ...results.filter((r) => r.symbol && !r.symbol.includes(".") && r.type !== "Common Stock"),
+      ];
+      for (const r of ordered) {
+        const sym = r.symbol?.toUpperCase();
+        if (!sym || seen.has(sym)) continue;
+        seen.add(sym);
+        out.push({ symbol: sym, name: (r.description ?? sym).trim() });
+        if (out.length >= 6) break;
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  }
+
   private async one(symbol: string): Promise<{ quote: Quote | null; error?: string }> {
     try {
       const url = `${BASE}/quote?symbol=${encodeURIComponent(symbol)}&token=${this.token}`;

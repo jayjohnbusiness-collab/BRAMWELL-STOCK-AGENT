@@ -206,6 +206,59 @@
   box-shadow: var(--focus);
 }
 
+/*
+ * Inline autocomplete: the suggestion sits inside the field, not in a menu.
+ * A ghost layer sits behind a transparent input; the typed part is invisible
+ * there (the real input paints it), and the completion trails in muted ink.
+ * The ghost must match the input's box metrics exactly so the text lines up.
+ */
+.typeahead {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.typeahead input {
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  background: transparent; /* let the ghost show through */
+}
+.field-ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  border: var(--hairline) solid transparent; /* match input border width */
+  padding: var(--space-3) var(--space-4); /* match input padding */
+  font-family: var(--font-body);
+  font-size: var(--step-body);
+  line-height: 1.6;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.field-ghost .ghost-typed {
+  color: transparent; /* the input already draws these characters */
+}
+.field-ghost .ghost-rest {
+  color: var(--ink-soft);
+}
+.field-hint {
+  position: absolute;
+  right: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none;
+  font-family: var(--font-body);
+  font-size: var(--step-small);
+  color: var(--ink-soft);
+  background: var(--paper);
+  padding-left: var(--space-2);
+}
+
 /* Primary action — accent-filled. */
 .btn {
   font-family: var(--font-body);
