@@ -50,23 +50,6 @@ export function Composer({
       }}
     >
       <div className="voicebar">
-        <button
-          type="button"
-          className={`mic${voice.enabled ? " on" : ""}${voice.listening ? " listening" : ""}`}
-          aria-pressed={voice.enabled}
-          aria-label={voice.enabled ? "Leave voice mode" : "Enter voice mode"}
-          disabled={!voice.available}
-          title={
-            voice.available
-              ? voice.enabled
-                ? "Leave voice mode"
-                : "Enter voice mode"
-              : "Voice isn't supported in this browser"
-          }
-          onClick={voice.onToggle}
-        >
-          <MicGlyph />
-        </button>
         <span className="small state-note" aria-live="polite">
           {voiceStatus(voice)}
         </span>
@@ -87,6 +70,23 @@ export function Composer({
           onChange={(e) => setValue(e.target.value)}
           autoFocus
         />
+        <button
+          type="button"
+          className={`mic${voice.enabled ? " on" : ""}${voice.listening ? " listening" : ""}`}
+          aria-pressed={voice.enabled}
+          aria-label={voice.enabled ? "Leave voice mode" : "Enter voice mode"}
+          disabled={!voice.available}
+          title={
+            voice.available
+              ? voice.enabled
+                ? "Leave voice mode"
+                : "Enter voice mode"
+              : "Voice isn't supported in this browser"
+          }
+          onClick={voice.onToggle}
+        >
+          <MicGlyph />
+        </button>
         <button type="submit" className="btn">
           Ask
         </button>

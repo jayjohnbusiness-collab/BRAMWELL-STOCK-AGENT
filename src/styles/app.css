@@ -185,6 +185,15 @@
   align-items: stretch;
 }
 
+/* In the input row the mic sits between the field and Ask, matching their
+   height rather than the fixed 36px it uses on its own. */
+.composer-row .mic {
+  align-self: stretch;
+  height: auto;
+  width: 44px;
+  flex: none;
+}
+
 /* One field style for both the chat and the watchlist "add" input. */
 .composer-row input {
   flex: 1;
