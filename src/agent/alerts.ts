@@ -20,7 +20,13 @@ const MOVE_THRESHOLD = 5; // percent
 function eligible(market: Market): Instrument[] {
   return market
     .held()
-    .filter((i) => Math.abs(i.changePct) >= MOVE_THRESHOLD && i.cause !== null)
+    .filter(
+      (i) =>
+        Math.abs(i.changePct) >= MOVE_THRESHOLD &&
+        i.cause !== null &&
+        // Thin, unconfirmed reporting is not enough to interrupt you.
+        i.cause.confidence !== "unconfirmed",
+    )
     .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct));
 }
 

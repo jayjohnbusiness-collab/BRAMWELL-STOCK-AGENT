@@ -104,6 +104,12 @@ export class Market {
     return this.instruments.find((i) => i.symbol === s);
   }
 
+  /** Set a probable cause from the attributor (null clears it). */
+  setCause(symbol: string, cause: Instrument["cause"]): void {
+    const i = this.bySymbol(symbol);
+    if (i) i.cause = cause;
+  }
+
   private changeFor(i: Instrument, day: "today" | "yesterday"): number {
     return day === "today" ? i.changePct : i.prevChangePct;
   }

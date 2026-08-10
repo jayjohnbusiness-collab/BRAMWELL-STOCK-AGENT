@@ -1,15 +1,18 @@
 import type { Instrument } from "./types";
 
 /*
- * Seed instruments for the simulated feed.
+ * Seed instruments for the simulated feed — the registry of names Bramwell can
+ * resolve and watch, with the shape of the trading day baked in.
  *
- * A few deliberate shapes are encoded here so the agent's harder behaviors
- * have something to act on:
- *   - NVDA / PLTR / AVGO: a one-sector story (semiconductors & adjacent).
- *   - MRNA: a real move with NO established cause — exercises "I don't have a
- *     reason for it yet" and keeps it below the unprompted alert bar.
+ * Causes start null on purpose: a price feed knows the move, not the reason.
+ * The attributor supplies causes at runtime from the newsroom (attribution/
+ * news.ts), so the demo exercises the real pipeline — including MRNA, which
+ * moves 6% with nothing on the wire and so stays uncaused.
+ *
+ * Deliberate shapes:
+ *   - NVDA / PLTR / AVGO / AMD: a one-sector story (semiconductors & adjacent).
  *   - DAL / DLA: a spoken collision ("Delta") — exercises the proposal path.
- *   - SPX / IXIC: indices, used for the market's overall shape.
+ *   - SPX / IXIC: indices, for the market's overall shape.
  */
 export const SEED: Instrument[] = [
   {
@@ -19,10 +22,7 @@ export const SEED: Instrument[] = [
     basePrice: 19_650.4,
     changePct: 0.62,
     prevChangePct: -0.18,
-    cause: {
-      text: "the strength is concentrated in a handful of large semiconductors",
-      source: null,
-    },
+    cause: null,
   },
   {
     symbol: "SPX",
@@ -42,10 +42,7 @@ export const SEED: Instrument[] = [
     changePct: 7.21,
     prevChangePct: 1.02,
     held: true,
-    cause: {
-      text: "the move began shortly after Reuters reported a Taiwan supply agreement; nothing from the company itself yet",
-      source: "Reuters",
-    },
+    cause: null,
   },
   {
     symbol: "PLTR",
@@ -55,10 +52,7 @@ export const SEED: Instrument[] = [
     basePrice: 187.22,
     changePct: 9.14,
     prevChangePct: 2.3,
-    cause: {
-      text: "it is trading with the semiconductor names rather than on any filing of its own",
-      source: null,
-    },
+    cause: null,
   },
   {
     symbol: "AVGO",
@@ -68,10 +62,7 @@ export const SEED: Instrument[] = [
     basePrice: 1_642.1,
     changePct: 4.53,
     prevChangePct: -0.4,
-    cause: {
-      text: "part of the same sector move; no separate news on the wire",
-      source: null,
-    },
+    cause: null,
   },
   {
     symbol: "AAPL",
@@ -82,10 +73,7 @@ export const SEED: Instrument[] = [
     changePct: -1.06,
     prevChangePct: 0.33,
     held: true,
-    cause: {
-      text: "down with the broader hardware group; no company-specific news",
-      source: null,
-    },
+    cause: null,
   },
   {
     symbol: "MSFT",
@@ -106,7 +94,6 @@ export const SEED: Instrument[] = [
     basePrice: 74.18,
     changePct: 6.4,
     prevChangePct: -2.1,
-    // Intentionally no cause: a real move with nothing behind it yet.
     cause: null,
   },
   {
@@ -118,10 +105,7 @@ export const SEED: Instrument[] = [
     changePct: -3.85,
     prevChangePct: 1.4,
     held: true,
-    cause: {
-      text: "the whole autos group is lower after weaker delivery figures across the sector",
-      source: "Bloomberg",
-    },
+    cause: null,
   },
   {
     symbol: "AMD",
@@ -131,10 +115,7 @@ export const SEED: Instrument[] = [
     basePrice: 168.9,
     changePct: 3.9,
     prevChangePct: 0.7,
-    cause: {
-      text: "moving with the rest of the semiconductor group",
-      source: null,
-    },
+    cause: null,
   },
   {
     symbol: "DAL",
@@ -145,10 +126,7 @@ export const SEED: Instrument[] = [
     changePct: -2.12,
     prevChangePct: 0.5,
     aliases: ["delta"],
-    cause: {
-      text: "airlines are lower on higher fuel costs",
-      source: null,
-    },
+    cause: null,
   },
   {
     symbol: "DLA",

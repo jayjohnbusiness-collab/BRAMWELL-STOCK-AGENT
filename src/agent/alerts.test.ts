@@ -34,6 +34,24 @@ describe("the unprompted alert bar", () => {
     expect(leadAlert(new Market(causeless))).toBeNull();
   });
 
+  it("stays silent when the cause is only unconfirmed", () => {
+    const thin: Instrument[] = [
+      {
+        symbol: "THN",
+        name: "Thinly",
+        kind: "equity",
+        sector: "misc",
+        basePrice: 10,
+        changePct: 9.0,
+        prevChangePct: 0,
+        held: true,
+        // A big move, on the watchlist, but the reporting is thin.
+        cause: { text: "unconfirmed chatter", source: "SomeBlog", confidence: "unconfirmed" },
+      },
+    ];
+    expect(leadAlert(new Market(thin))).toBeNull();
+  });
+
   it("stays silent for a big move on a name that isn't watched", () => {
     const unwatched: Instrument[] = [
       {

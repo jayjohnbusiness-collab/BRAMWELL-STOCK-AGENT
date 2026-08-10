@@ -105,6 +105,28 @@ synthesis; `src/hooks/useVoice.ts` composes them (wake → command, barge-in,
 spoken replies). The UI (`src/components/`, `src/brand/`) and the design system
 (`src/styles/`) render all of it under the brand rules.
 
+### Cause attribution
+
+A price feed knows a name *moved*; it does not know *why* — and the why is the
+whole product. Attribution (`src/attribution/`) is a separate step, parallel to
+the feed, with one governing rule from spec §7: **Bramwell never invents a
+cause.** The pure core (`attribute.ts`) turns retrieved news into a cause **or
+null**, and the cause text is always built from a real headline and a named
+source — never composed from nothing. So the failure mode is silence, not a
+plausible fake.
+
+- `SimulatedAttributor` runs against a seeded newsroom (`news.ts`);
+  `FinnhubNewsAttributor` runs the identical rule against live company news.
+- Sourcing sets confidence: a major wire is **reported**; anything thinner is
+  **unconfirmed** and does *not* clear the unprompted alert bar; nothing recent
+  is **null** ("I don't have a reason for it yet — I'll tell you when there is
+  one").
+- `useMarketFeed` attaches causes to names that moved, caches attempts, and
+  retries later so a story that breaks after the move can still upgrade a null.
+
+Because causes come from attribution rather than the feed, both feeds report
+only price and move; the newsroom is the single place a "why" originates.
+
 ### Tests
 
 `npm test` runs a Vitest suite over the brain (it's pure, so no DOM is

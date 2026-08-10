@@ -121,17 +121,32 @@ function Quote({ instrument }: { instrument: Instrument }) {
         <InstrumentRow instrument={instrument} />
       </div>
       {instrument.cause ? (
-        <p className="small" style={{ color: "var(--ink-soft)", marginTop: "var(--space-4)" }}>
-          {cap(instrument.cause.text)}.
-          {instrument.cause.source ? (
-            <span style={{ display: "block", marginTop: "var(--space-1)" }}>
-              Source: {instrument.cause.source}.
+        <div style={{ marginTop: "var(--space-4)" }}>
+          {instrument.cause.confidence === "unconfirmed" ? (
+            <span className="label" style={{ display: "block", marginBottom: "var(--space-1)" }}>
+              Unconfirmed
             </span>
           ) : null}
-        </p>
+          <p className="small" style={{ color: "var(--ink-soft)", margin: 0 }}>
+            {cap(instrument.cause.text)}.
+          </p>
+          {instrument.cause.source ? (
+            <p className="small" style={{ color: "var(--ink-soft)", margin: "var(--space-1) 0 0" }}>
+              Source:{" "}
+              {instrument.cause.url ? (
+                <a href={instrument.cause.url} target="_blank" rel="noreferrer" style={{ color: "var(--ink)" }}>
+                  {instrument.cause.source}
+                </a>
+              ) : (
+                instrument.cause.source
+              )}
+              .
+            </p>
+          ) : null}
+        </div>
       ) : (
         <p className="small" style={{ color: "var(--ink-soft)", marginTop: "var(--space-4)" }}>
-          No established cause on the wire.
+          No established cause on the wire yet.
         </p>
       )}
     </div>

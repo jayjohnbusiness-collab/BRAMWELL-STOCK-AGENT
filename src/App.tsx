@@ -3,6 +3,7 @@ import { Bramwell } from "./agent/bramwell";
 import { Market } from "./agent/market";
 import type { ScreenPayload } from "./agent/types";
 import { createFeed } from "./feed";
+import { createAttributor } from "./attribution";
 import { useMarketFeed } from "./hooks/useMarketFeed";
 import { useVoice } from "./hooks/useVoice";
 import { loadWatchlist, saveWatchlist } from "./watchlist/storage";
@@ -39,7 +40,8 @@ export default function App() {
   const agent = agentRef.current;
 
   const feedRef = useRef(createFeed());
-  const { alert, ack } = useMarketFeed(market, feedRef.current);
+  const attributorRef = useRef(createAttributor());
+  const { alert, ack } = useMarketFeed(market, feedRef.current, attributorRef.current);
 
   const idRef = useRef(1);
   const [messages, setMessages] = useState<ChatMessage[]>([INTRO]);

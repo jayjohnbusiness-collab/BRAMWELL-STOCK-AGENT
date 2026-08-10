@@ -26,12 +26,14 @@ export class SimulatedFeed implements Feed {
         // A small, calm walk proportional to price — never a jump.
         const wobble = (pseudo(i.symbol, this.step) - 0.5) * i.basePrice * 0.0006;
         i.basePrice = Math.max(0.01, i.basePrice + wobble);
+        // No cause here: a price feed reports the move, not the reason.
+        // The attributor owns cause, and omitting it leaves attribution intact
+        // across polls (rather than overwriting it every cycle).
         return {
           symbol: i.symbol,
           price: i.basePrice,
           changePct: i.changePct,
           prevChangePct: i.prevChangePct,
-          cause: i.cause,
         };
       });
   }

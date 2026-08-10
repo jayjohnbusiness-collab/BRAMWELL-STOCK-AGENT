@@ -18,8 +18,10 @@ describe("Market.applyQuotes", () => {
 
   it("leaves cause untouched when the feed omits it", () => {
     const m = new Market();
+    // Causes come from the attributor, not the feed; once set, a quote without
+    // a cause field must not wipe it.
+    m.setCause("NVDA", { text: "an attributed cause", source: "Reuters" });
     const before = m.bySymbol("NVDA")!.cause;
-    expect(before).not.toBeNull();
     m.applyQuotes([{ symbol: "NVDA", price: 1, changePct: 1 }]); // no cause field
     expect(m.bySymbol("NVDA")!.cause).toBe(before);
   });

@@ -10,10 +10,18 @@
 export type Sign = "+" | "-" | "";
 
 export interface Cause {
-  /** One plain sentence. Bramwell never invents this; absent means unknown. */
+  /** One plain sentence, built from a real headline — never invented. */
   text: string;
-  /** Named source when there is one; "unconfirmed" when reporting is thin. */
+  /** Named source when there is one. */
   source: string | null;
+  /** Link to the underlying item, when the attributor has one. */
+  url?: string;
+  /**
+   * How firmly it's established. A major-wire report is "reported"; thin
+   * reporting is "unconfirmed" and does not clear the unprompted alert bar.
+   * Absent (seed/registry causes) is treated as reported.
+   */
+  confidence?: "reported" | "unconfirmed";
 }
 
 export interface Instrument {

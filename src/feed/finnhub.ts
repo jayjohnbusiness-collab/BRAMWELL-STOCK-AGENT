@@ -11,8 +11,8 @@ import { SEED } from "../agent/seed";
  *   - Indices aren't covered on the free tier, so we skip them and leave those
  *     rows to their registry defaults.
  *   - Prior-session change isn't in the quote payload; it's left untouched.
- *   - Cause attribution (a news/wire lookup) isn't wired, so cause is null —
- *     which is exactly what makes Bramwell say "no reason for it yet."
+ *   - Cause is not the feed's job: the attributor (attribution/finnhub.ts)
+ *     supplies it from company news. This adapter only reports price and move.
  *   - The token rides in the query string, which is fine for a dev scaffold;
  *     a production deployment should proxy this through a backend.
  */
@@ -39,11 +39,12 @@ export class FinnhubFeed implements Feed {
       // c = current price, dp = percent change. A zero current price on this
       // endpoint means "no data for this symbol", not a real quote.
       if (typeof d.c !== "number" || d.c === 0) return null;
+      // Cause is left to the attributor (company news), not the price feed.
+      // Omitting it here keeps any attributed cause intact across polls.
       return {
         symbol,
         price: d.c,
         changePct: typeof d.dp === "number" ? d.dp : 0,
-        cause: null,
       };
     } catch {
       return null; // keep calm; the next poll will try again
