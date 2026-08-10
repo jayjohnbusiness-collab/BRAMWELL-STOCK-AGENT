@@ -231,42 +231,43 @@ export default function App() {
 
   const lastReply = [...messages].reverse().find((m) => m.from === "bramwell")?.text;
 
+  // The live-feed status detail, shown beside the "Live data" badge. The badge
+  // already carries the words "Live data", so this line drops that prefix.
+  const liveError =
+    hasToken() && feedStatus != null && feedStatus.ok === 0 && feedStatus.failed > 0;
+  const liveDetail = !hasToken()
+    ? null
+    : feedStatus == null
+      ? "connecting…"
+      : feedStatus.ok > 0
+        ? `${feedStatus.ok} symbols updating${
+            feedStatus.sample
+              ? ` — ${feedStatus.sample.symbol} at ${feedStatus.sample.price.toFixed(2)}`
+              : ""
+          }`
+        : `no prices — ${feedStatus.error ?? "request failed"}`;
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <Bell size={30} tone="brass" />
         <span className="wordmark">Bramwell</span>
+        <span className="tagline small state-note">
+          You'll hear from Bramwell when it matters.
+        </span>
         <div className="header-right">
-          <span className="tagline small state-note">
-            You'll hear from Bramwell when it matters.
-          </span>
+          {liveDetail ? (
+            <span
+              className="small live-detail"
+              style={{ color: liveError ? "var(--data-down)" : "var(--ink-soft)" }}
+            >
+              {liveDetail}
+            </span>
+          ) : null}
           <LiveDataControl />
         </div>
       </header>
       <hr className="rule" />
-
-      {hasToken() ? (
-        <p
-          className="small"
-          style={{
-            margin: "var(--space-3) 0 0",
-            color:
-              feedStatus && feedStatus.ok === 0 && feedStatus.failed > 0
-                ? "var(--data-down)"
-                : "var(--ink-soft)",
-          }}
-        >
-          {feedStatus == null
-            ? "Live data — connecting…"
-            : feedStatus.ok > 0
-              ? `Live data · ${feedStatus.ok} symbols updating${
-                  feedStatus.sample
-                    ? ` — ${feedStatus.sample.symbol} at ${feedStatus.sample.price.toFixed(2)}`
-                    : ""
-                }.`
-              : `Live data received no prices — ${feedStatus.error ?? "request failed"}. Prices shown are placeholders.`}
-        </p>
-      ) : null}
 
       <div className="app-grid">
         <section className="conv-pane" aria-label="Conversation">
