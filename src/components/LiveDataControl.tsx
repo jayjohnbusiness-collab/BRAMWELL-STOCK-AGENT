@@ -1,12 +1,34 @@
-import { hasToken, setToken, clearToken } from "../feed/token";
+import { hasToken, setToken } from "../feed/token";
 
 /*
- * A small header control to connect live market data with a free Finnhub key.
- * The key is stored only in this browser and never leaves it except in the
- * requests to Finnhub. Switching either way reloads so the feed is rebuilt.
+ * Header market-data indicator.
+ *
+ * Once live, this is a plain, non-interactive badge — there is deliberately no
+ * way to switch back to simulated data from here. When not yet connected, it
+ * offers the one action that makes sense: connect a live key.
  */
 export function LiveDataControl() {
-  const live = hasToken();
+  if (hasToken()) {
+    return (
+      <span
+        title="Live prices via Finnhub"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "var(--space-2)",
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--step-small)",
+          color: "var(--ink-soft)",
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--data-up)" }}
+        />
+        Live data
+      </span>
+    );
+  }
 
   function connect() {
     const key = window.prompt(
@@ -18,35 +40,19 @@ export function LiveDataControl() {
     }
   }
 
-  function disconnect() {
-    if (window.confirm("Switch back to simulated data and remove the saved key from this browser?")) {
-      clearToken();
-      window.location.reload();
-    }
-  }
-
   return (
     <button
       type="button"
       className="chip"
-      onClick={live ? disconnect : connect}
-      title={
-        live
-          ? "Live prices via Finnhub — click to switch back to simulated"
-          : "Connect a free Finnhub key for live prices"
-      }
+      onClick={connect}
+      title="Connect a free Finnhub key for live prices"
       style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)" }}
     >
       <span
         aria-hidden="true"
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: live ? "var(--data-up)" : "var(--ink-soft)",
-        }}
+        style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ink-soft)" }}
       />
-      {live ? "Live data" : "Connect live data"}
+      Connect live data
     </button>
   );
 }
