@@ -121,6 +121,11 @@ plausible fake.
   **unconfirmed** and does *not* clear the unprompted alert bar; nothing recent
   is **null** ("I don't have a reason for it yet — I'll tell you when there is
   one").
+- Relevance by direction (`sentiment.ts`): a headline whose sentiment
+  *contradicts* the move — bullish news on a name that fell — is refused
+  outright, because attaching it would mislead. Among the rest, a credible
+  source wins first, then directional alignment, then recency; neutral
+  (factually worded) headlines are kept, not penalized.
 - `useMarketFeed` attaches causes to names that moved, caches attempts, and
   retries later so a story that breaks after the move can still upgrade a null.
 

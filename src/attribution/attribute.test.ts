@@ -60,6 +60,52 @@ describe("attributeFromNews — grounded, or nothing (§7)", () => {
     expect(c!.text).toContain("Reuters scoop");
   });
 
+  it("refuses a headline that contradicts the move (bullish news, down move)", () => {
+    const down = { symbol: "X", name: "X Corp", changePct: -6.0 };
+    const c = attributeFromNews(
+      down,
+      [item({ headline: "Company wins record contract, shares set to soar", source: "Reuters" })],
+      NOW,
+    );
+    // Attaching a bullish story to a fall would mislead — say nothing instead.
+    expect(c).toBeNull();
+  });
+
+  it("attributes a negative headline to a down move", () => {
+    const down = { symbol: "X", name: "X Corp", changePct: -6.0 };
+    const c = attributeFromNews(
+      down,
+      [item({ headline: "Profit warning sends shares lower", source: "Bloomberg" })],
+      NOW,
+    );
+    expect(c!.confidence).toBe("reported");
+    expect(c!.text).toContain("Profit warning sends shares lower");
+  });
+
+  it("skips a contradicting major source for an aligned lesser one", () => {
+    const up = { symbol: "X", name: "X Corp", changePct: 6.0 };
+    const c = attributeFromNews(
+      up,
+      [
+        item({ headline: "Shares to plunge on downgrade", source: "Reuters" }), // conflict, excluded
+        item({ headline: "Traders cite upbeat demand", source: "Yahoo Finance" }), // aligned
+      ],
+      NOW,
+    );
+    expect(c!.source).toBe("Yahoo Finance");
+    expect(c!.confidence).toBe("unconfirmed");
+  });
+
+  it("keeps a neutral headline (factual causes aren't penalized)", () => {
+    const c = attributeFromNews(
+      input,
+      [item({ headline: "Company to hold investor day", source: "Reuters" })],
+      NOW,
+    );
+    expect(c!.confidence).toBe("reported");
+    expect(c!.text).toContain("investor day");
+  });
+
   it("trims an overlong headline", () => {
     const long = "x".repeat(200);
     const c = attributeFromNews(input, [item({ headline: long, source: "Reuters" })], NOW);

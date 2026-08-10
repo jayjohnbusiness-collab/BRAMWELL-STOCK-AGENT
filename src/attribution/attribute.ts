@@ -1,5 +1,6 @@
 import type { Cause } from "../agent/types";
 import type { AttributionInput, NewsItem } from "./types";
+import { headlineSentiment } from "./sentiment";
 
 /*
  * The pure attribution rule — shared by every attributor and fully testable.
@@ -13,7 +14,15 @@ import type { AttributionInput, NewsItem } from "./types";
  *   - Name the source when there is one.
  *   - Say "unconfirmed" when the reporting is thin (non-major sources).
  *   - Say nothing (null) when there is nothing recent and material.
+ *
+ * Relevance by direction: a headline whose sentiment *contradicts* the move
+ * (bullish news on a name that fell) is refused outright — attaching it would
+ * mislead, and silence is the honest answer. Among the rest, a credible source
+ * wins first, then directional alignment, then recency. Neutral headlines are
+ * kept: most factual causes are neutrally worded.
  */
+
+type Agreement = "aligned" | "neutral" | "conflict";
 
 // Look back far enough to catch the story behind a same-day move, not stale news.
 const LOOKBACK_MS = 48 * 60 * 60 * 1000;
@@ -28,33 +37,43 @@ const MAJOR = [
 ];
 
 export function attributeFromNews(
-  // Reserved for future relevance scoring (move size / direction vs. headline);
-  // today the items are already company-scoped, so selection is by source+time.
-  _input: AttributionInput,
+  input: AttributionInput,
   items: NewsItem[],
   now: number,
 ): Cause | null {
-  const recent = items.filter(
-    (i) => i.headline?.trim() && i.publishedAt >= now - LOOKBACK_MS,
-  );
-  if (recent.length === 0) return null; // nothing recent → say nothing
+  const moveSign = Math.sign(input.changePct);
 
-  // Rank major sources first, then most recent.
-  const ranked = [...recent].sort((a, b) => {
-    const major = Number(isMajor(b.source)) - Number(isMajor(a.source));
-    if (major !== 0) return major;
-    return b.publishedAt - a.publishedAt;
+  const scored = items
+    .filter((i) => i.headline?.trim() && i.publishedAt >= now - LOOKBACK_MS)
+    .map((i) => ({
+      item: i,
+      major: isMajor(i.source),
+      agreement: agreementOf(headlineSentiment(i.headline), moveSign),
+    }));
+
+  // Refuse to attribute a headline that contradicts the move — silence over a
+  // misleading cause.
+  const eligible = scored.filter((s) => s.agreement !== "conflict");
+  if (eligible.length === 0) return null;
+
+  eligible.sort((a, b) => {
+    if (a.major !== b.major) return Number(b.major) - Number(a.major); // credible source first
+    const rank = (x: Agreement) => (x === "aligned" ? 0 : 1);
+    if (rank(a.agreement) !== rank(b.agreement)) {
+      return rank(a.agreement) - rank(b.agreement); // then directional alignment
+    }
+    return b.item.publishedAt - a.item.publishedAt; // then recency
   });
 
-  const best = ranked[0];
-  const source = cleanSource(best.source);
-  const headline = trimHeadline(best.headline);
+  const best = eligible[0];
+  const source = cleanSource(best.item.source);
+  const headline = trimHeadline(best.item.headline);
 
-  if (isMajor(best.source)) {
+  if (best.major) {
     return {
       text: `the move followed a ${source} report: ${headline}`,
       source,
-      url: best.url,
+      url: best.item.url,
       confidence: "reported",
     };
   }
@@ -62,9 +81,15 @@ export function attributeFromNews(
   return {
     text: `there's unconfirmed reporting from ${source}: ${headline}`,
     source,
-    url: best.url,
+    url: best.item.url,
     confidence: "unconfirmed",
   };
+}
+
+/** How a headline's sentiment sits against the move direction. */
+function agreementOf(sentiment: number, moveSign: number): Agreement {
+  if (sentiment === 0 || moveSign === 0) return "neutral";
+  return sentiment === moveSign ? "aligned" : "conflict";
 }
 
 function isMajor(source: string): boolean {
