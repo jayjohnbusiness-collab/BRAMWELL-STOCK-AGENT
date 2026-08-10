@@ -14,14 +14,31 @@ export function Conversation({
   messages: ChatMessage[];
   working: boolean;
 }) {
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  // Stick to the bottom only while the reader is already there. If they've
+  // scrolled up to read history, a new message won't yank them back down.
+  const stick = useRef(true);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const el = listRef.current;
+    // Jump (not animate) to the bottom — a smooth scroll here fights the wheel.
+    if (el && stick.current) el.scrollTop = el.scrollHeight;
   }, [messages.length, working]);
 
+  function handleScroll() {
+    const el = listRef.current;
+    if (!el) return;
+    stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }
+
   return (
-    <div className="messages" role="log" aria-live="polite">
+    <div
+      className="messages"
+      role="log"
+      aria-live="polite"
+      ref={listRef}
+      onScroll={handleScroll}
+    >
       {messages.map((m) => (
         <div key={m.id} className={`msg msg-${m.from}`}>
           <div className="label msg-who">{m.from === "user" ? "You" : "Bramwell"}</div>
@@ -38,7 +55,6 @@ export function Conversation({
           </div>
         </div>
       ) : null}
-      <div ref={endRef} />
     </div>
   );
 }
