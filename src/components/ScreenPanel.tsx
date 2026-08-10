@@ -5,29 +5,26 @@ import { InstrumentRow } from "./InstrumentRow";
  * "The screen." The same answer is delivered twice, differently: spoken it is
  * rounded and capped at three; here it is exact, tabular, and complete.
  * The unprompted alert, when there is one, sits at the top behind a single
- * brass rule — the one brass accent on this side.
+ * brass rule — the one brass accent on this side. The watchlist itself lives
+ * in the manager below; here, at rest, the screen is simply quiet.
  */
 export function ScreenPanel({
   payload,
-  watchlist,
   alert,
   onAck,
 }: {
   payload: ScreenPayload;
-  watchlist: Instrument[];
   alert: Alert | null;
   onAck?: () => void;
 }) {
+  const showResting = payload.kind === "none" && !alert;
   return (
     <section
       aria-label="Ledger"
       style={{
-        background: "var(--paper)",
-        padding: "var(--space-6)",
         display: "flex",
         flexDirection: "column",
         gap: "var(--space-6)",
-        minHeight: "100%",
       }}
     >
       {alert ? <AlertBlock alert={alert} onAck={onAck} /> : null}
@@ -36,9 +33,14 @@ export function ScreenPanel({
         <Ledger title={payload.title} rows={payload.rows} />
       ) : payload.kind === "quote" ? (
         <Quote instrument={payload.instrument} />
-      ) : (
-        <Ledger title="Your watchlist" rows={watchlist} empty="Nothing on the watch yet." />
-      )}
+      ) : showResting ? (
+        <div>
+          <span className="label">Now</span>
+          <p className="body" style={{ margin: "var(--space-2) 0 0", color: "var(--ink-soft)" }}>
+            Nothing worth reporting.
+          </p>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -13,10 +13,13 @@ import { spokenChange } from "./format";
 
 const MOVE_THRESHOLD = 5; // percent
 
-/** Instruments that individually clear the bar: big move AND an established cause. */
+/**
+ * Instruments that individually clear the bar: on the watchlist, a big move,
+ * AND an established cause. Bramwell interrupts you only about names you follow.
+ */
 function eligible(market: Market): Instrument[] {
   return market
-    .equities()
+    .held()
     .filter((i) => Math.abs(i.changePct) >= MOVE_THRESHOLD && i.cause !== null)
     .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct));
 }

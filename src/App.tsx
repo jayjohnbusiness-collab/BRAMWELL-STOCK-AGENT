@@ -4,10 +4,12 @@ import { Market } from "./agent/market";
 import type { ScreenPayload } from "./agent/types";
 import { createFeed } from "./feed";
 import { useMarketFeed } from "./hooks/useMarketFeed";
+import { loadWatchlist, saveWatchlist } from "./watchlist/storage";
 import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
 import { ScreenPanel } from "./components/ScreenPanel";
+import { WatchlistManager } from "./components/WatchlistManager";
 import "./styles/global.css";
 import "./styles/app.css";
 
@@ -23,7 +25,12 @@ export default function App() {
   // The Market (read-model) and Bramwell (brain) are built once and shared:
   // the feed hydrates the Market, and the brain reads the same instance.
   const marketRef = useRef<Market | null>(null);
-  if (marketRef.current === null) marketRef.current = new Market();
+  if (marketRef.current === null) {
+    const market = new Market();
+    const saved = loadWatchlist();
+    if (saved) market.setWatchlist(saved); // the persisted list wins over defaults
+    marketRef.current = market;
+  }
   const market = marketRef.current;
 
   const agentRef = useRef<Bramwell | null>(null);
@@ -38,10 +45,17 @@ export default function App() {
   const [working, setWorking] = useState(false);
   const [screen, setScreen] = useState<ScreenPayload>({ kind: "none" });
   const [awaitingChoice, setAwaitingChoice] = useState(false);
+  const [, forceRender] = useState(0);
 
   function nextId(): string {
     idRef.current += 1;
     return `m${idRef.current}`;
+  }
+
+  // Persist the watchlist and re-render after any change (spoken or clicked).
+  function persist() {
+    saveWatchlist(market.watchlistSymbols());
+    forceRender((n) => n + 1);
   }
 
   function handleSend(text: string) {
@@ -62,7 +76,29 @@ export default function App() {
         setScreen(reply.screen);
       }
       setAwaitingChoice(Boolean(reply.awaitingChoice));
+      persist(); // Bramwell may have edited the watchlist ("watch Tesla")
     }, 650);
+  }
+
+  // The watchlist editor resolves through the same brain, reporting in voice.
+  function handleAdd(text: string): string {
+    const res = market.resolve(text);
+    if (res.status === "ambiguous") {
+      const [a, b] = res.options;
+      return `Which one — ${a.name}, or ${b.name}?`;
+    }
+    if (res.status !== "ok") return "I don't have anything by that name.";
+    if (market.isWatched(res.instrument.symbol)) {
+      return `${res.instrument.name} is already on the list.`;
+    }
+    market.watch(res.instrument.symbol);
+    persist();
+    return "";
+  }
+
+  function handleRemove(symbol: string) {
+    market.unwatch(symbol);
+    persist();
   }
 
   return (
@@ -85,9 +121,14 @@ export default function App() {
         <div className="screen-pane">
           <ScreenPanel
             payload={screen}
-            watchlist={market.held()}
             alert={alert}
             onAck={alert ? () => ack(alert.id) : undefined}
+          />
+          <hr className="rule" style={{ margin: "var(--space-5) 0" }} />
+          <WatchlistManager
+            watched={market.held()}
+            onAdd={handleAdd}
+            onRemove={handleRemove}
           />
         </div>
       </div>

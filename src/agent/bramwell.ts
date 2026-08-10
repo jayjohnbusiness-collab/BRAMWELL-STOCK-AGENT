@@ -57,6 +57,10 @@ export class Bramwell {
         return this.helpReply();
       case "advice":
         return this.adviceReply(intent.text);
+      case "watch":
+        return this.watchReply(intent.text, true);
+      case "unwatch":
+        return this.watchReply(intent.text, false);
       case "query":
         return this.handleQuery(intent);
       case "unknown":
@@ -262,6 +266,48 @@ export class Bramwell {
     };
   }
 
+  /** Add or remove a name from the watchlist, confirmed in character. */
+  private watchReply(text: string, add: boolean): Reply {
+    const res = this.market.resolve(text);
+    if (res.status === "ambiguous") {
+      // Don't guess which to watch; ask, but plainly (no pending quote here).
+      const [a, b] = distinct(res.options);
+      return {
+        spoken: `${a.name}, or ${b.name}? Tell me which and I'll ${
+          add ? "add it" : "take it off"
+        }.`,
+        screen: { kind: "none" },
+      };
+    }
+    if (res.status !== "ok") return this.notUnderstood(text);
+
+    const i = res.instrument;
+    if (add) {
+      if (this.market.isWatched(i.symbol)) {
+        return {
+          spoken: `${cap(i.name)} is already on the list.`,
+          screen: { kind: "quote", instrument: i },
+        };
+      }
+      this.market.watch(i.symbol);
+      return {
+        spoken: `Done. I'll keep an eye on ${cap(i.name)}.`,
+        screen: { kind: "quote", instrument: i },
+      };
+    }
+
+    if (!this.market.unwatch(i.symbol)) {
+      return {
+        spoken: `${cap(i.name)} wasn't on the list.`,
+        screen: { kind: "none" },
+      };
+    }
+    return {
+      spoken: `Off the list — ${cap(i.name)}.`,
+      screen: { kind: "none" },
+    };
+  }
+
   private helpReply(): Reply {
     return {
       spoken:
@@ -272,14 +318,10 @@ export class Bramwell {
 
   private ask(options: Instrument[]): Reply {
     // Distinct instruments, at most two, proposed as an either/or.
-    const distinct: Instrument[] = [];
-    for (const o of options) {
-      if (!distinct.find((d) => d.symbol === o.symbol)) distinct.push(o);
-      if (distinct.length === 2) break;
-    }
-    this.pending = distinct;
+    const [a, b] = distinct(options);
+    this.pending = [a, b];
     return {
-      spoken: `${distinct[0].name}, or ${distinct[1].name}?`,
+      spoken: `${a.name}, or ${b.name}?`,
       screen: { kind: "none" },
       awaitingChoice: true,
     };
@@ -309,6 +351,16 @@ export class Bramwell {
 
 function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** The first two distinct instruments (by symbol) from a hit list. */
+function distinct(options: Instrument[]): [Instrument, Instrument] {
+  const out: Instrument[] = [];
+  for (const o of options) {
+    if (!out.find((d) => d.symbol === o.symbol)) out.push(o);
+    if (out.length === 2) break;
+  }
+  return [out[0], out[1]];
 }
 
 /** "Palantir is up nine percent, NVDA seven, and Broadcom four and a half." */
@@ -372,6 +424,9 @@ const STOP = new Set([
   "The", "This", "That", "What", "When", "Where", "Why", "How", "Who", "Whats",
   "Is", "Are", "Was", "Should", "Could", "Would", "Do", "Does", "Did", "My",
   "And", "Or", "Nasdaq", "Bramwell", "Hey", "Show", "Tell", "Give",
+  // Command verbs, so "Watch Meridian" echoes "Meridian", not "Watch".
+  "Watch", "Follow", "Add", "Track", "Remove", "Drop", "Stop", "Unwatch",
+  "Unfollow", "Keep", "Start", "Take", "Get",
 ]);
 function properNoun(text: string): string | null {
   const matches = text.match(/\b([A-Z][a-zA-Z]{2,})\b/g);

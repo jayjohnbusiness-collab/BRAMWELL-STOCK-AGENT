@@ -13,7 +13,7 @@ export type Universe = "nasdaq" | "watchlist";
 export type Day = "today" | "yesterday";
 
 export interface Intent {
-  kind: "wake" | "advice" | "help" | "query" | "unknown";
+  kind: "wake" | "advice" | "help" | "query" | "watch" | "unwatch" | "unknown";
   metric?: Metric;
   universe?: Universe;
   day?: Day;
@@ -23,6 +23,12 @@ export interface Intent {
 }
 
 const WAKE = /^\s*(hey\s+)?bramwell\b[\s,.:!?-]*/i;
+
+// Remove is checked before add so "stop watching X" doesn't match "watch".
+const UNWATCH =
+  /\b(stop watching|stop following|unwatch|unfollow|remove|drop|take off|get rid of|no longer (watch|follow))\b/i;
+const WATCH =
+  /\b(watch|follow|add|keep an eye on|track|start watching)\b/i;
 
 const ADVICE =
   /\b(should i|shall i|do i|is it a (good |bad )?(buy|sell|time)|worth (buying|selling|it)|good (entry|buy|price|time)|cheap|expensive|overvalued|undervalued|overdue|will it (go|rise|fall|drop|climb)|price target|target price|recommend|advice|hold or sell|buy or sell)\b/i;
@@ -69,6 +75,8 @@ export function parse(input: string): Intent {
 
   if (ADVICE.test(body)) return { kind: "advice", explicit: false, text: body };
   if (HELP.test(body)) return { kind: "help", explicit: false, text: body };
+  if (UNWATCH.test(body)) return { kind: "unwatch", explicit: false, text: body };
+  if (WATCH.test(body)) return { kind: "watch", explicit: false, text: body };
 
   let metric: Metric | undefined = GAINERS.test(body)
     ? "gainers"

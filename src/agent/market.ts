@@ -19,10 +19,17 @@ export type Resolution =
 
 export class Market {
   private instruments: Instrument[];
+  /** The watchlist: the symbols the user follows. The source of truth. */
+  private watched: Set<string>;
 
   constructor(registry: Instrument[] = SEED) {
     // Clone so the registry stays pristine and updates don't mutate module state.
     this.instruments = registry.map((i) => ({ ...i }));
+    // Seed the watchlist from the registry defaults; a persisted list overrides.
+    this.watched = new Set(
+      this.instruments.filter((i) => i.held).map((i) => i.symbol),
+    );
+    this.syncHeld();
   }
 
   all(): Instrument[] {
@@ -44,8 +51,52 @@ export class Market {
     );
   }
 
+  /** The instruments on the watchlist ("the ones you follow"). */
   held(): Instrument[] {
-    return this.instruments.filter((i) => i.held);
+    return this.instruments.filter((i) => this.watched.has(i.symbol));
+  }
+
+  /** The watchlist as bare symbols, for persistence. */
+  watchlistSymbols(): string[] {
+    return this.instruments
+      .filter((i) => this.watched.has(i.symbol))
+      .map((i) => i.symbol);
+  }
+
+  isWatched(symbol: string): boolean {
+    return this.watched.has(symbol.toUpperCase());
+  }
+
+  /** Add to the watchlist. Returns false if the symbol isn't in the registry. */
+  watch(symbol: string): boolean {
+    const i = this.bySymbol(symbol);
+    if (!i) return false;
+    this.watched.add(i.symbol);
+    this.syncHeld();
+    return true;
+  }
+
+  /** Remove from the watchlist. Returns false if it wasn't on it. */
+  unwatch(symbol: string): boolean {
+    const i = this.bySymbol(symbol);
+    if (!i || !this.watched.has(i.symbol)) return false;
+    this.watched.delete(i.symbol);
+    this.syncHeld();
+    return true;
+  }
+
+  /** Replace the whole watchlist — e.g. from a persisted list on load. */
+  setWatchlist(symbols: string[]): void {
+    const known = new Set(this.symbols());
+    this.watched = new Set(
+      symbols.map((s) => s.toUpperCase()).filter((s) => known.has(s)),
+    );
+    this.syncHeld();
+  }
+
+  /** Keep the convenience `held` flag on each instrument in step with the set. */
+  private syncHeld(): void {
+    for (const i of this.instruments) i.held = this.watched.has(i.symbol);
   }
 
   bySymbol(symbol: string): Instrument | undefined {

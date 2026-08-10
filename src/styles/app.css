@@ -42,8 +42,8 @@
 
 /* The screen sits on paper; the conversation sits on the parchment ground. */
 .screen-pane {
-  position: sticky;
-  top: var(--space-5);
+  background: var(--paper);
+  padding: var(--space-6);
 }
 
 .messages {
