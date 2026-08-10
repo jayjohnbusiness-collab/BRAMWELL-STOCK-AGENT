@@ -275,6 +275,7 @@ export default function App() {
           <Composer
             onSend={handleSend}
             awaitingChoice={awaitingChoice}
+            showSuggestions={!messages.some((m) => m.from === "user")}
             voice={{
               available: voice.available,
               enabled: voice.enabled,

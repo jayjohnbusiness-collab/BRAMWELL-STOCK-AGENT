@@ -6,13 +6,13 @@ import { useState } from "react";
  * and a watchlist read. Above them, the voice controls — a mic toggle and a
  * quiet status line (a butler does not chime on wake).
  */
+// Four starters, one per behavior: a market summary, a single quote, the
+// losers, and a watchlist read. Shown only before the first message.
 const SUGGESTIONS = [
   "What's moving on the Nasdaq today?",
   "How's NVDA?",
   "What about the losers?",
-  "Should I buy Tesla?",
   "How are my holdings?",
-  "How's Delta?",
 ];
 
 export interface VoiceState {
@@ -27,10 +27,13 @@ export function Composer({
   onSend,
   awaitingChoice,
   voice,
+  showSuggestions,
 }: {
   onSend: (text: string) => void;
   awaitingChoice: boolean;
   voice: VoiceState;
+  /** Starter prompts only make sense before the conversation begins. */
+  showSuggestions: boolean;
 }) {
   const [value, setValue] = useState("");
 
@@ -49,19 +52,25 @@ export function Composer({
         submit(value);
       }}
     >
-      <div className="voicebar">
-        <span className="small state-note" aria-live="polite">
-          {voiceStatus(voice)}
-        </span>
-      </div>
+      {/* A status line only when it says something: in voice mode, or when
+          voice isn't available. At rest the mic's own tooltip carries it. */}
+      {voice.enabled || !voice.available ? (
+        <div className="voicebar">
+          <span className="small state-note" aria-live="polite">
+            {voiceStatus(voice)}
+          </span>
+        </div>
+      ) : null}
 
-      <div className="chips" aria-label="Suggestions">
-        {SUGGESTIONS.map((s) => (
-          <button type="button" key={s} className="chip" onClick={() => submit(s)}>
-            {s}
-          </button>
-        ))}
-      </div>
+      {showSuggestions ? (
+        <div className="chips" aria-label="Suggestions">
+          {SUGGESTIONS.map((s) => (
+            <button type="button" key={s} className="chip" onClick={() => submit(s)}>
+              {s}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="composer-row">
         <input
           aria-label="Ask Bramwell"
