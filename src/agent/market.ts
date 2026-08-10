@@ -1,13 +1,15 @@
 import type { Instrument } from "./types";
+import type { Quote } from "../feed/types";
 import { SEED } from "./seed";
 
 /*
- * Simulated market feed.
+ * The market read-model.
  *
- * This stands in for a real price feed. It is intentionally small and
- * deterministic in structure: the "story of the day" (changePct + cause) is
- * fixed, and only the price digits drift on each tick, so the screen has
- * something to cross-fade without the narrative changing underfoot.
+ * This is the synchronous snapshot the agent brain reads: the registry of
+ * instruments (names, sectors, aliases, watchlist membership) with their
+ * current price, change, and cause. It does not fetch anything — a Feed
+ * hydrates it via applyQuotes(). Swapping the Feed swaps the data source
+ * without the brain or this class changing.
  */
 
 export type Resolution =
@@ -18,13 +20,18 @@ export type Resolution =
 export class Market {
   private instruments: Instrument[];
 
-  constructor(seed: Instrument[] = SEED) {
-    // Clone so the seed stays pristine and ticks don't mutate module state.
-    this.instruments = seed.map((i) => ({ ...i, cause: i.cause }));
+  constructor(registry: Instrument[] = SEED) {
+    // Clone so the registry stays pristine and updates don't mutate module state.
+    this.instruments = registry.map((i) => ({ ...i }));
   }
 
   all(): Instrument[] {
     return this.instruments;
+  }
+
+  /** Every symbol in the registry — what to ask the feed for. */
+  symbols(): string[] {
+    return this.instruments.map((i) => i.symbol);
   }
 
   equities(): Instrument[] {
@@ -127,14 +134,19 @@ export class Market {
   }
 
   /**
-   * Advance the simulated feed by one tick. Only the price digits drift; the
-   * daily change and its cause hold steady so the reporting stays coherent.
+   * Overlay live quotes from a Feed onto the registry. Price and change always
+   * refresh; prior-session change and cause update only when the feed supplies
+   * them, so a feed that can't attribute a cause leaves the registry's alone
+   * (and a feed that sets cause: null explicitly clears it — "no reason yet").
    */
-  tick(step = 1): void {
-    for (const i of this.instruments) {
-      // A small, calm walk proportional to price — never a jump.
-      const wobble = (pseudo(i.symbol, step) - 0.5) * i.basePrice * 0.0006;
-      i.basePrice = Math.max(0.01, i.basePrice + wobble);
+  applyQuotes(quotes: Quote[]): void {
+    for (const q of quotes) {
+      const i = this.bySymbol(q.symbol);
+      if (!i) continue;
+      i.basePrice = q.price;
+      i.changePct = q.changePct;
+      if (q.prevChangePct !== undefined) i.prevChangePct = q.prevChangePct;
+      if (q.cause !== undefined) i.cause = q.cause;
     }
   }
 }
@@ -142,20 +154,4 @@ export class Market {
 /** A word-boundary match so "delta" doesn't fire inside "deltas" incidentally. */
 function matchesWord(haystack: string, word: string): boolean {
   return new RegExp(`\\b${word}\\b`, "i").test(haystack);
-}
-
-/**
- * Deterministic pseudo-noise from a symbol + step. Avoids Math.random so a
- * given render is reproducible and testable; still lively enough to animate.
- */
-function pseudo(symbol: string, step: number): number {
-  let h = 2166136261 ^ step;
-  for (let k = 0; k < symbol.length; k++) {
-    h = Math.imul(h ^ symbol.charCodeAt(k), 16777619);
-  }
-  // xorshift to a [0,1) float
-  h ^= h << 13;
-  h ^= h >>> 17;
-  h ^= h << 5;
-  return ((h >>> 0) % 100000) / 100000;
 }

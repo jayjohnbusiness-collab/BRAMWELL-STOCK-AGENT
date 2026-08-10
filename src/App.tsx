@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Bramwell } from "./agent/bramwell";
-import { leadAlert } from "./agent/alerts";
-import type { Alert, ScreenPayload } from "./agent/types";
+import { Market } from "./agent/market";
+import type { ScreenPayload } from "./agent/types";
+import { createFeed } from "./feed";
+import { useMarketFeed } from "./hooks/useMarketFeed";
 import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
@@ -18,36 +20,24 @@ const INTRO: ChatMessage = {
 };
 
 export default function App() {
+  // The Market (read-model) and Bramwell (brain) are built once and shared:
+  // the feed hydrates the Market, and the brain reads the same instance.
+  const marketRef = useRef<Market | null>(null);
+  if (marketRef.current === null) marketRef.current = new Market();
+  const market = marketRef.current;
+
   const agentRef = useRef<Bramwell | null>(null);
-  if (agentRef.current === null) agentRef.current = new Bramwell();
+  if (agentRef.current === null) agentRef.current = new Bramwell(market);
   const agent = agentRef.current;
 
-  const idRef = useRef(1);
-  const stepRef = useRef(0);
+  const feedRef = useRef(createFeed());
+  const { alert, ack } = useMarketFeed(market, feedRef.current);
 
+  const idRef = useRef(1);
   const [messages, setMessages] = useState<ChatMessage[]>([INTRO]);
   const [working, setWorking] = useState(false);
   const [screen, setScreen] = useState<ScreenPayload>({ kind: "none" });
-  const [alert, setAlert] = useState<Alert | null>(null);
   const [awaitingChoice, setAwaitingChoice] = useState(false);
-  const [, setTick] = useState(0);
-
-  // The simulated feed ticks calmly; prices cross-fade, nothing pulses.
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      stepRef.current += 1;
-      agent.market.tick(stepRef.current);
-      setTick((t) => t + 1);
-    }, 1600);
-    return () => window.clearInterval(id);
-  }, [agent]);
-
-  // The one unprompted alert of the session, surfaced a beat after arrival —
-  // the whole point being that most of the time there is nothing here.
-  useEffect(() => {
-    const id = window.setTimeout(() => setAlert(leadAlert(agent.market)), 3500);
-    return () => window.clearTimeout(id);
-  }, [agent]);
 
   function nextId(): string {
     idRef.current += 1;
@@ -95,9 +85,9 @@ export default function App() {
         <div className="screen-pane">
           <ScreenPanel
             payload={screen}
-            watchlist={agent.market.held()}
+            watchlist={market.held()}
             alert={alert}
-            onAck={() => setAlert(null)}
+            onAck={alert ? () => ack(alert.id) : undefined}
           />
         </div>
       </div>

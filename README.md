@@ -17,11 +17,29 @@ the foundation the real product is built on, not a throwaway mock.
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # type-check + production build to dist/
+npm test           # run the agent-brain test suite (Vitest)
 npm run typecheck  # types only
 ```
 
-No API keys, no network calls: fonts are bundled locally and the market feed is
-simulated, so it runs fully offline.
+By default there are no API keys and no network calls: fonts are bundled
+locally and the market feed is simulated, so it runs fully offline.
+
+### Going live
+
+The feed is swappable behind a `Feed` interface. Provide a
+[Finnhub](https://finnhub.io) token and the app runs against real prices with
+no other changes:
+
+```bash
+echo 'VITE_FINNHUB_TOKEN=your_token_here' > .env.local
+npm run dev
+```
+
+The real adapter reports honestly within its limits: indices and prior-session
+change aren't on the free tier, and it attaches no cause to a move — which is
+exactly what makes Bramwell say "I don't have a reason for it yet." (The token
+rides in the browser for this dev scaffold; a production deployment should
+proxy the feed through a backend.)
 
 ## What's here
 
@@ -55,15 +73,29 @@ tomorrow it can sit behind an API against a real feed.
 | File | Responsibility |
 | --- | --- |
 | `agent/types.ts` | Domain types: instruments, subject/session, replies, alerts. |
-| `agent/seed.ts` | Simulated instruments, shaped to exercise the hard behaviors. |
-| `agent/market.ts` | The feed: movers, symbol/name resolution, ambiguity, ticking. |
+| `agent/market.ts` | The read-model: movers, symbol/name resolution, ambiguity. |
 | `agent/nlu.ts` | Rules-based intent parser — the seam where an LLM would go. |
 | `agent/format.ts` | Spoken (rounded, in words) vs. on-screen (exact, tabular). |
 | `agent/alerts.ts` | The unprompted alert bar: move **and** cause, one line only. |
 | `agent/bramwell.ts` | The brain: routing, subject memory, and every reply shape. |
+| `agent/seed.ts` | The instrument registry, shaped to exercise the hard behaviors. |
 
-The UI (`src/components/`, `src/brand/`) and the design system
+Data comes through a `Feed` (`src/feed/`): the `Market` holds a synchronous
+snapshot, and a feed hydrates it via `applyQuotes()`. `SimulatedFeed` is the
+default; `FinnhubFeed` is a real adapter — same brain, different data source.
+`src/hooks/useMarketFeed.ts` owns the live loop (poll → overlay → re-evaluate
+the alert). The UI (`src/components/`, `src/brand/`) and the design system
 (`src/styles/`) render that logic under the brand rules.
+
+### Tests
+
+`npm test` runs a Vitest suite over the brain (it's pure, so no DOM is
+involved): the summary-not-leaderboard shape and connective tissue, subject
+memory across follow-ups, resolve-out-loud and the ambiguity proposal, the
+day-shift, uncertainty stated rather than invented, the advice decline, the
+scope/failure lines, the silent wake, the spoken-vs-screen formatting, the
+alert bar, and the feed overlay rules. These are the contract an LLM-backed
+`nlu.ts` would have to keep green.
 
 ## Brand fidelity
 
