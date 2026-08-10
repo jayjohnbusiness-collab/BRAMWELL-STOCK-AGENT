@@ -1,6 +1,6 @@
 import type { Instrument, Reply, Session, Subject } from "./types";
 import { Market, type Resolution } from "./market";
-import { parse, type Day, type Intent, type Metric } from "./nlu";
+import { parse, watchTarget, type Day, type Intent, type Metric } from "./nlu";
 import {
   direction,
   magnitudeInWords,
@@ -268,7 +268,10 @@ export class Bramwell {
 
   /** Add or remove a name from the watchlist, confirmed in character. */
   private watchReply(text: string, add: boolean): Reply {
-    const res = this.market.resolve(text);
+    // Resolve against the name alone, not the whole command — "add Shell to my
+    // stocks" must resolve "Shell", never the scaffolding around it.
+    const target = watchTarget(text) || text;
+    const res = this.market.resolve(target);
     if (res.status === "ambiguous") {
       // Don't guess which to watch; ask, but plainly (no pending quote here).
       const [a, b] = distinct(res.options);
@@ -279,7 +282,7 @@ export class Bramwell {
         screen: { kind: "none" },
       };
     }
-    if (res.status !== "ok") return this.notUnderstood(text, res);
+    if (res.status !== "ok") return this.notUnderstood(target, res);
 
     const i = res.instrument;
     if (add) {
@@ -424,20 +427,29 @@ function mixedTail(held: Instrument[], day: Day): string {
   return `${shortName(top)} is the mover, ${direction(c)} ${percentInWords(c)}.`;
 }
 
-/** Pull a plausible proper-noun candidate to echo back in "I heard …". */
-const STOP = new Set([
-  "The", "This", "That", "What", "When", "Where", "Why", "How", "Who", "Whats",
-  "Is", "Are", "Was", "Should", "Could", "Would", "Do", "Does", "Did", "My",
-  "And", "Or", "Nasdaq", "Bramwell", "Hey", "Show", "Tell", "Give",
-  // Command verbs, so "Watch Meridian" echoes "Meridian", not "Watch".
-  "Watch", "Follow", "Add", "Track", "Remove", "Drop", "Stop", "Unwatch",
-  "Unfollow", "Keep", "Start", "Take", "Get",
-]);
+/*
+ * Pull a plausible proper-noun candidate to echo back in "I heard …".
+ * Stored lower-cased and compared case-insensitively, so all-caps typing
+ * ("CAN YOU ADD SHELL…") skips the filler too and echoes "Shell", not "Can".
+ */
+const STOP = new Set(
+  [
+    "the", "this", "that", "what", "when", "where", "why", "how", "who", "whats",
+    "is", "are", "was", "should", "could", "would", "will", "can", "do", "does",
+    "did", "my", "our", "you", "your", "and", "or", "to", "from", "on", "in",
+    "into", "onto", "it", "them", "me", "please", "nasdaq", "bramwell", "hey",
+    "show", "tell", "give", "list", "stock", "stocks", "share", "shares",
+    "portfolio", "holdings", "holding", "positions", "position", "names", "name",
+    // Command verbs, so "Watch Meridian" echoes "Meridian", not "Watch".
+    "watch", "follow", "add", "track", "remove", "drop", "stop", "unwatch",
+    "unfollow", "keep", "start", "take", "get",
+  ].map((w) => w.toLowerCase()),
+);
 function properNoun(text: string): string | null {
   const matches = text.match(/\b([A-Z][a-zA-Z]{2,})\b/g);
   if (!matches) return null;
   for (const m of matches) {
-    if (!STOP.has(m)) return m;
+    if (!STOP.has(m.toLowerCase())) return m;
   }
   return null;
 }

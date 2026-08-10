@@ -62,6 +62,45 @@ const TODAY = /\b(today|so far|this session|right now)\b/i;
 const MARKETY =
   /\b(up|down|percent|%|move|moving|movers?|price|trading|stock|shares?|index|indices|ticker|market|holdings?|portfolio|performers?)\b/i;
 
+// Filler that is never itself the name being added/removed.
+const TARGET_STOP = new Set([
+  "it", "them", "that", "this", "these", "those", "one", "ones", "some",
+  "the", "a", "an", "my", "our", "list", "stock", "stocks", "share", "shares",
+]);
+
+/**
+ * Strip command scaffolding from a watch/unwatch utterance down to the bare
+ * name. "can you add Shell to my stocks" → "Shell"; "add it" → "" (nothing
+ * nameable). This is what the agent resolves against, so filler words like
+ * "can" or "stock" can never be mistaken for the ticker.
+ */
+export function watchTarget(input: string): string {
+  let s = input.trim().replace(WAKE, "");
+  // Leading politeness: "can you", "could you please", "would you", "please".
+  s = s.replace(/^\s*(can|could|would|will)\s+you\s+/i, " ");
+  s = s.replace(/^\s*please\s+/i, " ");
+  // Destination phrase and everything after it: "to my list", "from my stocks".
+  s = s.replace(
+    /\b(to|from|on|onto|into|in)\s+(the\s+|my\s+)?(watch\s?list|stock\s?list|stocks?|shares?|list|portfolio|holdings?|names?|positions?)\b.*$/i,
+    " ",
+  );
+  // Command verbs, anywhere.
+  s = s.replace(
+    /\b(start watching|stop watching|stop following|keep an eye on|no longer (watch|follow)|watch|follow|track|add|remove|drop|unwatch|unfollow|take off|get rid of)\b/gi,
+    " ",
+  );
+  // Any trailing "stock"/"shares"/"please" left dangling ("shell stock").
+  s = s.replace(/\b(stock|stocks|shares?|please)\b/gi, " ");
+  s = s.replace(/[?.!,]+/g, " ");
+  const cleaned = s.replace(/\s+/g, " ").trim();
+
+  // If nothing but filler survived, there's no name to act on.
+  const words = cleaned.split(" ").filter(Boolean);
+  if (words.length === 0) return "";
+  if (words.every((w) => TARGET_STOP.has(w.toLowerCase()))) return "";
+  return cleaned;
+}
+
 export function parse(input: string): Intent {
   const text = input.trim();
   const stripped = text.replace(WAKE, "").trim();

@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { Bramwell } from "./agent/bramwell";
 import { Market } from "./agent/market";
-import type { ScreenPayload } from "./agent/types";
+import { parse, watchTarget } from "./agent/nlu";
+import type { Instrument, ScreenPayload } from "./agent/types";
 import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
 import { useMarketFeed } from "./hooks/useMarketFeed";
@@ -91,6 +92,19 @@ export default function App() {
   function handleSend(text: string) {
     voice.cancel(); // a new request stops Bramwell mid-word
     setMessages((prev) => [...prev, { id: nextId(), from: "user", text }]);
+
+    // An "add / watch" command is handled here rather than in the (network-free)
+    // brain, so it can look a real ticker up live — exactly like the watchlist
+    // field. Everything else goes to Bramwell as before.
+    const intent = parse(text);
+    if (intent.kind === "watch") {
+      const target = watchTarget(text);
+      if (target) {
+        void addFromChat(target);
+        return;
+      }
+    }
+
     setWorking(true);
 
     // Answer inside two seconds or show a quiet working state; no filler.
@@ -113,27 +127,39 @@ export default function App() {
   }
   dispatchRef.current = handleSend;
 
-  // Add a name to the watchlist. Known names resolve through the brain; an
-  // unknown ticker is looked up live from the feed (name + quote) and added.
-  async function handleAdd(text: string): Promise<string> {
+  // The shared add engine. Known names resolve through the registry; an unknown
+  // ticker or company name is looked up live from the feed (name + quote) and
+  // added. Returns a structured result so both the watchlist field and the chat
+  // can phrase it their own way.
+  type AddResult =
+    | { ok: true; instrument: Instrument }
+    | { ok: false; message: string; instrument?: Instrument };
+
+  async function addName(text: string): Promise<AddResult> {
     const res = market.resolve(text);
     if (res.status === "ambiguous") {
       const [a, b] = res.options;
-      return `Which one — ${a.name}, or ${b.name}?`;
+      return { ok: false, message: `Which one — ${a.name}, or ${b.name}?` };
     }
     if (res.status === "ok") {
       if (market.isWatched(res.instrument.symbol)) {
-        return `${res.instrument.name} is already on the list.`;
+        return {
+          ok: false,
+          message: `${cap(res.instrument.name)} is already on the list.`,
+          instrument: res.instrument,
+        };
       }
       market.watch(res.instrument.symbol);
       persist();
-      return "";
+      return { ok: true, instrument: res.instrument };
     }
 
     // Not a known name — look it up live: first as a ticker, then by company
-    // name (e.g. "Amazon" → AMZN).
+    // name (e.g. "Amazon" → AMZN, "Shell" → SHEL).
     const feed = feedRef.current;
-    if (!feed.lookup) return "I don't have anything by that name.";
+    if (!feed.lookup) {
+      return { ok: false, message: "I don't have anything by that name." };
+    }
 
     const candidate = symbolCandidate(text);
     let found = candidate ? await feed.lookup(candidate) : null;
@@ -143,7 +169,7 @@ export default function App() {
     }
 
     if (found) {
-      market.add({
+      const instrument: Instrument = {
         symbol: found.symbol,
         name: found.name,
         kind: "equity",
@@ -151,14 +177,43 @@ export default function App() {
         changePct: found.changePct,
         prevChangePct: 0,
         cause: null,
-      });
+      };
+      market.add(instrument);
       market.watch(found.symbol);
       persist();
-      return "";
+      return { ok: true, instrument: market.bySymbol(found.symbol) ?? instrument };
     }
-    return hasToken()
-      ? `I couldn't find anything for "${text.trim()}".`
-      : `Connect live data to add "${text.trim()}".`;
+    return {
+      ok: false,
+      message: hasToken()
+        ? `I couldn't find anything for "${text.trim()}".`
+        : `Connect live data to add "${text.trim()}".`,
+    };
+  }
+
+  // The watchlist "Add" field: a message to show (empty on success).
+  async function handleAdd(text: string): Promise<string> {
+    const r = await addName(text);
+    return r.ok ? "" : r.message;
+  }
+
+  // A spoken "add / watch X" from the chat: same engine, butler phrasing, and
+  // it drops the added name onto the screen like any other quote.
+  async function addFromChat(target: string) {
+    setWorking(true);
+    const r = await addName(target);
+    setWorking(false);
+
+    const spoken = r.ok
+      ? `Done. I'll keep an eye on ${cap(r.instrument.name)}.`
+      : r.message;
+
+    if (spoken.trim().length > 0) {
+      setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: spoken }]);
+      voice.speak(spoken);
+    }
+    if (r.instrument) setScreen({ kind: "quote", instrument: r.instrument });
+    setAwaitingChoice(false);
   }
 
   // Typeahead: closest matching tickers for a partial query, best-effort.
@@ -263,4 +318,9 @@ export default function App() {
 function symbolCandidate(text: string): string | null {
   const m = text.trim().toUpperCase().match(/^[A-Z][A-Z.]{0,5}$/);
   return m ? m[0] : null;
+}
+
+/** Capitalize the first letter, leaving the rest of the name as-is. */
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
