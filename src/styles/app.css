@@ -3,10 +3,15 @@
 .app-shell {
   max-width: 1160px;
   margin: 0 auto;
-  padding: var(--space-7) var(--space-5) var(--space-8);
+  padding: var(--space-6) var(--space-5);
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-header {
+  flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -34,32 +39,40 @@
 }
 
 .app-grid {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 1.1fr 1fr;
+  grid-template-rows: 1fr;
   gap: var(--space-6);
-  align-items: start;
-  margin-top: var(--space-5);
+  margin-top: var(--space-4);
 }
 
 .conv-pane {
   display: flex;
   flex-direction: column;
-  min-height: 60vh;
+  min-height: 0;
 }
 
-/* The right column is a stack of cards on the grey workspace. */
+/* The right column is a stack of cards that scrolls on its own. */
 .screen-pane {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-2);
 }
 
+/* Messages scroll within the left pane; the composer stays pinned below. */
 .messages {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
   flex: 1;
-  padding: var(--space-2) 0 var(--space-5);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-2) var(--space-5) 0;
 }
 
 .msg {
@@ -122,6 +135,7 @@
 }
 
 .composer {
+  flex: none;
   border-top: var(--hairline) solid var(--rule);
   padding-top: var(--space-4);
   display: flex;
@@ -225,11 +239,27 @@
 }
 
 @media (max-width: 860px) {
+  /* On narrow screens, fall back to one natural, page-scrolling column. */
+  .app-shell {
+    height: auto;
+    display: block;
+    padding: var(--space-5) var(--space-4);
+  }
   .app-grid {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    margin-top: var(--space-4);
+  }
+  .conv-pane {
+    min-height: 60vh;
+  }
+  .messages {
+    overflow: visible;
   }
   .screen-pane {
+    overflow: visible;
     order: -1;
+    padding-right: 0;
   }
   .tagline {
     display: none;
