@@ -17,6 +17,9 @@ import { EventsCard } from "./cards/EventsCard";
 export function CardBoard({ ctx }: { ctx: CardContext }) {
   const [cards, setCards] = useState<CardConfig[]>(() => loadCards());
   const [picking, setPicking] = useState(false);
+  // Drag-to-reorder state: the card being dragged and the one hovered over.
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   function commit(next: CardConfig[]) {
     setCards(next);
@@ -35,6 +38,22 @@ export function CardBoard({ ctx }: { ctx: CardContext }) {
     setPicking(false);
   }
 
+  // Move the dragged card to the dropped-on card's position.
+  function reorder(targetId: string) {
+    if (!dragId || dragId === targetId) return;
+    const from = cards.findIndex((c) => c.id === dragId);
+    const to = cards.findIndex((c) => c.id === targetId);
+    if (from < 0 || to < 0) return;
+    const next = [...cards];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    commit(next);
+  }
+  function endDrag() {
+    setDragId(null);
+    setOverId(null);
+  }
+
   const present = new Set(cards.map((c) => c.type));
   const available = ALL_CARD_TYPES.filter((t) => !present.has(t));
 
@@ -48,6 +67,15 @@ export function CardBoard({ ctx }: { ctx: CardContext }) {
             size={c.size}
             onCycleSize={() => cycleSize(c.id)}
             onRemove={() => remove(c.id)}
+            dragging={dragId === c.id}
+            over={Boolean(dragId) && overId === c.id && dragId !== c.id}
+            onGrab={() => setDragId(c.id)}
+            onOver={() => setOverId((cur) => (cur === c.id ? cur : c.id))}
+            onDropCard={() => {
+              reorder(c.id);
+              endDrag();
+            }}
+            onDragEnd={endDrag}
           >
             {renderBody(c.type, c.size, ctx)}
           </CardFrame>

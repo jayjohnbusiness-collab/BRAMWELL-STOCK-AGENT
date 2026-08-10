@@ -363,14 +363,43 @@
 
 .card-head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
 }
 .card-title {
   margin: 0;
   min-width: 0;
+  flex: 1;
+}
+
+/* Drag grip — the only draggable part, so inner controls keep working. */
+.card-grip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-soft);
+  cursor: grab;
+  padding: 2px;
+  margin-left: -2px;
+  border-radius: 6px;
+  touch-action: none;
+}
+.card-grip:hover {
+  color: var(--brass);
+}
+.card-grip:active {
+  cursor: grabbing;
+}
+.card-grip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.board-card.dragging {
+  opacity: 0.45;
+}
+.board-card.drop-over {
+  box-shadow: 0 0 0 2px var(--brass);
 }
 .card-tools {
   display: inline-flex;
