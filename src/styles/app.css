@@ -405,8 +405,12 @@
   outline: none;
   box-shadow: var(--focus);
 }
+.board-card {
+  transition: opacity 160ms ease, box-shadow 160ms ease;
+  will-change: transform;
+}
 .board-card.dragging {
-  opacity: 0.45;
+  opacity: 0.4;
 }
 .board-card.drop-over {
   box-shadow: 0 0 0 2px var(--brass);

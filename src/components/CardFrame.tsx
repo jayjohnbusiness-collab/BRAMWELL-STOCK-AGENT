@@ -18,6 +18,7 @@ export function CardFrame({
   onOver,
   onDropCard,
   onDragEnd,
+  innerRef,
   children,
 }: {
   title: string;
@@ -31,13 +32,19 @@ export function CardFrame({
   onOver: () => void;
   onDropCard: () => void;
   onDragEnd: () => void;
+  /** Lets the board track this card's element for reorder (FLIP) animation. */
+  innerRef?: (el: HTMLElement | null) => void;
   children: ReactNode;
 }) {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLElement | null>(null);
+  const setRef = (el: HTMLElement | null) => {
+    ref.current = el;
+    innerRef?.(el);
+  };
 
   return (
     <section
-      ref={ref}
+      ref={setRef}
       className={`card board-card size-${size}${dragging ? " dragging" : ""}${
         over ? " drop-over" : ""
       }`}
