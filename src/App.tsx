@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Bramwell } from "./agent/bramwell";
 import { Market } from "./agent/market";
-import { parse, watchTarget } from "./agent/nlu";
+import { parse, parseTrigger, watchTarget } from "./agent/nlu";
 import type { Instrument, ScreenPayload } from "./agent/types";
 import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
@@ -9,6 +9,9 @@ import { useMarketFeed } from "./hooks/useMarketFeed";
 import { useVoice } from "./hooks/useVoice";
 import { loadWatchlist, saveWatchlist, loadCustom, saveCustom } from "./watchlist/storage";
 import { hasToken } from "./feed/token";
+import { TriggerStore } from "./triggers/store";
+import { firedLine, type Trigger, type TriggerKind } from "./triggers/types";
+import { fireNotification, notifyState, requestNotify } from "./notify";
 import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
@@ -57,10 +60,20 @@ export default function App() {
 
   const feedRef = useRef(createFeed());
   const attributorRef = useRef(createAttributor());
+
+  // The trigger book, built once. The live loop evaluates it; a ref indirection
+  // lets the fire handler use voice/messages defined further down.
+  const triggerStoreRef = useRef<TriggerStore | null>(null);
+  if (triggerStoreRef.current === null) triggerStoreRef.current = new TriggerStore();
+  const triggerStore = triggerStoreRef.current;
+  const triggerFireRef = useRef<(fired: Trigger[]) => void>(() => {});
+
   const { alert, ack, feedStatus } = useMarketFeed(
     market,
     feedRef.current,
     attributorRef.current,
+    triggerStore,
+    (fired) => triggerFireRef.current(fired),
   );
 
   const idRef = useRef(1);
@@ -91,6 +104,14 @@ export default function App() {
   function handleSend(text: string) {
     voice.cancel(); // a new request stops Bramwell mid-word
     setMessages((prev) => [...prev, { id: nextId(), from: "user", text }]);
+
+    // A standing alert ("tell me if NVDA drops below 200") is set here so it
+    // can resolve/track the name live and register a trigger.
+    const trig = parseTrigger(text);
+    if (trig) {
+      void setTriggerFromChat(trig);
+      return;
+    }
 
     // An "add / watch" command is handled here rather than in the (network-free)
     // brain, so it can look a real ticker up live — exactly like the watchlist
@@ -125,6 +146,53 @@ export default function App() {
     }, 650);
   }
   dispatchRef.current = handleSend;
+
+  // A fired trigger: Bramwell speaks up in chat, and (if allowed) a browser
+  // notification reaches the user even when the tab isn't focused.
+  triggerFireRef.current = (fired: Trigger[]) => {
+    for (const t of fired) {
+      const i = market.bySymbol(t.symbol);
+      const q = { price: i?.basePrice ?? t.value, changePct: i?.changePct ?? 0 };
+      const line = firedLine(t, q);
+      setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
+      voice.speak(line);
+      fireNotification("Bramwell", line);
+    }
+    forceRender((n) => n + 1);
+  };
+
+  // Set a standing alert from chat: resolve (and start tracking) the name, then
+  // register the trigger. "hits/reaches N" picks a direction from the price.
+  async function setTriggerFromChat(spec: {
+    namePhrase: string;
+    kind: "above" | "below" | "move" | "cross";
+    value: number;
+  }) {
+    setWorking(true);
+    const r = await addName(spec.namePhrase);
+    setWorking(false);
+    const inst = r.instrument;
+    if (!inst) {
+      const msg = r.ok ? "I couldn't place that name." : r.message;
+      setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: msg }]);
+      voice.speak(msg);
+      return;
+    }
+    let kind: TriggerKind = spec.kind === "cross" ? "above" : spec.kind;
+    if (spec.kind === "cross") kind = spec.value >= inst.basePrice ? "above" : "below";
+    triggerStore.add({ symbol: inst.symbol, name: inst.name, kind, value: spec.value });
+    requestNotify().then(() => forceRender((n) => n + 1));
+
+    const name = cap(inst.name);
+    const line =
+      kind === "move"
+        ? `Very good. I'll speak up if ${name} moves ${spec.value}% either way.`
+        : `Very good. I'll tell you the moment ${name} is ${kind} ${spec.value}.`;
+    setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
+    voice.speak(line);
+    setScreen({ kind: "quote", instrument: inst });
+    forceRender((n) => n + 1);
+  }
 
   // The shared add engine. Known names resolve through the registry; an unknown
   // ticker or company name is looked up live from the feed (name + quote) and
@@ -295,6 +363,23 @@ export default function App() {
               watchRemove: handleRemove,
               watchSuggest: handleSuggest,
               earnings: (symbols) => feedRef.current.events?.(symbols) ?? Promise.resolve([]),
+              triggers: {
+                all: () => triggerStore.all(),
+                add: (input) => {
+                  triggerStore.add(input);
+                  forceRender((n) => n + 1);
+                },
+                remove: (id) => {
+                  triggerStore.remove(id);
+                  forceRender((n) => n + 1);
+                },
+                rearm: (id) => {
+                  triggerStore.rearm(id);
+                  forceRender((n) => n + 1);
+                },
+                notifyState: notifyState(),
+                requestNotify: () => requestNotify().then(() => forceRender((n) => n + 1)),
+              },
               version: feedStatus?.at ?? 0,
             }}
           />

@@ -621,6 +621,85 @@
   align-self: flex-start;
 }
 
+/* Alerts & triggers card */
+.notify-cta {
+  cursor: pointer;
+  align-self: flex-start;
+}
+.trigger-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-top: var(--hairline) solid var(--rule);
+}
+.trigger-row:first-child {
+  border-top: 0;
+}
+.trigger-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.trigger-line {
+  min-width: 0;
+}
+.trigger-status {
+  display: inline-flex;
+  align-items: center;
+}
+.armed-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--data-up);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.trigger-btn,
+.trigger-x {
+  flex: none;
+  cursor: pointer;
+}
+.trigger-x {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.trigger-add {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.trigger-add select,
+.trigger-add input {
+  font-family: var(--font-body);
+  font-size: var(--step-small);
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+}
+.trigger-add input {
+  width: 5.5em;
+  min-width: 0;
+}
+.trigger-add select:focus-visible,
+.trigger-add input:focus-visible {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: var(--focus);
+}
+
 @media (max-width: 860px) {
   .card-board {
     grid-template-columns: 1fr;

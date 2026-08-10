@@ -5,6 +5,8 @@ import type { Alert } from "../agent/types";
 import type { Feed, FeedDiagnostics } from "../feed/types";
 import type { Attributor } from "../attribution/types";
 import { headlineSentiment } from "../attribution/sentiment";
+import type { TriggerStore } from "../triggers/store";
+import type { Trigger } from "../triggers/types";
 
 export interface FeedStatus extends FeedDiagnostics {
   /** Epoch ms of the last completed poll. */
@@ -28,13 +30,22 @@ const DIRECTION_EPS = 0.5; // percent
  * Updating internal state here re-renders the consumer, so the mutated Market
  * is read fresh on every cycle without threading a snapshot through props.
  */
-export function useMarketFeed(market: Market, feed: Feed, attributor: Attributor) {
+export function useMarketFeed(
+  market: Market,
+  feed: Feed,
+  attributor: Attributor,
+  triggers?: TriggerStore,
+  onTriggerFire?: (fired: Trigger[]) => void,
+) {
   const [alert, setAlert] = useState<Alert | null>(null);
   const [feedStatus, setFeedStatus] = useState<FeedStatus | null>(null);
   const [, setVersion] = useState(0);
   const dismissed = useRef<Set<string>>(new Set());
   const armed = useRef(false);
   const lastAttempt = useRef<Map<string, number>>(new Map());
+  // Latest fire callback, read fresh so the poll loop needn't restart on it.
+  const fireRef = useRef(onTriggerFire);
+  fireRef.current = onTriggerFire;
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +123,17 @@ export function useMarketFeed(market: Market, feed: Feed, attributor: Attributor
         setVersion((v) => v + 1);
         pruneStaleCauses();
         attributionPass();
+        // Check standing price triggers against the fresh quotes.
+        if (triggers) {
+          const fired = triggers.evaluate((symbol) => {
+            const i = market.bySymbol(symbol);
+            return i ? { price: i.basePrice, changePct: i.changePct } : undefined;
+          }, Date.now());
+          if (fired.length > 0) {
+            setVersion((v) => v + 1);
+            fireRef.current?.(fired);
+          }
+        }
         evaluateAlert();
       } catch {
         // Keep calm; the next cycle will try again.
@@ -130,7 +152,7 @@ export function useMarketFeed(market: Market, feed: Feed, attributor: Attributor
       window.clearTimeout(arm);
       if (poll) window.clearTimeout(poll);
     };
-  }, [market, feed, attributor]);
+  }, [market, feed, attributor, triggers]);
 
   function ack(id: string) {
     dismissed.current.add(id);

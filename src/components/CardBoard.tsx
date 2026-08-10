@@ -8,6 +8,7 @@ import { WatchlistManager } from "./WatchlistManager";
 import { SpotlightCard, AlertsCard, MoversCard, BreadthCard, CausesCard } from "./cards/simpleCards";
 import { ClockCard } from "./cards/ClockCard";
 import { EventsCard } from "./cards/EventsCard";
+import { TriggersCard } from "./cards/TriggersCard";
 
 /*
  * The board: a grid of cards the user composes. Add via the picker, remove via
@@ -207,6 +208,8 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
       return <ClockCard size={size} />;
     case "events":
       return <EventsCard market={ctx.market} earnings={ctx.earnings} size={size} />;
+    case "triggers":
+      return <TriggersCard ctx={ctx} size={size} />;
     default:
       return null;
   }

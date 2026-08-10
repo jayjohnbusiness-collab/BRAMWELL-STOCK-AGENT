@@ -101,6 +101,71 @@ export function watchTarget(input: string): string {
   return cleaned;
 }
 
+/*
+ * Trigger phrasing: "alert me if NVDA drops below 200", "tell me when Tesla is
+ * above 300", "notify me if Apple moves 5%". Returns the name to resolve, the
+ * kind, and the threshold — or null when the text isn't setting an alert.
+ * "cross" (hits/reaches N) is direction-agnostic; the app picks above/below by
+ * comparing N to the current price.
+ */
+export interface TriggerSpec {
+  namePhrase: string;
+  kind: "above" | "below" | "move" | "cross";
+  value: number;
+}
+
+const TRIGGER_VERB =
+  /\b(alert|notify|tell|let me know|ping|warn|remind|watch .* (for|when|if))\b/i;
+const T_BELOW = /\b(below|under|beneath|dips? below|less than|drops? (to|below)|falls? (to|below))\b/i;
+const T_ABOVE =
+  /\b(above|over|exceeds?|more than|greater than|rises? (to|above)|climbs? (to|above)|tops?)\b/i;
+const T_CROSS = /\b(hits?|reaches?|reach|crosses?|touches?|gets? to)\b/i;
+const T_MOVE = /\b(moves?|swings?|jumps?|by)\b/i;
+
+export function parseTrigger(input: string): TriggerSpec | null {
+  const text = input.trim();
+  const num = text.match(/(-?\d+(?:\.\d+)?)\s*(%|percent)?/i);
+  if (!num) return null;
+  const value = Math.abs(parseFloat(num[1]));
+  if (!Number.isFinite(value)) return null;
+  const isPct = Boolean(num[2]);
+
+  let kind: TriggerSpec["kind"];
+  if (isPct || (T_MOVE.test(text) && !T_BELOW.test(text) && !T_ABOVE.test(text) && !T_CROSS.test(text))) {
+    kind = "move";
+  } else if (T_BELOW.test(text)) {
+    kind = "below";
+  } else if (T_ABOVE.test(text)) {
+    kind = "above";
+  } else if (T_CROSS.test(text)) {
+    kind = "cross";
+  } else {
+    return null;
+  }
+
+  // A percent-move alert without an explicit verb is too easily a plain
+  // question ("is NVDA up 5%?"); require the alerting intent there.
+  if (kind === "move" && !TRIGGER_VERB.test(text)) return null;
+
+  const namePhrase = text
+    .replace(TRIGGER_VERB, " ")
+    .replace(T_BELOW, " ")
+    .replace(T_ABOVE, " ")
+    .replace(T_CROSS, " ")
+    .replace(T_MOVE, " ")
+    .replace(/(-?\d+(?:\.\d+)?)\s*(%|percent|dollars?|\$)?/gi, " ")
+    .replace(
+      /\b(me|if|when|whenever|the|is|its|it'?s|it|to|for|that|a|an|of|price|stock|shares?|today|either way|up|down|gets?)\b/gi,
+      " ",
+    )
+    .replace(/[^\w.\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!namePhrase) return null;
+
+  return { namePhrase, kind, value };
+}
+
 export function parse(input: string): Intent {
   const text = input.trim();
   const stripped = text.replace(WAKE, "").trim();

@@ -62,6 +62,12 @@ export const CARD_META: Record<CardType, CardMeta> = {
     blurb: "Upcoming earnings and your own reminders.",
     defaultSize: "md",
   },
+  triggers: {
+    type: "triggers",
+    title: "Alerts & triggers",
+    blurb: "Get told when a name crosses a price or moves.",
+    defaultSize: "md",
+  },
 };
 
 export const ALL_CARD_TYPES: CardType[] = [
@@ -73,4 +79,5 @@ export const ALL_CARD_TYPES: CardType[] = [
   "causes",
   "clock",
   "events",
+  "triggers",
 ];

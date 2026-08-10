@@ -1,6 +1,8 @@
 import type { Market } from "../agent/market";
 import type { Alert, ScreenPayload } from "../agent/types";
 import type { MarketEvent } from "../feed/types";
+import type { Trigger, TriggerKind } from "../triggers/types";
+import type { NotifyState } from "../notify";
 
 /*
  * The dashboard card model.
@@ -19,7 +21,8 @@ export type CardType =
   | "breadth"
   | "causes"
   | "clock"
-  | "events";
+  | "events"
+  | "triggers";
 
 export type CardSize = "sm" | "md" | "lg";
 
@@ -39,6 +42,15 @@ export interface CardContext {
   watchRemove: (symbol: string) => void;
   watchSuggest: (query: string) => Promise<{ symbol: string; name: string }[]>;
   earnings: (symbols: string[]) => Promise<MarketEvent[]>;
+  /** Price triggers: set, list, remove, re-arm, and manage notifications. */
+  triggers: {
+    all: () => Trigger[];
+    add: (input: { symbol: string; name: string; kind: TriggerKind; value: number }) => void;
+    remove: (id: string) => void;
+    rearm: (id: string) => void;
+    notifyState: NotifyState;
+    requestNotify: () => void;
+  };
   /** Bumps whenever the live loop mutates the market, to pull fresh reads. */
   version: number;
 }

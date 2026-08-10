@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parse, watchTarget } from "./nlu";
+import { parse, parseTrigger, watchTarget } from "./nlu";
 
 /*
  * The command layer: conversational "add / watch" phrasings must classify as a
@@ -46,5 +46,35 @@ describe("watchTarget — name extraction", () => {
   it("returns empty when only filler survives", () => {
     expect(watchTarget("add it to my list")).toBe("");
     expect(watchTarget("add that")).toBe("");
+  });
+});
+
+describe("parseTrigger — setting an alert", () => {
+  it("parses a below-price alert", () => {
+    const t = parseTrigger("alert me if NVDA drops below 200");
+    expect(t).toEqual({ namePhrase: "NVDA", kind: "below", value: 200 });
+  });
+
+  it("parses an above-price alert", () => {
+    const t = parseTrigger("tell me when Tesla is above 300");
+    expect(t).toEqual({ namePhrase: "Tesla", kind: "above", value: 300 });
+  });
+
+  it("parses a percent-move alert", () => {
+    const t = parseTrigger("notify me if Apple moves 5%");
+    expect(t).toEqual({ namePhrase: "Apple", kind: "move", value: 5 });
+  });
+
+  it("treats hits/reaches as a direction-agnostic cross", () => {
+    const t = parseTrigger("let me know when NVDA hits 250");
+    expect(t?.kind).toBe("cross");
+    expect(t?.value).toBe(250);
+    expect(t?.namePhrase).toBe("NVDA");
+  });
+
+  it("does not fire on ordinary questions", () => {
+    expect(parseTrigger("how's NVDA?")).toBeNull();
+    expect(parseTrigger("what about the losers?")).toBeNull();
+    expect(parseTrigger("is NVDA up 5%?")).toBeNull(); // a move needs an alert verb
   });
 });
