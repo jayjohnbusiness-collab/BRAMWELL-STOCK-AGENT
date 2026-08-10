@@ -17,9 +17,8 @@ import { EventsCard } from "./cards/EventsCard";
 export function CardBoard({ ctx }: { ctx: CardContext }) {
   const [cards, setCards] = useState<CardConfig[]>(() => loadCards());
   const [picking, setPicking] = useState(false);
-  // Drag-to-reorder state: the card being dragged and the one hovered over.
+  // Drag-to-reorder state: the card currently being dragged.
   const [dragId, setDragId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
 
   // --- FLIP reorder animation ---------------------------------------------
   // Card elements by id, and the positions captured just before a layout
@@ -68,14 +67,11 @@ export function CardBoard({ ctx }: { ctx: CardContext }) {
     });
   }, [cards]);
 
-  function commit(next: CardConfig[]) {
-    setCards(next);
-    saveCards(next);
-  }
   // Every layout-changing edit captures positions first, so cards animate.
   function mutate(next: CardConfig[]) {
     captureFirst();
-    commit(next);
+    setCards(next);
+    saveCards(next);
   }
 
   function cycleSize(id: string) {
@@ -90,20 +86,23 @@ export function CardBoard({ ctx }: { ctx: CardContext }) {
     setPicking(false);
   }
 
-  // Move the dragged card to the dropped-on card's position.
-  function reorder(targetId: string) {
+  // Live reorder while dragging: as the cursor crosses another card, move the
+  // dragged card into that slot so the board opens the gap where it will land.
+  // This animates via FLIP and isn't persisted until the drop (endDrag).
+  function previewMove(targetId: string) {
     if (!dragId || dragId === targetId) return;
     const from = cards.findIndex((c) => c.id === dragId);
     const to = cards.findIndex((c) => c.id === targetId);
-    if (from < 0 || to < 0) return;
+    if (from < 0 || to < 0 || from === to) return;
     const next = [...cards];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
-    mutate(next);
+    captureFirst();
+    setCards(next); // persisted on drop, not on every hover
   }
   function endDrag() {
+    saveCards(cards); // the live order is now final
     setDragId(null);
-    setOverId(null);
   }
 
   const present = new Set(cards.map((c) => c.type));
@@ -120,17 +119,13 @@ export function CardBoard({ ctx }: { ctx: CardContext }) {
             onCycleSize={() => cycleSize(c.id)}
             onRemove={() => remove(c.id)}
             dragging={dragId === c.id}
-            over={Boolean(dragId) && overId === c.id && dragId !== c.id}
             innerRef={(el) => {
               if (el) elRefs.current.set(c.id, el);
               else elRefs.current.delete(c.id);
             }}
             onGrab={() => setDragId(c.id)}
-            onOver={() => setOverId((cur) => (cur === c.id ? cur : c.id))}
-            onDropCard={() => {
-              reorder(c.id);
-              endDrag();
-            }}
+            onOver={() => previewMove(c.id)}
+            onDropCard={endDrag}
             onDragEnd={endDrag}
           >
             {renderBody(c.type, c.size, ctx)}

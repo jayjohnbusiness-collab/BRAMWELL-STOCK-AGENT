@@ -13,7 +13,6 @@ export function CardFrame({
   onRemove,
   removable = true,
   dragging = false,
-  over = false,
   onGrab,
   onOver,
   onDropCard,
@@ -27,7 +26,6 @@ export function CardFrame({
   onRemove: () => void;
   removable?: boolean;
   dragging?: boolean;
-  over?: boolean;
   onGrab: () => void;
   onOver: () => void;
   onDropCard: () => void;
@@ -45,9 +43,7 @@ export function CardFrame({
   return (
     <section
       ref={setRef}
-      className={`card board-card size-${size}${dragging ? " dragging" : ""}${
-        over ? " drop-over" : ""
-      }`}
+      className={`card board-card size-${size}${dragging ? " dragging" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
