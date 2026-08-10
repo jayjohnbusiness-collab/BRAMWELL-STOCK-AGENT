@@ -13,18 +13,22 @@ export function WatchlistManager({
   onRemove,
 }: {
   watched: Instrument[];
-  /** Returns a message to show (in Bramwell's voice), or "" on success. */
-  onAdd: (text: string) => string;
+  /** Returns a message to show (empty on success). May look a ticker up live. */
+  onAdd: (text: string) => Promise<string>;
   onRemove: (symbol: string) => void;
 }) {
   const [value, setValue] = useState("");
   const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const t = value.trim();
-    if (!t) return;
-    const message = onAdd(t);
+    if (!t || busy) return;
+    setBusy(true);
+    setNote("Looking it up…");
+    const message = await onAdd(t);
+    setBusy(false);
     setNote(message);
     if (!message) setValue("");
   }
@@ -89,8 +93,8 @@ export function WatchlistManager({
             if (note) setNote("");
           }}
         />
-        <button type="submit" className="btn">
-          Add
+        <button type="submit" className="btn" disabled={busy}>
+          {busy ? "…" : "Add"}
         </button>
       </form>
       {note ? (

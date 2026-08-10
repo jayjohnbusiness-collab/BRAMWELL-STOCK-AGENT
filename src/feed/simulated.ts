@@ -1,4 +1,4 @@
-import type { Feed, Quote } from "./types";
+import type { Feed, LookupResult, Quote } from "./types";
 import type { Instrument } from "../agent/types";
 import { SEED } from "../agent/seed";
 
@@ -15,6 +15,13 @@ export class SimulatedFeed implements Feed {
 
   constructor(seed: Instrument[] = SEED) {
     this.book = seed.map((i) => ({ ...i }));
+  }
+
+  async lookup(symbol: string): Promise<LookupResult | null> {
+    const i = this.book.find((x) => x.symbol === symbol.trim().toUpperCase());
+    return i
+      ? { symbol: i.symbol, name: i.name, price: i.basePrice, changePct: i.changePct }
+      : null;
   }
 
   async quotes(symbols: string[]): Promise<Quote[]> {

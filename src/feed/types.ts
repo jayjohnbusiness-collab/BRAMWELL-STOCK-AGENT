@@ -33,6 +33,13 @@ export interface FeedDiagnostics {
   sample?: { symbol: string; price: number };
 }
 
+export interface LookupResult {
+  symbol: string;
+  name: string;
+  price: number;
+  changePct: number;
+}
+
 export interface Feed {
   /** For diagnostics and the "which feed am I on" surface. */
   readonly name: string;
@@ -42,4 +49,9 @@ export interface Feed {
   quotes(symbols: string[]): Promise<Quote[]>;
   /** How the most recent poll went, when the feed tracks it. */
   lastDiagnostics?(): FeedDiagnostics;
+  /**
+   * Resolve a not-yet-known ticker to a real instrument (name + quote), so the
+   * user can add any symbol the feed covers. Returns null if it isn't found.
+   */
+  lookup?(symbol: string): Promise<LookupResult | null>;
 }

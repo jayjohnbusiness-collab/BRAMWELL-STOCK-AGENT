@@ -185,8 +185,10 @@
   align-items: stretch;
 }
 
-.composer input {
+/* One field style for both the chat and the watchlist "add" input. */
+.composer-row input {
   flex: 1;
+  min-width: 0;
   font-family: var(--font-body);
   font-size: var(--step-body);
   color: var(--ink);
@@ -195,8 +197,13 @@
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-4);
 }
-.composer input::placeholder {
+.composer-row input::placeholder {
   color: var(--ink-soft);
+}
+.composer-row input:focus-visible {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: var(--focus);
 }
 
 /* Primary action — accent-filled. */
@@ -213,6 +220,10 @@
 .btn:hover {
   background: var(--brass-strong);
   border-color: var(--brass-strong);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .chips {

@@ -8,6 +8,7 @@
  */
 
 const KEY = "bramwell.watchlist.v1";
+const CUSTOM_KEY = "bramwell.custom.v1";
 
 /** The subset of the Web Storage API we use. */
 export interface KeyValueStore {
@@ -47,5 +48,41 @@ export function saveWatchlist(
     store.setItem(KEY, JSON.stringify(symbols));
   } catch {
     // Quota or privacy mode — nothing to be done; state stays in memory.
+  }
+}
+
+export interface CustomInstrument {
+  symbol: string;
+  name: string;
+}
+
+/** User-added tickers (beyond the built-in registry), so they survive reloads. */
+export function loadCustom(
+  store: KeyValueStore | null = defaultStore(),
+): CustomInstrument[] {
+  if (!store) return [];
+  try {
+    const raw = store.getItem(CUSTOM_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (c): c is CustomInstrument =>
+        c && typeof c.symbol === "string" && typeof c.name === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustom(
+  items: CustomInstrument[],
+  store: KeyValueStore | null = defaultStore(),
+): void {
+  if (!store) return;
+  try {
+    store.setItem(CUSTOM_KEY, JSON.stringify(items));
+  } catch {
+    /* storage unavailable */
   }
 }

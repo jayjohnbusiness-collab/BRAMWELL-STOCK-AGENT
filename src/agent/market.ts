@@ -108,6 +108,33 @@ export class Market {
     if (i) i.cause = cause;
   }
 
+  /** Add an instrument not in the registry (a user-added ticker). */
+  add(instrument: Instrument): boolean {
+    if (this.bySymbol(instrument.symbol)) return false;
+    this.instruments.push({ ...instrument });
+    return true;
+  }
+
+  /** Drop an instrument entirely (used when removing a user-added ticker). */
+  removeInstrument(symbol: string): void {
+    const s = symbol.toUpperCase();
+    this.instruments = this.instruments.filter((i) => i.symbol !== s);
+    this.watched.delete(s);
+  }
+
+  /** Instruments the user added beyond the built-in registry. */
+  customInstruments(): { symbol: string; name: string }[] {
+    const seeded = new Set(SEED.map((i) => i.symbol));
+    return this.instruments
+      .filter((i) => !seeded.has(i.symbol))
+      .map((i) => ({ symbol: i.symbol, name: i.name }));
+  }
+
+  /** Whether a symbol is user-added (not part of the built-in registry). */
+  isCustom(symbol: string): boolean {
+    return !SEED.some((i) => i.symbol === symbol.toUpperCase());
+  }
+
   private changeFor(i: Instrument, day: "today" | "yesterday"): number {
     return day === "today" ? i.changePct : i.prevChangePct;
   }

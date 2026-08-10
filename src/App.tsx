@@ -6,7 +6,7 @@ import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
 import { useMarketFeed } from "./hooks/useMarketFeed";
 import { useVoice } from "./hooks/useVoice";
-import { loadWatchlist, saveWatchlist } from "./watchlist/storage";
+import { loadWatchlist, saveWatchlist, loadCustom, saveCustom } from "./watchlist/storage";
 import { hasToken } from "./feed/token";
 import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
@@ -32,6 +32,19 @@ export default function App() {
   const marketRef = useRef<Market | null>(null);
   if (marketRef.current === null) {
     const market = new Market();
+    // Re-add any tickers the user added beyond the built-in set, so the saved
+    // watchlist can reference them.
+    for (const c of loadCustom()) {
+      market.add({
+        symbol: c.symbol,
+        name: c.name,
+        kind: "equity",
+        basePrice: 0,
+        changePct: 0,
+        prevChangePct: 0,
+        cause: null,
+      });
+    }
     const saved = loadWatchlist();
     if (saved) market.setWatchlist(saved); // the persisted list wins over defaults
     marketRef.current = market;
@@ -68,9 +81,10 @@ export default function App() {
     return `m${idRef.current}`;
   }
 
-  // Persist the watchlist and re-render after any change (spoken or clicked).
+  // Persist the watchlist (and any user-added tickers) and re-render.
   function persist() {
     saveWatchlist(market.watchlistSymbols());
+    saveCustom(market.customInstruments());
     forceRender((n) => n + 1);
   }
 
@@ -99,24 +113,53 @@ export default function App() {
   }
   dispatchRef.current = handleSend;
 
-  // The watchlist editor resolves through the same brain, reporting in voice.
-  function handleAdd(text: string): string {
+  // Add a name to the watchlist. Known names resolve through the brain; an
+  // unknown ticker is looked up live from the feed (name + quote) and added.
+  async function handleAdd(text: string): Promise<string> {
     const res = market.resolve(text);
     if (res.status === "ambiguous") {
       const [a, b] = res.options;
       return `Which one — ${a.name}, or ${b.name}?`;
     }
-    if (res.status !== "ok") return "I don't have anything by that name.";
-    if (market.isWatched(res.instrument.symbol)) {
-      return `${res.instrument.name} is already on the list.`;
+    if (res.status === "ok") {
+      if (market.isWatched(res.instrument.symbol)) {
+        return `${res.instrument.name} is already on the list.`;
+      }
+      market.watch(res.instrument.symbol);
+      persist();
+      return "";
     }
-    market.watch(res.instrument.symbol);
-    persist();
-    return "";
+
+    // Not a known name — try to look it up as a live ticker.
+    const candidate = symbolCandidate(text);
+    const feed = feedRef.current;
+    if (candidate && feed.lookup) {
+      const found = await feed.lookup(candidate);
+      if (found) {
+        market.add({
+          symbol: found.symbol,
+          name: found.name,
+          kind: "equity",
+          basePrice: found.price,
+          changePct: found.changePct,
+          prevChangePct: 0,
+          cause: null,
+        });
+        market.watch(found.symbol);
+        persist();
+        return "";
+      }
+      return hasToken()
+        ? `I couldn't find a live quote for "${candidate}".`
+        : `Connect live data to add "${candidate}".`;
+    }
+    return "I don't have anything by that name.";
   }
 
   function handleRemove(symbol: string) {
     market.unwatch(symbol);
+    // A user-added ticker is dropped entirely so it isn't re-fetched.
+    if (market.isCustom(symbol)) market.removeInstrument(symbol);
     persist();
   }
 
@@ -201,4 +244,10 @@ export default function App() {
       ) : null}
     </div>
   );
+}
+
+/** A plausible ticker from typed text (e.g. "googl" → "GOOGL", "brk.b" → "BRK.B"). */
+function symbolCandidate(text: string): string | null {
+  const m = text.trim().toUpperCase().match(/^[A-Z][A-Z.]{0,5}$/);
+  return m ? m[0] : null;
 }

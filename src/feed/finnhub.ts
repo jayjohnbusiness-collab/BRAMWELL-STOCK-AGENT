@@ -1,4 +1,4 @@
-import type { Feed, FeedDiagnostics, Quote } from "./types";
+import type { Feed, FeedDiagnostics, LookupResult, Quote } from "./types";
 import { SEED } from "../agent/seed";
 
 /*
@@ -59,6 +59,35 @@ export class FinnhubFeed implements Feed {
       console.warn(`[Bramwell] live feed: 0/${failed} quotes — ${error ?? "unknown"}`);
     }
     return results.filter((q): q is Quote => q !== null);
+  }
+
+  /** Look up any ticker: confirm it has a live quote, then fetch its name. */
+  async lookup(symbol: string): Promise<LookupResult | null> {
+    const s = symbol.trim().toUpperCase();
+    try {
+      const res = await fetch(
+        `${BASE}/quote?symbol=${encodeURIComponent(s)}&token=${this.token}`,
+      );
+      if (!res.ok) return null;
+      const d = (await res.json()) as { c?: number; dp?: number };
+      if (typeof d.c !== "number" || d.c === 0) return null;
+
+      let name = s;
+      try {
+        const pr = await fetch(
+          `${BASE}/stock/profile2?symbol=${encodeURIComponent(s)}&token=${this.token}`,
+        );
+        if (pr.ok) {
+          const p = (await pr.json()) as { name?: string };
+          if (p?.name && p.name.trim()) name = p.name.trim();
+        }
+      } catch {
+        /* name is a nicety; the symbol will do */
+      }
+      return { symbol: s, name, price: d.c, changePct: typeof d.dp === "number" ? d.dp : 0 };
+    } catch {
+      return null;
+    }
   }
 
   private async one(symbol: string): Promise<{ quote: Quote | null; error?: string }> {
