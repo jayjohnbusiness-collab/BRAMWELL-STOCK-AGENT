@@ -1,9 +1,9 @@
 /* Layout — open, card-based, generous whitespace. */
 
 .app-shell {
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: var(--space-6) var(--space-5);
+  max-width: none;
+  margin: 0;
+  padding: var(--space-6) var(--space-7);
   height: 100vh;
   height: 100dvh;
   display: flex;
