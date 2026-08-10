@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import type { Instrument } from "../agent/types";
+import type { CardSize } from "../cards/types";
+import { rowLimit } from "../cards/types";
 import { PriceCell } from "./PriceCell";
 
 type Suggestion = { symbol: string; name: string };
 
 /*
- * The watchlist — the one piece of real user state. Editable here or by asking
- * Bramwell ("watch Tesla", "stop watching Apple"); both paths persist. Kept in
- * the brand's key: hairline rows, ink controls, no data color on furniture.
+ * The watchlist body — the one piece of real user state. Editable here or by
+ * asking Bramwell ("watch Tesla", "stop watching Apple"); both paths persist.
+ * Chromeless: the card frame supplies the title. Size caps how many rows show.
  */
 export function WatchlistManager({
   watched,
   onAdd,
   onRemove,
   onSuggest,
+  size = "lg",
 }: {
   watched: Instrument[];
   /** Returns a message to show (empty on success). May look a ticker up live. */
@@ -21,7 +24,11 @@ export function WatchlistManager({
   onRemove: (symbol: string) => void;
   /** Live typeahead: closest matching tickers for a partial query. */
   onSuggest?: (query: string) => Promise<Suggestion[]>;
+  size?: CardSize;
 }) {
+  const limit = rowLimit(size, { sm: 3, md: 6, lg: 99 });
+  const shown = watched.slice(0, limit);
+  const hidden = watched.length - shown.length;
   const [value, setValue] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -86,18 +93,14 @@ export function WatchlistManager({
   }
 
   return (
-    <section aria-label="Watchlist" className="card">
-      <h2 className="h2" style={{ marginBottom: "var(--space-3)" }}>
-        The names you follow
-      </h2>
-
+    <>
       {watched.length === 0 ? (
         <p className="small" style={{ color: "var(--ink-soft)", margin: "0 0 var(--space-3)" }}>
           Nothing on the watch yet. Add a name and I'll keep an eye on it.
         </p>
       ) : (
         <div style={{ marginBottom: "var(--space-4)" }}>
-          {watched.map((i) => (
+          {shown.map((i) => (
             <div
               key={i.symbol}
               style={{
@@ -132,6 +135,19 @@ export function WatchlistManager({
               <PriceCell instrument={i} />
             </div>
           ))}
+          {hidden > 0 ? (
+            <p
+              className="small"
+              style={{
+                color: "var(--ink-soft)",
+                margin: "var(--space-2) 0 0",
+                borderTop: "var(--hairline) solid var(--rule)",
+                paddingTop: "var(--space-3)",
+              }}
+            >
+              +{hidden} more — enlarge the card to see {hidden === 1 ? "it" : "them"}.
+            </p>
+          ) : null}
         </div>
       )}
 
@@ -183,7 +199,7 @@ export function WatchlistManager({
           {note}
         </p>
       ) : null}
-    </section>
+    </>
   );
 }
 

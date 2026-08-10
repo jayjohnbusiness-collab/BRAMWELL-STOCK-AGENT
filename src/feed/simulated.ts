@@ -1,4 +1,4 @@
-import type { Feed, LookupResult, Quote } from "./types";
+import type { Feed, LookupResult, MarketEvent, Quote } from "./types";
 import type { Instrument } from "../agent/types";
 import { SEED } from "../agent/seed";
 
@@ -46,6 +46,18 @@ export class SimulatedFeed implements Feed {
     return scored;
   }
 
+  async events(symbols: string[]): Promise<MarketEvent[]> {
+    // A couple of deterministic upcoming dates so the Events card has something
+    // to show without a live calendar. Spread a few days out from today.
+    const want = symbols.slice(0, 3);
+    return want.map((symbol, i) => ({
+      symbol,
+      date: isoDay(Date.now() + (i * 6 + 3) * 24 * 60 * 60 * 1000),
+      kind: "earnings" as const,
+      when: i % 2 === 0 ? ("amc" as const) : ("bmo" as const),
+    }));
+  }
+
   async quotes(symbols: string[]): Promise<Quote[]> {
     this.step += 1;
     const want = new Set(symbols);
@@ -81,6 +93,14 @@ function rankMatch(symbol: string, name: string, q: string): number {
   if (nm.split(/\s+/).some((w) => w.startsWith(q))) return 3;
   if (nm.includes(q)) return 4;
   return Infinity;
+}
+
+/** YYYY-MM-DD in local time. */
+function isoDay(ms: number): string {
+  const d = new Date(ms);
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
 /**

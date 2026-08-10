@@ -40,6 +40,16 @@ export interface LookupResult {
   changePct: number;
 }
 
+/** An upcoming dated event for a symbol (earnings today; more feeds later). */
+export interface MarketEvent {
+  symbol: string;
+  /** YYYY-MM-DD. */
+  date: string;
+  kind: "earnings";
+  /** Before-market / after-market / during, when the feed says. */
+  when?: "bmo" | "amc" | "dmh" | null;
+}
+
 export interface Feed {
   /** For diagnostics and the "which feed am I on" surface. */
   readonly name: string;
@@ -63,4 +73,9 @@ export interface Feed {
    * Typeahead: the closest matching tickers for a partial query, best first.
    */
   suggest?(query: string): Promise<{ symbol: string; name: string }[]>;
+  /**
+   * Upcoming dated events (earnings) for the given symbols, when the feed can
+   * supply them. Empty array when it can't.
+   */
+  events?(symbols: string[]): Promise<MarketEvent[]>;
 }

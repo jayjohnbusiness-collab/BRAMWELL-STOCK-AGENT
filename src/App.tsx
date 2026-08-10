@@ -12,8 +12,7 @@ import { hasToken } from "./feed/token";
 import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
-import { ScreenPanel } from "./components/ScreenPanel";
-import { WatchlistManager } from "./components/WatchlistManager";
+import { CardBoard } from "./components/CardBoard";
 import { VoiceOverlay } from "./components/VoiceOverlay";
 import { LiveDataControl } from "./components/LiveDataControl";
 import "./styles/global.css";
@@ -287,16 +286,18 @@ export default function App() {
         </section>
 
         <div className="screen-pane">
-          <ScreenPanel
-            payload={screen}
-            alert={alert}
-            onAck={alert ? () => ack(alert.id) : undefined}
-          />
-          <WatchlistManager
-            watched={market.held()}
-            onAdd={handleAdd}
-            onRemove={handleRemove}
-            onSuggest={handleSuggest}
+          <CardBoard
+            ctx={{
+              market,
+              screen,
+              alert,
+              onAck: ack,
+              watchAdd: handleAdd,
+              watchRemove: handleRemove,
+              watchSuggest: handleSuggest,
+              earnings: (symbols) => feedRef.current.events?.(symbols) ?? Promise.resolve([]),
+              version: feedStatus?.at ?? 0,
+            }}
           />
         </div>
       </div>

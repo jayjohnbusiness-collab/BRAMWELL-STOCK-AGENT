@@ -1,4 +1,4 @@
-import type { Feed, FeedDiagnostics, LookupResult, Quote } from "./types";
+import type { Feed, FeedDiagnostics, LookupResult, MarketEvent, Quote } from "./types";
 import { SEED } from "../agent/seed";
 
 /*
@@ -151,6 +151,38 @@ export class FinnhubFeed implements Feed {
     }
   }
 
+  /** Upcoming earnings dates for the given symbols (next ~6 weeks). */
+  async events(symbols: string[]): Promise<MarketEvent[]> {
+    const now = Date.now();
+    const from = isoDay(now);
+    const to = isoDay(now + 45 * 24 * 60 * 60 * 1000);
+    const out: MarketEvent[] = [];
+    await Promise.all(
+      symbols.map(async (symbol) => {
+        try {
+          const res = await fetch(
+            `${BASE}/calendar/earnings?from=${from}&to=${to}&symbol=${encodeURIComponent(
+              symbol,
+            )}&token=${this.token}`,
+          );
+          if (!res.ok) return;
+          const d = (await res.json()) as {
+            earningsCalendar?: Array<{ symbol?: string; date?: string; hour?: string }>;
+          };
+          for (const e of d?.earningsCalendar ?? []) {
+            if (!e.date) continue;
+            const when =
+              e.hour === "bmo" || e.hour === "amc" || e.hour === "dmh" ? e.hour : null;
+            out.push({ symbol: (e.symbol ?? symbol).toUpperCase(), date: e.date, kind: "earnings", when });
+          }
+        } catch {
+          /* one symbol failing shouldn't sink the card */
+        }
+      }),
+    );
+    return out;
+  }
+
   private async one(symbol: string): Promise<{ quote: Quote | null; error?: string }> {
     try {
       const url = `${BASE}/quote?symbol=${encodeURIComponent(symbol)}&token=${this.token}`;
@@ -186,4 +218,12 @@ function httpReason(status: number): string {
 
 function isIndex(symbol: string): boolean {
   return SEED.some((i) => i.symbol === symbol && i.kind === "index");
+}
+
+/** YYYY-MM-DD in local time, which the earnings calendar range expects. */
+function isoDay(ms: number): string {
+  const d = new Date(ms);
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
 }
