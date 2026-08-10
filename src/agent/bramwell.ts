@@ -76,23 +76,29 @@ export class Bramwell {
   private handleQuery(intent: Intent): Reply {
     const subject = this.session.subject;
 
+    // Does the utterance itself name a specific instrument ("How's Tesla…")? If
+    // so it's a fresh single-name quote and must win over any held list subject
+    // — a stray "today" mustn't turn it into a movers follow-up.
+    const namesInstrument = this.market.resolve(intent.text).status === "ok";
+
     // A pure day-shift on a prior single-name answer: "and yesterday".
     if (
       subject?.symbol &&
       intent.day &&
       !intent.metric &&
       !intent.universe &&
-      this.market.resolve(intent.text).status !== "ok"
+      !namesInstrument
     ) {
       return this.quoteReply(subject.symbol, intent.day);
     }
 
     // Is this a list query? Either it carries a metric/universe of its own, or
-    // it's a bare follow-up ("and yesterday") against a list subject.
+    // it's a bare follow-up ("and yesterday") against a list subject — but not
+    // when the utterance plainly names an instrument.
     const hasListSignal =
       intent.metric !== undefined ||
       intent.universe !== undefined ||
-      (intent.explicit && subject?.metric !== undefined);
+      (intent.explicit && subject?.metric !== undefined && !namesInstrument);
 
     if (hasListSignal) {
       const universe = intent.universe ?? subject?.universe ?? "nasdaq";

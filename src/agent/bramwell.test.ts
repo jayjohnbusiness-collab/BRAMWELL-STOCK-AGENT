@@ -79,6 +79,17 @@ describe("day-shift follow-up (§6)", () => {
     expect(y.spoken).toContain("yesterday");
     expect(y.spoken).toContain("one percent");
   });
+
+  it("a named instrument with a day word quotes the name, not the held list", () => {
+    const b = mk();
+    // A prior movers question leaves a list subject (metric = gainers).
+    b.respond("What's moving on the Nasdaq today?");
+    // Naming an instrument must win over that subject, despite the "today".
+    const r = b.respond("How's Sunrise Micro's performance today?");
+    expect(r.screen?.kind).toBe("quote");
+    expect(r.spoken).toContain("Sunrise Micro");
+    expect(r.spoken).not.toMatch(/carrying it/i); // not a movers list
+  });
 });
 
 describe("uncertainty is stated, never invented (§7)", () => {
