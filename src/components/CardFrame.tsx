@@ -27,7 +27,7 @@ export function CardFrame({
   removable?: boolean;
   dragging?: boolean;
   onGrab: () => void;
-  onOver: () => void;
+  onOver: (clientX: number, clientY: number) => void;
   onDropCard: () => void;
   onDragEnd: () => void;
   /** Lets the board track this card's element for reorder (FLIP) animation. */
@@ -47,7 +47,7 @@ export function CardFrame({
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
-        onOver();
+        onOver(e.clientX, e.clientY);
       }}
       onDrop={(e) => {
         e.preventDefault();

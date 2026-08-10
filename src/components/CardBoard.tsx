@@ -86,19 +86,34 @@ export function CardBoard({ ctx }: { ctx: CardContext }) {
     setPicking(false);
   }
 
-  // Live reorder while dragging: as the cursor crosses another card, move the
-  // dragged card into that slot so the board opens the gap where it will land.
-  // This animates via FLIP and isn't persisted until the drop (endDrag).
-  function previewMove(targetId: string) {
+  // Live reorder while dragging. To avoid rapid oscillation when the cursor
+  // sits on the border between two cards, the dragged card only moves past a
+  // target once the pointer crosses that target's midpoint — hysteresis half a
+  // card wide, so it settles instead of flickering. Persisted on drop.
+  function previewMove(targetId: string, clientX: number, clientY: number) {
     if (!dragId || dragId === targetId) return;
-    const from = cards.findIndex((c) => c.id === dragId);
-    const to = cards.findIndex((c) => c.id === targetId);
-    if (from < 0 || to < 0 || from === to) return;
-    const next = [...cards];
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
+    const targetEl = elRefs.current.get(targetId);
+    if (!targetEl) return;
+    const rect = targetEl.getBoundingClientRect();
+
+    // Insert after the target if the pointer is below its vertical midpoint;
+    // for two cards on the same row, fall back to the horizontal midpoint.
+    const midY = rect.top + rect.height / 2;
+    const midX = rect.left + rect.width / 2;
+    const band = 6;
+    const after =
+      clientY > midY + band ? true : clientY < midY - band ? false : clientX > midX;
+
+    const without = cards.filter((c) => c.id !== dragId);
+    const targetPos = without.findIndex((c) => c.id === targetId);
+    const insertAt = after ? targetPos + 1 : targetPos;
+    const moved = cards.find((c) => c.id === dragId)!;
+    without.splice(insertAt, 0, moved);
+
+    // Only re-render (and animate) if the order actually changed.
+    if (sameOrder(without, cards)) return;
     captureFirst();
-    setCards(next); // persisted on drop, not on every hover
+    setCards(without);
   }
   function endDrag() {
     saveCards(cards); // the live order is now final
@@ -124,7 +139,7 @@ export function CardBoard({ ctx }: { ctx: CardContext }) {
               else elRefs.current.delete(c.id);
             }}
             onGrab={() => setDragId(c.id)}
-            onOver={() => previewMove(c.id)}
+            onOver={(x, y) => previewMove(c.id, x, y)}
             onDropCard={endDrag}
             onDragEnd={endDrag}
           >
@@ -159,6 +174,11 @@ export function CardBoard({ ctx }: { ctx: CardContext }) {
       </div>
     </div>
   );
+}
+
+function sameOrder(a: CardConfig[], b: CardConfig[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((c, i) => c.id === b[i].id);
 }
 
 function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
