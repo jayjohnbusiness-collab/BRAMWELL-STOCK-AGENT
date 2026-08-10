@@ -1,20 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Recognizer } from "../speech/recognition";
 import { Voice } from "../speech/synthesis";
-import { AudioMeter } from "../speech/meter";
 
 /*
- * Wires speech recognition, synthesis, and mic metering to the app.
+ * Wires speech recognition and synthesis to the app.
  *
- *   - toggle() enters/leaves voice mode. In voice mode Bramwell listens for the
- *     wake word and, once addressed, for follow-ups; the mic meter drives the
- *     surface's orb.
+ *   - toggle() enters/leaves voice mode. In voice mode every utterance is a
+ *     command (the user has already addressed Bramwell by entering it), and a
+ *     leading "Hey Bramwell" is simply stripped.
  *   - speak() reads a reply aloud, but only while in voice mode.
  *   - Barge-in: the moment the user starts speaking, Bramwell stops mid-word.
- *   - interim is the live (not-yet-final) transcript, for the surface.
+ *   - interim is the live (not-yet-final) transcript; error surfaces a real
+ *     recognition problem (blocked mic, unreachable service) instead of silence.
  *
- * Recognition may be unavailable (e.g. Firefox); `available` reflects that and
- * the typed composer always remains the fallback.
+ * Only one consumer of the microphone runs (the recognizer). A second capture
+ * for amplitude metering is deliberately avoided — on some browsers it starves
+ * SpeechRecognition of audio, which reads as "Bramwell doesn't respond."
  */
 export function useVoice(onCommand: (text: string) => void) {
   const [available] = useState(() => Recognizer.supported());
@@ -22,11 +23,10 @@ export function useVoice(onCommand: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [interim, setInterim] = useState("");
-  const [meter, setMeter] = useState<AudioMeter | null>(null);
+  const [error, setError] = useState("");
 
   const recRef = useRef<Recognizer | null>(null);
   const voiceRef = useRef<Voice | null>(null);
-  const meterRef = useRef<AudioMeter | null>(null);
   const enabledRef = useRef(false);
   const commandRef = useRef(onCommand);
   commandRef.current = onCommand;
@@ -36,28 +36,29 @@ export function useVoice(onCommand: (text: string) => void) {
     return () => {
       recRef.current?.stop();
       voiceRef.current?.cancel();
-      meterRef.current?.stop();
     };
   }, []);
 
   function ensureRecognizer(): Recognizer {
     if (recRef.current) return recRef.current;
-    recRef.current = new Recognizer({
-      onCommand: (text) => {
-        voiceRef.current?.cancel(); // stop any current line before answering
-        setInterim("");
-        commandRef.current(text);
+    recRef.current = new Recognizer(
+      {
+        onCommand: (text) => {
+          setError("");
+          setInterim("");
+          voiceRef.current?.cancel(); // stop any current line before answering
+          commandRef.current(text);
+        },
+        onInterim: setInterim,
+        onListeningChange: setListening,
+        onSpeechStart: () => voiceRef.current?.cancel(), // barge-in, mid-word
+        onError: (e) => {
+          const message = friendlyError(e);
+          if (message) setError(message);
+        },
       },
-      onInterim: setInterim,
-      onListeningChange: (l) => {
-        setListening(l);
-        if (!l) setInterim("");
-      },
-      onSpeechStart: () => voiceRef.current?.cancel(), // barge-in, mid-word
-      onError: () => {
-        /* transient; the recognizer keeps itself alive */
-      },
-    });
+      { requireWake: false },
+    );
     return recRef.current;
   }
 
@@ -66,19 +67,14 @@ export function useVoice(onCommand: (text: string) => void) {
     if (enabledRef.current) {
       recRef.current?.stop();
       voiceRef.current?.cancel();
-      meterRef.current?.stop();
-      meterRef.current = null;
-      setMeter(null);
       setInterim("");
+      setError("");
       enabledRef.current = false;
       setEnabled(false);
       setListening(false);
     } else {
+      setError("");
       ensureRecognizer().start();
-      const m = new AudioMeter();
-      meterRef.current = m;
-      setMeter(m);
-      void m.start(); // best-effort; the surface tolerates a flat level
       enabledRef.current = true;
       setEnabled(true);
     }
@@ -99,9 +95,28 @@ export function useVoice(onCommand: (text: string) => void) {
     listening,
     speaking,
     interim,
-    meter,
+    error,
     toggle,
     speak,
     cancel,
   };
+}
+
+/** Turn a SpeechRecognition error code into something the user can act on. */
+function friendlyError(code: string): string | null {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Microphone access is blocked. Allow it via the icon in the address bar, then toggle voice again.";
+    case "audio-capture":
+      return "No microphone was found.";
+    case "network":
+      return "The speech service is unreachable right now — check your connection.";
+    case "language-not-supported":
+      return "This browser's speech recognition doesn't support the language.";
+    case "unsupported":
+      return "This browser doesn't support speech recognition — try Chrome or Edge.";
+    default:
+      return null; // transient (no-speech, aborted) — not worth surfacing
+  }
 }

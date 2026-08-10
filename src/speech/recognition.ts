@@ -35,8 +35,17 @@ export class Recognizer {
   private primed = false;
   private idle: number | undefined;
   private readonly followupMs = 12_000;
+  private readonly requireWake: boolean;
 
-  constructor(private readonly h: RecognizerHandlers) {}
+  constructor(
+    private readonly h: RecognizerHandlers,
+    opts: { requireWake?: boolean } = {},
+  ) {
+    // In the always-listening ambient case the wake word gates commands. In
+    // explicit voice mode the user has already addressed Bramwell by entering
+    // it, so every utterance is a command (a leading wake word is just stripped).
+    this.requireWake = opts.requireWake ?? true;
+  }
 
   start(): void {
     if (this.running) return;
@@ -80,6 +89,8 @@ export class Recognizer {
     };
     this.rec = rec;
     this.running = true;
+    // Voice mode is active the moment the mic is on — reflect it immediately.
+    if (!this.requireWake) this.h.onListeningChange?.(true);
     try {
       rec.start();
     } catch {
@@ -100,6 +111,14 @@ export class Recognizer {
 
   private handle(transcript: string): void {
     const { woke, command } = detectWake(transcript);
+
+    if (!this.requireWake) {
+      // Every utterance is a command; strip a leading wake word if present.
+      const text = woke ? command : transcript;
+      if (text.trim()) this.h.onCommand(text);
+      return;
+    }
+
     if (woke) {
       if (command) this.deliver(command);
       else this.open(); // silent acknowledgement; await the command

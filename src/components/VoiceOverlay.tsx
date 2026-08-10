@@ -1,57 +1,61 @@
 import { useEffect, useRef } from "react";
 import { Bell } from "../brand/Bell";
-import type { AudioMeter } from "../speech/meter";
-import { voicePhase } from "../speech/voicePhase";
 import "../styles/voice.css";
 
 /*
  * The dark, voice-activated surface. Immersive, but still Bramwell: the same
- * ink/brass/parchment, inverted onto a dark ground. The orb breathes with the
- * mic amplitude (driven by a ref, not React state, so it animates at frame rate
- * without re-rendering), and reduced motion holds it still.
+ * ink/brass/parchment, inverted onto a dark ground.
+ *
+ * The orb breathes on its own (a synthetic wave, so no second microphone
+ * capture competes with speech recognition) and swells while the user talks or
+ * Bramwell speaks. The focal text always shows the latest state — the live
+ * transcript, then Bramwell's answer — so a reply is visible even if the
+ * browser's text-to-speech stays silent. Reduced motion holds the orb still.
  */
 export function VoiceOverlay({
-  meter,
   interim,
+  error,
   working,
-  listening,
   speaking,
   lastReply,
   onExit,
 }: {
-  meter: AudioMeter | null;
   interim: string;
+  error: string;
   working: boolean;
-  listening: boolean;
   speaking: boolean;
   lastReply?: string;
   onExit: () => void;
 }) {
   const orbRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
-  const phase = voicePhase({ speaking, working, listening });
+  const activeRef = useRef(false);
+  activeRef.current = speaking || interim.trim().length > 0;
 
-  // Drive the orb from the mic meter at frame rate, via a CSS variable.
   useEffect(() => {
     const orb = orbRef.current;
     if (!orb) return;
     const reduced = window.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    if (reduced || !meter) {
-      orb.style.setProperty("--level", reduced ? "0.2" : "0");
-      if (reduced) return;
+    if (reduced) {
+      orb.style.setProperty("--level", "0.2");
+      return;
     }
     let raf = 0;
-    const loop = () => {
-      orb.style.setProperty("--level", String(meter?.level() ?? 0));
+    let t0 = 0;
+    const loop = (ts: number) => {
+      if (!t0) t0 = ts;
+      const t = (ts - t0) / 1000;
+      const idle = 0.12 + 0.05 * Math.sin(t * 2.0);
+      const boost = activeRef.current ? 0.28 + 0.16 * Math.abs(Math.sin(t * 9)) : 0;
+      orb.style.setProperty("--level", String(Math.min(1, idle + boost)));
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [meter]);
+  }, []);
 
-  // Escape leaves voice mode; focus the exit control on entry.
   useEffect(() => {
     exitRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
@@ -60,6 +64,16 @@ export function VoiceOverlay({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onExit]);
+
+  const label = error
+    ? ""
+    : working
+      ? ""
+      : interim.trim()
+        ? "Listening"
+        : lastReply
+          ? "Bramwell"
+          : "Listening";
 
   return (
     <div className="voice-overlay" role="dialog" aria-modal="true" aria-label="Voice mode">
@@ -77,42 +91,28 @@ export function VoiceOverlay({
       </div>
 
       <div className="voice-label" aria-live="polite">
-        {label(phase)}
+        {label}
       </div>
 
-      {/* The focal text: the answer while speaking, the live transcript while
-          listening, a quiet working state in between. */}
-      {phase === "speaking" ? (
-        <p className="voice-answer">{lastReply}</p>
-      ) : phase === "working" ? (
+      {error ? (
+        <p className="voice-error">{error}</p>
+      ) : working ? (
         <div className="voice-working" aria-label="Working">
           <span />
           <span />
           <span />
         </div>
-      ) : phase === "listening" ? (
+      ) : interim.trim() ? (
         <p className="voice-transcript" aria-live="polite">
-          {interim || "…"}
+          {interim}
         </p>
+      ) : lastReply ? (
+        <p className="voice-answer">{lastReply}</p>
       ) : (
-        <>
-          <p className="voice-transcript">Say “Hey Bramwell.”</p>
-          {lastReply ? <p className="voice-context">{lastReply}</p> : null}
-        </>
+        <p className="voice-transcript">Ask me anything — say a name, or “what's moving today?”</p>
       )}
+
+      <p className="voice-hint">Speak naturally. Chrome or Edge work best. Press Done to leave.</p>
     </div>
   );
-}
-
-function label(phase: ReturnType<typeof voicePhase>): string {
-  switch (phase) {
-    case "speaking":
-      return "Bramwell";
-    case "working":
-      return "";
-    case "listening":
-      return "Listening";
-    default:
-      return "Standing by";
-  }
 }

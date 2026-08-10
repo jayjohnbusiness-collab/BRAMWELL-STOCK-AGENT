@@ -160,10 +160,9 @@ export default function App() {
 
       {voice.enabled ? (
         <VoiceOverlay
-          meter={voice.meter}
           interim={voice.interim}
+          error={voice.error}
           working={working}
-          listening={voice.listening}
           speaking={voice.speaking}
           lastReply={lastReply}
           onExit={voice.toggle}
