@@ -12,6 +12,7 @@ import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
 import { ScreenPanel } from "./components/ScreenPanel";
 import { WatchlistManager } from "./components/WatchlistManager";
+import { VoiceOverlay } from "./components/VoiceOverlay";
 import "./styles/global.css";
 import "./styles/app.css";
 
@@ -113,6 +114,8 @@ export default function App() {
     persist();
   }
 
+  const lastReply = [...messages].reverse().find((m) => m.from === "bramwell")?.text;
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -154,6 +157,18 @@ export default function App() {
           />
         </div>
       </div>
+
+      {voice.enabled ? (
+        <VoiceOverlay
+          meter={voice.meter}
+          interim={voice.interim}
+          working={working}
+          listening={voice.listening}
+          speaking={voice.speaking}
+          lastReply={lastReply}
+          onExit={voice.toggle}
+        />
+      ) : null}
     </div>
   );
 }

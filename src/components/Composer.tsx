@@ -54,13 +54,13 @@ export function Composer({
           type="button"
           className={`mic${voice.enabled ? " on" : ""}${voice.listening ? " listening" : ""}`}
           aria-pressed={voice.enabled}
-          aria-label={voice.enabled ? "Turn voice off" : "Turn voice on"}
+          aria-label={voice.enabled ? "Leave voice mode" : "Enter voice mode"}
           disabled={!voice.available}
           title={
             voice.available
               ? voice.enabled
-                ? "Turn voice off"
-                : "Turn voice on"
+                ? "Leave voice mode"
+                : "Enter voice mode"
               : "Voice isn't supported in this browser"
           }
           onClick={voice.onToggle}
@@ -97,10 +97,8 @@ export function Composer({
 
 function voiceStatus(v: VoiceState): string {
   if (!v.available) return "Voice isn't supported here — type instead.";
-  if (!v.enabled) return "Voice off.";
-  if (v.speaking) return "Bramwell is speaking.";
-  if (v.listening) return "Listening.";
-  return "Say “Hey Bramwell.”";
+  if (!v.enabled) return "Enter voice mode.";
+  return "In voice mode.";
 }
 
 function MicGlyph() {

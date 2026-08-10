@@ -67,15 +67,22 @@ that panel is quiet, and that is Bramwell working correctly.
 
 ### Voice
 
-Toggle the mic (top-left of the composer) and Bramwell listens for the wake
-word **"Hey Bramwell"** — or a bare "Bramwell"; "Bram" alone is rejected.
-Acknowledgement is silent: no chime, just the mic ring turning brass. After an
-exchange a short follow-up window stays open, so "and yesterday?" works without
-saying his name again. Replies are read aloud (unhurried, low), and **barge-in**
-stops him mid-word the instant you speak. Recognition uses the browser Web
-Speech API; where it isn't available the mic disables itself and the typed
-composer carries on. The watchlist is editable by voice too — "watch Tesla",
-"stop watching Apple."
+Toggle the mic (top-left of the composer) to enter **voice mode**. Bramwell
+listens for the wake word **"Hey Bramwell"** — or a bare "Bramwell"; "Bram"
+alone is rejected. Acknowledgement is silent: no chime. After an exchange a
+short follow-up window stays open, so "and yesterday?" works without saying his
+name again. Replies are read aloud (unhurried, low), and **barge-in** stops him
+mid-word the instant you speak. Recognition uses the browser Web Speech API;
+where it isn't available the mic disables itself and the typed composer carries
+on. The watchlist is editable by voice too — "watch Tesla", "stop watching
+Apple."
+
+Voice mode is a full-screen **dark surface** — a deliberate, scoped departure
+from the parchment app. It stays Bramwell: the same ink, brass, and parchment,
+inverted onto a dark ground, with a brass orb (the call bell) that breathes with
+your voice via a real mic meter (`src/speech/meter.ts`, Web Audio) and the live
+transcript and spoken answer set large. No neon; reduced motion holds the orb
+still. The main app never goes dark.
 
 ## Architecture
 

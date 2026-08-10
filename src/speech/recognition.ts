@@ -15,6 +15,8 @@ import { detectWake } from "./wakeword";
 export interface RecognizerHandlers {
   onCommand: (text: string) => void;
   onListeningChange?: (listening: boolean) => void;
+  /** Live, not-yet-final transcript — for the voice surface to show. */
+  onInterim?: (text: string) => void;
   /** Fires the instant the user starts speaking — used to stop Bramwell. */
   onSpeechStart?: () => void;
   onError?: (error: string) => void;
@@ -48,13 +50,16 @@ export class Recognizer {
     }
     const rec = new Ctor();
     rec.continuous = true;
-    rec.interimResults = false;
+    rec.interimResults = true; // needed for the live transcript on the surface
     rec.lang = "en-US";
     rec.onspeechstart = () => this.h.onSpeechStart?.();
     rec.onresult = (ev: any) => {
       const result = ev.results?.[ev.results.length - 1];
-      if (!result?.isFinal) return;
-      const transcript: string = result[0]?.transcript ?? "";
+      const transcript: string = result?.[0]?.transcript ?? "";
+      if (!result?.isFinal) {
+        if (transcript.trim()) this.h.onInterim?.(transcript);
+        return;
+      }
       if (transcript.trim()) this.handle(transcript);
     };
     rec.onerror = (ev: any) => {
