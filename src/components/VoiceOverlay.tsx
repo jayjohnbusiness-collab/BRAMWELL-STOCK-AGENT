@@ -82,7 +82,7 @@ export function VoiceOverlay({
         ) : lastReply ? (
           <p className="voice-answer">{lastReply}</p>
         ) : (
-          <p className="voice-transcript">Ask me anything — say a name, or “what's moving today?”</p>
+          <p className="voice-transcript">Say “Hey Bramwell,” then your question.</p>
         )}
       </div>
     </div>

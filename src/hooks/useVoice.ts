@@ -5,9 +5,10 @@ import { Voice } from "../speech/synthesis";
 /*
  * Wires speech recognition and synthesis to the app.
  *
- *   - toggle() enters/leaves voice mode. In voice mode every utterance is a
- *     command (the user has already addressed Bramwell by entering it), and a
- *     leading "Hey Bramwell" is simply stripped.
+ *   - toggle() enters/leaves voice mode. In voice mode Bramwell only acts when
+ *     addressed: an utterance must open with "Hey Bramwell". After a reply a
+ *     short follow-up window stays open so "and yesterday?" works without
+ *     repeating his name.
  *   - speak() reads a reply aloud, but only while in voice mode.
  *   - Barge-in: the moment the user starts speaking, Bramwell stops mid-word.
  *   - interim is the live (not-yet-final) transcript; error surfaces a real
@@ -57,7 +58,10 @@ export function useVoice(onCommand: (text: string) => void) {
           if (message) setError(message);
         },
       },
-      { requireWake: false },
+      // Bramwell only acts when addressed: an utterance must open with
+      // "Hey Bramwell" (a short follow-up window then stays open for "and
+      // yesterday?" without repeating his name).
+      { requireWake: true },
     );
     return recRef.current;
   }
