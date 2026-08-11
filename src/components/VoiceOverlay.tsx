@@ -54,33 +54,37 @@ export function VoiceOverlay({
         Done
       </button>
 
-      <VoiceOrb
-        speaking={speaking}
-        working={working}
-        listening={interim.trim().length > 0}
-      />
-
-      <div className="voice-label" aria-live="polite">
-        {label}
+      <div className="voice-orb-wrap">
+        <VoiceOrb
+          speaking={speaking}
+          working={working}
+          listening={interim.trim().length > 0}
+        />
       </div>
 
-      {error ? (
-        <p className="voice-error">{error}</p>
-      ) : working ? (
-        <div className="voice-working" aria-label="Working">
-          <span />
-          <span />
-          <span />
+      <div className="voice-readout">
+        <div className="voice-label" aria-live="polite">
+          {label}
         </div>
-      ) : interim.trim() ? (
-        <p className="voice-transcript" aria-live="polite">
-          {interim}
-        </p>
-      ) : lastReply ? (
-        <p className="voice-answer">{lastReply}</p>
-      ) : (
-        <p className="voice-transcript">Ask me anything — say a name, or “what's moving today?”</p>
-      )}
+
+        {error ? (
+          <p className="voice-error">{error}</p>
+        ) : working ? (
+          <div className="voice-working" aria-label="Working">
+            <span />
+            <span />
+            <span />
+          </div>
+        ) : interim.trim() ? (
+          <p className="voice-transcript" aria-live="polite">
+            {interim}
+          </p>
+        ) : lastReply ? (
+          <p className="voice-answer">{lastReply}</p>
+        ) : (
+          <p className="voice-transcript">Ask me anything — say a name, or “what's moving today?”</p>
+        )}
+      </div>
 
       <p className="voice-hint">Speak naturally. Chrome or Edge work best. Press Done to leave.</p>
     </div>

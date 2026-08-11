@@ -10,12 +10,6 @@
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-6);
-  padding: var(--space-7) var(--space-5);
   text-align: center;
   /* Always a dark surface, so text is a fixed parchment — never the theme's
      --paper (which is dark in dark mode and would vanish here). */
@@ -23,6 +17,43 @@
   background:
     radial-gradient(circle at 50% 40%, #1c2836 0%, #16202e 46%, #0c121b 100%);
   animation: voice-fade-in 320ms ease;
+}
+
+/* The orb is pinned to the middle and never moves as the text changes. */
+.voice-orb-wrap {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+}
+
+/* The readout lives in a fixed zone below the orb, scrolling within itself so a
+   long answer wraps and scrolls rather than clipping or shoving the orb. */
+.voice-readout {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 63%;
+  bottom: 72px;
+  width: min(92vw, 680px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--space-3);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(238, 242, 247, 0.25) transparent;
+}
+.voice-readout::-webkit-scrollbar {
+  width: 8px;
+}
+.voice-readout::-webkit-scrollbar-thumb {
+  background: rgba(238, 242, 247, 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 @keyframes voice-fade-in {
   from {
@@ -33,10 +64,11 @@
   }
 }
 
-/* The orb is a single canvas; it sizes itself and honours reduced motion. */
+/* The orb is a single canvas; it sizes itself and honours reduced motion.
+   Also capped by height so it doesn't crowd the readout on short screens. */
 .voice-orb-canvas {
-  width: min(360px, 82vw);
-  height: min(360px, 82vw);
+  width: min(340px, 80vw, 46vh);
+  height: min(340px, 80vw, 46vh);
   display: block;
 }
 
@@ -53,22 +85,24 @@
 .voice-answer {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(24px, 3.4vw, 40px);
-  line-height: 1.25;
+  font-size: clamp(19px, 2.3vw, 28px);
+  line-height: 1.35;
   letter-spacing: -0.01em;
   color: #f4f7fb;
-  max-width: 22ch;
+  max-width: 34ch;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .voice-transcript {
   font-family: var(--font-body);
-  font-size: clamp(17px, 2.2vw, 24px);
+  font-size: clamp(16px, 2vw, 22px);
   line-height: 1.5;
   color: rgba(247, 244, 236, 0.72);
-  max-width: 32ch;
+  max-width: 36ch;
   min-height: 1.5em;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .voice-context {
