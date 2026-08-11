@@ -68,7 +68,9 @@ export function VoiceOrb({
     if (!canvas || !ctx) return;
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-    const CSS = 300;
+    // The canvas is comfortably larger than the orb so the glow and the
+    // particle field fade out well before the edge — no square clipping.
+    const CSS = 360;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = CSS * dpr;
     canvas.height = CSS * dpr;
@@ -76,13 +78,13 @@ export function VoiceOrb({
 
     const cx = CSS / 2;
     const cy = CSS / 2;
-    const R = 74; // core radius
+    const R = 82; // core radius (leaves margin inside the 360px box)
     const c = accentRGB();
     const rgb = (a: number) => `rgba(${c.r},${c.g},${c.b},${a})`;
 
-    // The orbiting particle field.
-    const parts = Array.from({ length: 140 }, () => ({
-      orbit: R * 1.15 + Math.random() * R * 1.5,
+    // The orbiting particle field — dense, kept within the canvas.
+    const parts = Array.from({ length: 260 }, () => ({
+      orbit: R * 1.0 + Math.random() * R * 0.95,
       angle: Math.random() * Math.PI * 2,
       speed: (Math.random() * 0.4 + 0.1) * (Math.random() < 0.5 ? 1 : -1) * 0.01,
       amp: Math.random() * 6 + 2,
@@ -113,7 +115,7 @@ export function VoiceOrb({
 
       // Atmospheric glow (additive).
       ctx.globalCompositeOperation = "lighter";
-      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * (1.7 + lv * 0.9));
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * (1.45 + lv * 0.5));
       glow.addColorStop(0, rgb(0.3 + lv * 0.25));
       glow.addColorStop(0.5, rgb(0.09 + lv * 0.1));
       glow.addColorStop(1, rgb(0));
