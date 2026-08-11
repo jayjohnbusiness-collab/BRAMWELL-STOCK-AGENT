@@ -31,54 +31,11 @@
   }
 }
 
-.voice-orb {
-  --level: 0;
-  position: relative;
-  width: 240px;
-  height: 240px;
-  display: grid;
-  place-items: center;
-}
-
-/* Fixed hairline ring — the steady frame. */
-.voice-orb .ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px solid var(--brass);
-  opacity: 0.35;
-}
-
-/* Amplitude halo — expands and brightens with the voice. */
-.voice-orb .halo {
-  position: absolute;
-  inset: -14px;
-  border-radius: 50%;
-  border: 1px solid var(--brass);
-  opacity: calc(0.12 + var(--level) * 0.5);
-  transform: scale(calc(1 + var(--level) * 0.16));
-  transition: transform 110ms linear, opacity 110ms linear;
-}
-
-/* Soft brass core — the glow at the centre. */
-.voice-orb .core {
-  position: absolute;
-  width: 62%;
-  height: 62%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(168, 133, 62, 0.6) 0%,
-    rgba(168, 133, 62, 0) 70%
-  );
-  transform: scale(calc(0.82 + var(--level) * 0.7));
-  opacity: calc(0.4 + var(--level) * 0.5);
-  transition: transform 90ms linear, opacity 90ms linear;
-}
-
-.voice-orb .bell {
-  position: relative;
-  z-index: 1;
+/* The orb is a single canvas; it sizes itself and honours reduced motion. */
+.voice-orb-canvas {
+  width: min(300px, 72vw);
+  height: min(300px, 72vw);
+  display: block;
 }
 
 .voice-label {
@@ -190,9 +147,5 @@
 @media (prefers-reduced-motion: reduce) {
   .voice-overlay {
     animation: none;
-  }
-  .voice-orb .halo,
-  .voice-orb .core {
-    transition: none;
   }
 }

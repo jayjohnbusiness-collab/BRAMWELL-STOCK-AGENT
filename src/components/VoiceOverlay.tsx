@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Bell } from "../brand/Bell";
+import { VoiceOrb } from "./VoiceOrb";
 import "../styles/voice.css";
 
 /*
@@ -27,34 +27,7 @@ export function VoiceOverlay({
   lastReply?: string;
   onExit: () => void;
 }) {
-  const orbRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
-  const activeRef = useRef(false);
-  activeRef.current = speaking || interim.trim().length > 0;
-
-  useEffect(() => {
-    const orb = orbRef.current;
-    if (!orb) return;
-    const reduced = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (reduced) {
-      orb.style.setProperty("--level", "0.2");
-      return;
-    }
-    let raf = 0;
-    let t0 = 0;
-    const loop = (ts: number) => {
-      if (!t0) t0 = ts;
-      const t = (ts - t0) / 1000;
-      const idle = 0.12 + 0.05 * Math.sin(t * 2.0);
-      const boost = activeRef.current ? 0.28 + 0.16 * Math.abs(Math.sin(t * 9)) : 0;
-      orb.style.setProperty("--level", String(Math.min(1, idle + boost)));
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
 
   useEffect(() => {
     exitRef.current?.focus();
@@ -81,14 +54,11 @@ export function VoiceOverlay({
         Done
       </button>
 
-      <div className="voice-orb" ref={orbRef} aria-hidden="true">
-        <span className="halo" />
-        <span className="ring" />
-        <span className="core" />
-        <span className="bell">
-          <Bell size={60} tone="brass" title="Bramwell" />
-        </span>
-      </div>
+      <VoiceOrb
+        speaking={speaking}
+        working={working}
+        listening={interim.trim().length > 0}
+      />
 
       <div className="voice-label" aria-live="polite">
         {label}
