@@ -5,10 +5,32 @@ import { PriceCell } from "./PriceCell";
 export function InstrumentRow({
   instrument,
   day = "today",
+  onOpen,
 }: {
   instrument: Instrument;
   day?: "today" | "yesterday";
+  /** Open the detail drawer for this name; makes the label clickable. */
+  onOpen?: (symbol: string) => void;
 }) {
+  const label = (
+    <>
+      <span className="label" style={{ color: "var(--ink)", display: "block" }}>
+        {instrument.symbol}
+      </span>
+      <span
+        className="small"
+        style={{
+          color: "var(--ink-soft)",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          display: "block",
+        }}
+      >
+        {cap(instrument.name)}
+      </span>
+    </>
+  );
   return (
     <div
       style={{
@@ -20,23 +42,27 @@ export function InstrumentRow({
         borderTop: "var(--hairline) solid var(--rule)",
       }}
     >
-      <span style={{ minWidth: 0 }}>
-        <span className="label" style={{ color: "var(--ink)", display: "block" }}>
-          {instrument.symbol}
-        </span>
-        <span
-          className="small"
+      {onOpen ? (
+        <button
+          type="button"
+          className="ticker-open"
+          onClick={() => onOpen(instrument.symbol)}
+          title={`Open ${instrument.symbol} details`}
           style={{
-            color: "var(--ink-soft)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "block",
+            minWidth: 0,
+            textAlign: "left",
+            background: "none",
+            border: "none",
+            padding: "2px 6px",
+            margin: "-2px -6px",
+            font: "inherit",
           }}
         >
-          {cap(instrument.name)}
-        </span>
-      </span>
+          {label}
+        </button>
+      ) : (
+        <span style={{ minWidth: 0 }}>{label}</span>
+      )}
       <PriceCell instrument={instrument} day={day} />
     </div>
   );

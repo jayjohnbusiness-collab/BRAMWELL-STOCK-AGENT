@@ -1,4 +1,11 @@
-import type { Feed, LookupResult, MarketEvent, NewsHeadline, Quote } from "./types";
+import type {
+  Feed,
+  LookupResult,
+  MarketEvent,
+  NewsHeadline,
+  Quote,
+  SymbolProfile,
+} from "./types";
 import type { Instrument } from "../agent/types";
 import { SEED } from "../agent/seed";
 import { SIM_NEWS } from "../attribution/news";
@@ -70,6 +77,37 @@ export class SimulatedFeed implements Feed {
       kind: "earnings" as const,
       when: i % 2 === 0 ? ("amc" as const) : ("bmo" as const),
     }));
+  }
+
+  async profile(symbol: string): Promise<SymbolProfile | null> {
+    const i = this.book.find((x) => x.symbol === symbol.trim().toUpperCase());
+    if (!i) return null;
+    const price = i.basePrice;
+    // Reconstruct plausible session figures from the known change: prevClose is
+    // where price started the day, open a touch off it, and the day's high/low
+    // bracket the current price. Deterministic (no Math.random), so it's stable
+    // across re-renders of the drawer.
+    const prevClose = price / (1 + i.changePct / 100);
+    const open = prevClose * (1 + (pseudo(i.symbol, 7) - 0.5) * 0.01);
+    const swing = price * 0.012;
+    const high = Math.max(price, open, prevClose) + swing * pseudo(i.symbol, 11);
+    const low = Math.min(price, open, prevClose) - swing * pseudo(i.symbol, 13);
+    // A 52-week band that comfortably contains today.
+    const week52High = high * (1.08 + pseudo(i.symbol, 17) * 0.35);
+    const week52Low = low * (0.72 - pseudo(i.symbol, 19) * 0.25);
+    return {
+      symbol: i.symbol,
+      name: i.name,
+      price,
+      changePct: i.changePct,
+      open,
+      high,
+      low,
+      prevClose,
+      week52High,
+      week52Low,
+      marketCapM: Math.round(price * 1000 * (2 + pseudo(i.symbol, 23) * 8)),
+    };
   }
 
   async quotes(symbols: string[]): Promise<Quote[]> {

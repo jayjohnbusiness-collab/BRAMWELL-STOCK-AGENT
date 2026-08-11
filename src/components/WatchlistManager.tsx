@@ -16,6 +16,7 @@ export function WatchlistManager({
   onAdd,
   onRemove,
   onSuggest,
+  onOpen,
   size = "lg",
 }: {
   watched: Instrument[];
@@ -24,6 +25,8 @@ export function WatchlistManager({
   onRemove: (symbol: string) => void;
   /** Live typeahead: closest matching tickers for a partial query. */
   onSuggest?: (query: string) => Promise<Suggestion[]>;
+  /** Open the detail drawer for a name; makes each row's label clickable. */
+  onOpen?: (symbol: string) => void;
   size?: CardSize;
 }) {
   const limit = rowLimit(size, { sm: 3, md: 6, lg: 99 });
@@ -123,14 +126,39 @@ export function WatchlistManager({
                 >
                   ×
                 </button>
-                <span>
-                  <span className="label" style={{ color: "var(--ink)", display: "block" }}>
-                    {i.symbol}
+                {onOpen ? (
+                  <button
+                    type="button"
+                    className="ticker-open"
+                    onClick={() => onOpen(i.symbol)}
+                    title={`Open ${i.symbol} details`}
+                    style={{
+                      minWidth: 0,
+                      textAlign: "left",
+                      background: "none",
+                      border: "none",
+                      padding: "2px 6px",
+                      margin: "-2px -6px",
+                      font: "inherit",
+                    }}
+                  >
+                    <span className="label" style={{ color: "var(--ink)", display: "block" }}>
+                      {i.symbol}
+                    </span>
+                    <span className="small" style={{ color: "var(--ink-soft)" }}>
+                      {cap(i.name)}
+                    </span>
+                  </button>
+                ) : (
+                  <span>
+                    <span className="label" style={{ color: "var(--ink)", display: "block" }}>
+                      {i.symbol}
+                    </span>
+                    <span className="small" style={{ color: "var(--ink-soft)" }}>
+                      {cap(i.name)}
+                    </span>
                   </span>
-                  <span className="small" style={{ color: "var(--ink-soft)" }}>
-                    {cap(i.name)}
-                  </span>
-                </span>
+                )}
               </span>
               <PriceCell instrument={i} />
             </div>

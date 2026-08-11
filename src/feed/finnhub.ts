@@ -5,6 +5,7 @@ import type {
   MarketEvent,
   NewsHeadline,
   Quote,
+  SymbolProfile,
 } from "./types";
 import { SEED } from "../agent/seed";
 
@@ -190,6 +191,82 @@ export class FinnhubFeed implements Feed {
     }
   }
 
+  /**
+   * A fuller snapshot for the detail drawer. The quote carries the day's
+   * OHLC + prev close; the metric endpoint carries the 52-week range; profile2
+   * carries the name and market cap. Any one of these can fail without sinking
+   * the drawer — we return whatever came back.
+   */
+  async profile(symbol: string): Promise<SymbolProfile | null> {
+    const s = symbol.trim().toUpperCase();
+    try {
+      const qr = await fetch(
+        `${BASE}/quote?symbol=${encodeURIComponent(s)}&token=${this.token}`,
+      );
+      if (!qr.ok) return null;
+      const q = (await qr.json()) as {
+        c?: number;
+        dp?: number;
+        o?: number;
+        h?: number;
+        l?: number;
+        pc?: number;
+      };
+      if (typeof q.c !== "number" || q.c === 0) return null;
+
+      const out: SymbolProfile = {
+        symbol: s,
+        name: s,
+        price: q.c,
+        changePct: typeof q.dp === "number" ? q.dp : 0,
+        open: num(q.o),
+        high: num(q.h),
+        low: num(q.l),
+        prevClose: num(q.pc),
+      };
+
+      // 52-week range (metric endpoint) and name + market cap (profile2), both
+      // best-effort — the drawer only shows what actually arrives.
+      await Promise.all([
+        (async () => {
+          try {
+            const mr = await fetch(
+              `${BASE}/stock/metric?symbol=${encodeURIComponent(s)}&metric=all&token=${this.token}`,
+            );
+            if (!mr.ok) return;
+            const m = (await mr.json()) as {
+              metric?: Record<string, number | undefined>;
+            };
+            out.week52High = num(m.metric?.["52WeekHigh"]);
+            out.week52Low = num(m.metric?.["52WeekLow"]);
+          } catch {
+            /* range is a nicety */
+          }
+        })(),
+        (async () => {
+          try {
+            const pr = await fetch(
+              `${BASE}/stock/profile2?symbol=${encodeURIComponent(s)}&token=${this.token}`,
+            );
+            if (!pr.ok) return;
+            const p = (await pr.json()) as {
+              name?: string;
+              marketCapitalization?: number;
+            };
+            if (p?.name && p.name.trim()) out.name = p.name.trim();
+            out.marketCapM = num(p?.marketCapitalization);
+          } catch {
+            /* name/cap are niceties */
+          }
+        })(),
+      ]);
+
+      return out;
+    } catch {
+      return null;
+    }
+  }
+
   /** Upcoming earnings dates for the given symbols (next ~6 weeks). */
   async events(symbols: string[]): Promise<MarketEvent[]> {
     const now = Date.now();
@@ -247,6 +324,11 @@ export class FinnhubFeed implements Feed {
       return { quote: null, error };
     }
   }
+}
+
+/** A finite positive number, or undefined — Finnhub uses 0 for "no value". */
+function num(v: number | undefined): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) && v !== 0 ? v : undefined;
 }
 
 function httpReason(status: number): string {

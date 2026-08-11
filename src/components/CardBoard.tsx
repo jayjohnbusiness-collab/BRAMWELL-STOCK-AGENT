@@ -194,14 +194,15 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
           onAdd={ctx.watchAdd}
           onRemove={ctx.watchRemove}
           onSuggest={ctx.watchSuggest}
+          onOpen={ctx.openDetail}
         />
       );
     case "spotlight":
-      return <SpotlightCard screen={ctx.screen} size={size} />;
+      return <SpotlightCard screen={ctx.screen} size={size} onOpen={ctx.openDetail} />;
     case "alerts":
-      return <AlertsCard alert={ctx.alert} onAck={ctx.onAck} />;
+      return <AlertsCard alert={ctx.alert} onAck={ctx.onAck} onOpen={ctx.openDetail} />;
     case "movers":
-      return <MoversCard market={ctx.market} size={size} />;
+      return <MoversCard market={ctx.market} size={size} onOpen={ctx.openDetail} />;
     case "breadth":
       return <BreadthCard market={ctx.market} size={size} />;
     case "causes":

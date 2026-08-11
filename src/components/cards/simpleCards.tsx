@@ -7,7 +7,15 @@ import { cap, Empty } from "./parts";
 
 /* ---------------------------------------------------------------- Spotlight */
 /** The last thing the user asked about, shown in full. */
-export function SpotlightCard({ screen, size }: { screen: ScreenPayload; size: CardSize }) {
+export function SpotlightCard({
+  screen,
+  size,
+  onOpen,
+}: {
+  screen: ScreenPayload;
+  size: CardSize;
+  onOpen?: (symbol: string) => void;
+}) {
   if (screen.kind === "quote") {
     const i = screen.instrument;
     return (
@@ -17,7 +25,7 @@ export function SpotlightCard({ screen, size }: { screen: ScreenPayload; size: C
           <span className="label">{i.symbol}</span>
         </div>
         <div style={{ marginTop: "var(--space-3)" }}>
-          <InstrumentRow instrument={i} />
+          <InstrumentRow instrument={i} onOpen={onOpen} />
         </div>
         {size !== "sm" ? <Cause instrument={i} /> : null}
       </div>
@@ -30,7 +38,7 @@ export function SpotlightCard({ screen, size }: { screen: ScreenPayload; size: C
         <span className="label">{screen.title}</span>
         <div style={{ marginTop: "var(--space-2)" }}>
           {screen.rows.slice(0, limit).map((r) => (
-            <InstrumentRow key={r.symbol} instrument={r} />
+            <InstrumentRow key={r.symbol} instrument={r} onOpen={onOpen} />
           ))}
         </div>
       </div>
@@ -77,7 +85,15 @@ function Cause({ instrument }: { instrument: Instrument }) {
 
 /* ------------------------------------------------------------------- Alerts */
 /** The single unprompted nudge, or calm. */
-export function AlertsCard({ alert, onAck }: { alert: Alert | null; onAck: (id: string) => void }) {
+export function AlertsCard({
+  alert,
+  onAck,
+  onOpen,
+}: {
+  alert: Alert | null;
+  onAck: (id: string) => void;
+  onOpen?: (symbol: string) => void;
+}) {
   if (!alert) return <Empty>Nothing worth reporting.</Empty>;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -98,7 +114,7 @@ export function AlertsCard({ alert, onAck }: { alert: Alert | null; onAck: (id: 
         {alert.spoken}
       </p>
       <div style={{ marginTop: "var(--space-2)" }}>
-        <InstrumentRow instrument={alert.instrument} />
+        <InstrumentRow instrument={alert.instrument} onOpen={onOpen} />
       </div>
     </div>
   );
@@ -106,7 +122,15 @@ export function AlertsCard({ alert, onAck }: { alert: Alert | null; onAck: (id: 
 
 /* ------------------------------------------------------------------- Movers */
 /** Today's leaders and laggards among the names the user follows. */
-export function MoversCard({ market, size }: { market: Market; size: CardSize }) {
+export function MoversCard({
+  market,
+  size,
+  onOpen,
+}: {
+  market: Market;
+  size: CardSize;
+  onOpen?: (symbol: string) => void;
+}) {
   const per = rowLimit(size, { sm: 2, md: 3, lg: 5 });
   const held = market.held();
   const up = held.filter((i) => i.changePct > 0.05).sort((a, b) => b.changePct - a.changePct).slice(0, per);
@@ -121,7 +145,7 @@ export function MoversCard({ market, size }: { market: Market; size: CardSize })
         <div>
           <span className="label" style={{ color: "var(--ink-soft)" }}>Leaders</span>
           {up.map((i) => (
-            <InstrumentRow key={i.symbol} instrument={i} />
+            <InstrumentRow key={i.symbol} instrument={i} onOpen={onOpen} />
           ))}
         </div>
       ) : null}
@@ -129,7 +153,7 @@ export function MoversCard({ market, size }: { market: Market; size: CardSize })
         <div>
           <span className="label" style={{ color: "var(--ink-soft)" }}>Laggards</span>
           {down.map((i) => (
-            <InstrumentRow key={i.symbol} instrument={i} />
+            <InstrumentRow key={i.symbol} instrument={i} onOpen={onOpen} />
           ))}
         </div>
       ) : null}

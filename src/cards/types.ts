@@ -45,6 +45,8 @@ export interface CardContext {
   watchRemove: (symbol: string) => void;
   watchSuggest: (query: string) => Promise<{ symbol: string; name: string }[]>;
   earnings: (symbols: string[]) => Promise<MarketEvent[]>;
+  /** Open the ticker detail drawer for a symbol. */
+  openDetail: (symbol: string) => void;
   /** Price triggers: set, list, remove, re-arm, and manage notifications. */
   triggers: {
     all: () => Trigger[];

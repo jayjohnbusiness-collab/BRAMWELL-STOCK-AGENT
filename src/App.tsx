@@ -26,6 +26,7 @@ import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
 import { CardBoard } from "./components/CardBoard";
+import { TickerDetail } from "./components/TickerDetail";
 import { VoiceOverlay } from "./components/VoiceOverlay";
 import { LiveDataControl } from "./components/LiveDataControl";
 import { ThemeToggle } from "./components/ThemeToggle";
@@ -97,6 +98,8 @@ export default function App() {
   const [working, setWorking] = useState(false);
   const [screen, setScreen] = useState<ScreenPayload>({ kind: "none" });
   const [awaitingChoice, setAwaitingChoice] = useState(false);
+  // The symbol whose detail drawer is open, if any.
+  const [detailSymbol, setDetailSymbol] = useState<string | null>(null);
   const [, forceRender] = useState(0);
 
   // Voice dispatches spoken commands through the same pipeline as typing.
@@ -520,6 +523,7 @@ export default function App() {
               watchRemove: handleRemove,
               watchSuggest: handleSuggest,
               earnings: (symbols) => feedRef.current.events?.(symbols) ?? Promise.resolve([]),
+              openDetail: (symbol) => setDetailSymbol(symbol),
               triggers: {
                 all: () => triggerStore.all(),
                 add: (input) => {
@@ -553,6 +557,21 @@ export default function App() {
           />
         </div>
       </div>
+
+      {detailSymbol ? (
+        <TickerDetail
+          symbol={detailSymbol}
+          market={market}
+          loadProfile={(s) =>
+            feedRef.current.profile?.(s) ?? Promise.resolve(null)
+          }
+          loadNews={(s) => feedRef.current.news?.(s) ?? Promise.resolve([])}
+          loadEvents={(symbols) =>
+            feedRef.current.events?.(symbols) ?? Promise.resolve([])
+          }
+          onClose={() => setDetailSymbol(null)}
+        />
+      ) : null}
 
       {voice.enabled ? (
         <VoiceOverlay

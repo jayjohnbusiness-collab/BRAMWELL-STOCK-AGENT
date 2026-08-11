@@ -3,6 +3,7 @@ import type { Market } from "../agent/market";
 import { leadAlert } from "../agent/alerts";
 import type { Alert } from "../agent/types";
 import type { Feed, FeedDiagnostics } from "../feed/types";
+import { recordQuotes } from "../feed/history";
 import type { Attributor } from "../attribution/types";
 import { headlineSentiment } from "../attribution/sentiment";
 import type { TriggerStore } from "../triggers/store";
@@ -118,6 +119,7 @@ export function useMarketFeed(
         const quotes = await feed.quotes(market.symbols());
         if (cancelled) return;
         market.applyQuotes(quotes);
+        recordQuotes(quotes, Date.now()); // feed the intraday sparkline tape
         const diag = feed.lastDiagnostics?.();
         if (diag) setFeedStatus({ ...diag, at: Date.now() });
         setVersion((v) => v + 1);

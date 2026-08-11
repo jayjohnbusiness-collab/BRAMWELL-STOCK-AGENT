@@ -49,6 +49,29 @@ export interface NewsHeadline {
   datetime: number;
 }
 
+/**
+ * A fuller snapshot of one instrument, for the detail drawer: the day's range,
+ * the 52-week range, and a few key figures. Everything past price/name is
+ * optional, because a given feed may not carry it — the drawer shows only what
+ * it actually has rather than inventing a number.
+ */
+export interface SymbolProfile {
+  symbol: string;
+  name: string;
+  price: number;
+  changePct: number;
+  /** Today's session figures, when the feed supplies them. */
+  open?: number;
+  high?: number;
+  low?: number;
+  prevClose?: number;
+  /** Trailing 52-week extremes. */
+  week52High?: number;
+  week52Low?: number;
+  /** Market capitalisation, in millions of currency units (Finnhub's unit). */
+  marketCapM?: number;
+}
+
 /** An upcoming dated event for a symbol (earnings today; more feeds later). */
 export interface MarketEvent {
   symbol: string;
@@ -92,4 +115,9 @@ export interface Feed {
    * feed has none (or can't fetch news).
    */
   news?(symbol: string): Promise<NewsHeadline[]>;
+  /**
+   * A fuller one-symbol snapshot (day + 52-week range, key figures) for the
+   * detail drawer. Null when the symbol can't be profiled.
+   */
+  profile?(symbol: string): Promise<SymbolProfile | null>;
 }
