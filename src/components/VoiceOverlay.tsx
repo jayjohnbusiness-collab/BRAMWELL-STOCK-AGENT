@@ -85,8 +85,6 @@ export function VoiceOverlay({
           <p className="voice-transcript">Ask me anything — say a name, or “what's moving today?”</p>
         )}
       </div>
-
-      <p className="voice-hint">Speak naturally. Chrome or Edge work best. Press Done to leave.</p>
     </div>
   );
 }

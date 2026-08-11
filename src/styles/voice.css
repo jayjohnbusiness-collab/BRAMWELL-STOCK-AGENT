@@ -34,7 +34,7 @@
   left: 50%;
   transform: translateX(-50%);
   top: 63%;
-  bottom: 72px;
+  bottom: var(--space-6);
   width: min(92vw, 680px);
   display: flex;
   flex-direction: column;
@@ -122,14 +122,6 @@
   margin: 0;
 }
 
-.voice-hint {
-  position: absolute;
-  bottom: var(--space-6);
-  font-family: var(--font-body);
-  font-size: var(--step-small);
-  color: rgba(247, 244, 236, 0.35);
-  margin: 0;
-}
 
 .voice-working {
   display: inline-flex;
