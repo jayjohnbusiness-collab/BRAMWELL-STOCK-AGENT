@@ -3,7 +3,7 @@ import type { Trigger, TriggerKind } from "./types";
 /* Triggers persist like the watchlist and board — set once, kept across reloads. */
 
 const KEY = "bramwell.triggers.v1";
-const KINDS: TriggerKind[] = ["above", "below", "move"];
+const KINDS: TriggerKind[] = ["above", "below", "move", "pctFromSet", "bookDay", "anyMove"];
 
 export function loadTriggers(): Trigger[] {
   try {
@@ -24,8 +24,11 @@ export function loadTriggers(): Trigger[] {
         name: t.name || t.symbol,
         kind: t.kind,
         value: t.value,
+        basis: typeof t.basis === "number" ? t.basis : undefined,
         createdAt: typeof t.createdAt === "number" ? t.createdAt : 0,
         firedAt: typeof t.firedAt === "number" ? t.firedAt : null,
+        firedNote: typeof t.firedNote === "string" ? t.firedNote : undefined,
+        firedValue: typeof t.firedValue === "number" ? t.firedValue : undefined,
       }));
   } catch {
     return [];

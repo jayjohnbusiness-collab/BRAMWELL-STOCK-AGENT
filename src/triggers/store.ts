@@ -1,5 +1,5 @@
-import type { Trigger, TriggerKind, TriggerQuote } from "./types";
-import { triggerFires } from "./types";
+import type { Trigger, TriggerContext, TriggerKind, TriggerQuote } from "./types";
+import { isPortfolioKind, portfolioTriggerFires, triggerFires } from "./types";
 import { loadTriggers, saveTriggers } from "./storage";
 
 /*
@@ -19,13 +19,20 @@ export class TriggerStore {
     return this.list;
   }
 
-  add(input: { symbol: string; name: string; kind: TriggerKind; value: number }): Trigger {
+  add(input: {
+    symbol: string;
+    name: string;
+    kind: TriggerKind;
+    value: number;
+    basis?: number;
+  }): Trigger {
     const t: Trigger = {
       id: `t${Date.now().toString(36)}${(this.seq++).toString(36)}`,
       symbol: input.symbol.toUpperCase(),
       name: input.name,
       kind: input.kind,
       value: input.value,
+      basis: input.basis,
       createdAt: Date.now(),
       firedAt: null,
     };
@@ -48,13 +55,29 @@ export class TriggerStore {
   }
 
   /**
-   * Check every armed trigger against a fresh quote lookup. Newly-fired ones
-   * are stamped and returned so the caller can announce them.
+   * Check every armed trigger. Per-name triggers use the quote lookup;
+   * portfolio-level ones use the supplied whole-book context. Newly-fired ones
+   * are stamped (with the tripping detail) and returned so the caller can
+   * announce them.
    */
-  evaluate(lookup: (symbol: string) => TriggerQuote | undefined, now: number): Trigger[] {
+  evaluate(
+    lookup: (symbol: string) => TriggerQuote | undefined,
+    now: number,
+    ctx?: TriggerContext,
+  ): Trigger[] {
     const fired: Trigger[] = [];
     for (const t of this.list) {
       if (t.firedAt != null) continue;
+      if (isPortfolioKind(t.kind)) {
+        const hit = ctx ? portfolioTriggerFires(t, ctx) : null;
+        if (hit) {
+          t.firedAt = now;
+          t.firedNote = hit.note;
+          t.firedValue = hit.value;
+          fired.push(t);
+        }
+        continue;
+      }
       const q = lookup(t.symbol);
       if (!q) continue;
       if (triggerFires(t, q)) {

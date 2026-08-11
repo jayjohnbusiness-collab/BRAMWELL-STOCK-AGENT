@@ -7,7 +7,7 @@ import { recordQuotes } from "../feed/history";
 import type { Attributor } from "../attribution/types";
 import { headlineSentiment } from "../attribution/sentiment";
 import type { TriggerStore } from "../triggers/store";
-import type { Trigger } from "../triggers/types";
+import type { Trigger, TriggerContext } from "../triggers/types";
 
 export interface FeedStatus extends FeedDiagnostics {
   /** Epoch ms of the last completed poll. */
@@ -37,6 +37,7 @@ export function useMarketFeed(
   attributor: Attributor,
   triggers?: TriggerStore,
   onTriggerFire?: (fired: Trigger[]) => void,
+  triggerContext?: () => TriggerContext,
 ) {
   const [alert, setAlert] = useState<Alert | null>(null);
   const [feedStatus, setFeedStatus] = useState<FeedStatus | null>(null);
@@ -48,9 +49,12 @@ export function useMarketFeed(
   const dismissed = useRef<Set<string>>(new Set());
   const armed = useRef(false);
   const lastAttempt = useRef<Map<string, number>>(new Map());
-  // Latest fire callback, read fresh so the poll loop needn't restart on it.
+  // Latest fire callback and portfolio-context provider, read fresh so the poll
+  // loop needn't restart on either.
   const fireRef = useRef(onTriggerFire);
   fireRef.current = onTriggerFire;
+  const ctxRef = useRef(triggerContext);
+  ctxRef.current = triggerContext;
 
   useEffect(() => {
     let cancelled = false;
@@ -132,10 +136,14 @@ export function useMarketFeed(
         attributionPass();
         // Check standing price triggers against the fresh quotes.
         if (triggers) {
-          const fired = triggers.evaluate((symbol) => {
-            const i = market.bySymbol(symbol);
-            return i ? { price: i.basePrice, changePct: i.changePct } : undefined;
-          }, Date.now());
+          const fired = triggers.evaluate(
+            (symbol) => {
+              const i = market.bySymbol(symbol);
+              return i ? { price: i.basePrice, changePct: i.changePct } : undefined;
+            },
+            Date.now(),
+            ctxRef.current?.(),
+          );
           if (fired.length > 0) {
             setVersion((v) => v + 1);
             fireRef.current?.(fired);

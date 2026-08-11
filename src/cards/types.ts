@@ -53,7 +53,13 @@ export interface CardContext {
   /** Price triggers: set, list, remove, re-arm, and manage notifications. */
   triggers: {
     all: () => Trigger[];
-    add: (input: { symbol: string; name: string; kind: TriggerKind; value: number }) => void;
+    add: (input: {
+      symbol: string;
+      name: string;
+      kind: TriggerKind;
+      value: number;
+      basis?: number;
+    }) => void;
     remove: (id: string) => void;
     rearm: (id: string) => void;
     notifyState: NotifyState;

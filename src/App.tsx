@@ -20,6 +20,7 @@ import { hasToken } from "./feed/token";
 import { TriggerStore } from "./triggers/store";
 import { firedLine, triggerFires, type Trigger, type TriggerKind } from "./triggers/types";
 import { fireNotification, notifyState, requestNotify } from "./notify";
+import { playChime } from "./chime";
 import { PortfolioStore } from "./portfolio/store";
 import { valuePosition, portfolioTotals } from "./portfolio/types";
 import { money } from "./components/cards/parts";
@@ -92,6 +93,23 @@ export default function App() {
     attributorRef.current,
     triggerStore,
     (fired) => triggerFireRef.current(fired),
+    // Whole-book context for portfolio-level triggers (day P/L, any holding).
+    () => {
+      const values = portfolioStore.all().map((p) => {
+        const i = market.bySymbol(p.symbol);
+        return valuePosition(p, {
+          price: i?.basePrice ?? 0,
+          changePct: i?.changePct ?? 0,
+          name: i?.name ?? p.symbol,
+        });
+      });
+      return {
+        bookDayAbs: values.length ? portfolioTotals(values).dayAbs : undefined,
+        holdings: market
+          .held()
+          .map((i) => ({ symbol: i.symbol, name: i.name, changePct: i.changePct })),
+      };
+    },
   );
 
   const idRef = useRef(1);
@@ -230,6 +248,7 @@ export default function App() {
   // A fired trigger: Bramwell speaks up in chat, and (if allowed) a browser
   // notification reaches the user even when the tab isn't focused.
   triggerFireRef.current = (fired: Trigger[]) => {
+    if (fired.length > 0) playChime(); // one discreet chime for the batch
     for (const t of fired) {
       const i = market.bySymbol(t.symbol);
       const q = { price: i?.basePrice ?? t.value, changePct: i?.changePct ?? 0 };
