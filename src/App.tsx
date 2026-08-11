@@ -37,7 +37,7 @@ import "./styles/app.css";
 const INTRO: ChatMessage = {
   id: "intro",
   from: "bramwell",
-  text: "I'm watching the names you've set. I'll speak up when something's worth it.",
+  text: "I'm keeping an eye on your names. I'll speak up the moment something's worth your while.",
 };
 
 export default function App() {
@@ -209,7 +209,7 @@ export default function App() {
     setWorking(false);
     const inst = r.instrument;
     if (!inst) {
-      const msg = r.ok ? "I couldn't place that name." : r.message;
+      const msg = r.ok ? "I couldn't quite place that name." : r.message;
       setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: msg }]);
       voice.speak(msg);
       return;
@@ -222,8 +222,8 @@ export default function App() {
     const name = cap(inst.name);
     const line =
       kind === "move"
-        ? `Very good. I'll speak up if ${name} moves ${spec.value}% either way.`
-        : `Very good. I'll tell you the moment ${name} is ${kind} ${spec.value}.`;
+        ? `Very good — I'll let you know if ${name} moves ${spec.value}% either way.`
+        : `Very good — I'll tell you the moment ${name} goes ${kind} ${spec.value}.`;
     setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
     voice.speak(line);
     setScreen({ kind: "quote", instrument: inst });
@@ -247,7 +247,7 @@ export default function App() {
     setWorking(false);
     const inst = r.instrument;
     if (!inst) {
-      say(r.ok ? "I couldn't place that name." : r.message);
+      say(r.ok ? "I couldn't quite place that name." : r.message);
       return;
     }
     const price = market.bySymbol(inst.symbol)?.basePrice ?? 0;
@@ -258,7 +258,7 @@ export default function App() {
     const value = spec.shares * price;
     const basis = spec.cost > 0 ? ` at ${spec.cost.toFixed(2)}` : "";
     say(
-      `Noted — ${trimShares(spec.shares)} ${cap(inst.name)}${basis}, worth ${money(value)} now.`,
+      `Noted — ${trimShares(spec.shares)} of ${cap(inst.name)}${basis}. That's worth about ${money(value)} as it stands.`,
     );
     setScreen({ kind: "quote", instrument: inst });
   }
@@ -274,17 +274,20 @@ export default function App() {
       });
     });
     if (values.length === 0) {
-      say("You've no positions recorded. Tell me what you hold — say, \"100 NVDA at 150\".");
+      say("You've nothing recorded yet — tell me what you hold, say, \"100 NVDA at 150\".");
       return;
     }
     const t = portfolioTotals(values);
-    const overall = t.hasBasis
-      ? ` It's ${t.plAbs >= 0 ? "up" : "down"} ${money(Math.abs(t.plAbs))} overall, ${
-          t.plPct >= 0 ? "up" : "down"
-        } ${Math.abs(t.plPct).toFixed(1)} percent.`
-      : "";
-    const today = ` Today it's ${t.dayAbs >= 0 ? "up" : "down"} ${money(Math.abs(t.dayAbs))}.`;
-    say(`Your book is worth ${money(t.marketValue)}.${overall}${today}`);
+    const day = `${t.dayAbs >= 0 ? "up" : "down"} ${money(Math.abs(t.dayAbs))} on the day`;
+    let line = `Your book's worth ${money(t.marketValue)} at the moment`;
+    if (t.hasBasis) {
+      line += `. It's ${t.plAbs >= 0 ? "up" : "down"} ${money(Math.abs(t.plAbs))} overall, about ${Math.abs(
+        t.plPct,
+      ).toFixed(1)} percent, and ${day}.`;
+    } else {
+      line += ` — ${day}.`;
+    }
+    say(line);
   }
 
   // "What's the recent news on X" — resolve the company (without adding it to
@@ -292,7 +295,7 @@ export default function App() {
   async function newsFromChat(namePhrase: string) {
     const feed = feedRef.current;
     if (!feed.news) {
-      say("I can only pull news with live data connected.");
+      say("I'll need live data connected before I can pull the news, I'm afraid.");
       return;
     }
     setWorking(true);
@@ -318,21 +321,21 @@ export default function App() {
     }
     if (!symbol) {
       setWorking(false);
-      say(`I couldn't find a company called "${namePhrase.trim()}".`);
+      say(`I couldn't find a company called "${namePhrase.trim()}", I'm afraid.`);
       return;
     }
 
     const items = await feed.news(symbol);
     setWorking(false);
     if (items.length === 0) {
-      say(`I don't see anything recent on ${cap(name)}.`);
+      say(`Nothing recent on ${cap(name)} that I can see.`);
       return;
     }
     const top = items.slice(0, 3);
     const lines = top
       .map((n) => `“${n.headline}” — ${n.source}, ${relTime(n.datetime)}`)
       .join("  •  ");
-    say(`The latest on ${cap(name)}. ${lines}`);
+    say(`Here's the latest on ${cap(name)} — ${lines}`);
   }
 
   // The shared add engine. Known names resolve through the registry; an unknown
@@ -347,13 +350,13 @@ export default function App() {
     const res = market.resolve(text);
     if (res.status === "ambiguous") {
       const [a, b] = res.options;
-      return { ok: false, message: `Which one — ${a.name}, or ${b.name}?` };
+      return { ok: false, message: `Which would that be — ${a.name}, or ${b.name}?` };
     }
     if (res.status === "ok") {
       if (market.isWatched(res.instrument.symbol)) {
         return {
           ok: false,
-          message: `${cap(res.instrument.name)} is already on the list.`,
+          message: `${cap(res.instrument.name)}'s already on your list.`,
           instrument: res.instrument,
         };
       }
@@ -366,7 +369,7 @@ export default function App() {
     // name (e.g. "Amazon" → AMZN, "Shell" → SHEL).
     const feed = feedRef.current;
     if (!feed.lookup) {
-      return { ok: false, message: "I don't have anything by that name." };
+      return { ok: false, message: "I don't have anything by that name, I'm afraid." };
     }
 
     const candidate = symbolCandidate(text);
@@ -394,8 +397,8 @@ export default function App() {
     return {
       ok: false,
       message: hasToken()
-        ? `I couldn't find anything for "${text.trim()}".`
-        : `Connect live data to add "${text.trim()}".`,
+        ? `I couldn't find anything under "${text.trim()}", I'm afraid.`
+        : `Connect live data and I'll add "${text.trim()}" for you.`,
     };
   }
 
@@ -413,7 +416,7 @@ export default function App() {
     setWorking(false);
 
     const spoken = r.ok
-      ? `Done. I'll keep an eye on ${cap(r.instrument.name)}.`
+      ? `Of course. I'll keep an eye on ${cap(r.instrument.name)} for you.`
       : r.message;
 
     if (spoken.trim().length > 0) {

@@ -146,7 +146,7 @@ export class Bramwell {
     if (shown.length === 0) {
       const dir = metric === "gainers" ? "up" : "down";
       return {
-        spoken: `Nothing in ${uni} is ${dir}${when || " today"}. Quiet ${
+        spoken: `Nothing much ${dir}${when || " today"} across ${uni}, I'm afraid — it's quiet ${
           metric === "gainers" ? "on the upside" : "on the downside"
         }.`,
         screen: { kind: "none" },
@@ -159,15 +159,15 @@ export class Bramwell {
     // Lead-in: name the shape, don't recite a leaderboard.
     let lead: string;
     if (totalDir > shown.length) {
-      lead = `${cap(numberToWords(totalDir))} names are ${dirWord}${when} in ${uni}; these ${
+      lead = `${cap(numberToWords(totalDir))} names are ${dirWord}${when} across ${uni}, and these ${
         numberToWords(shown.length)
       } are carrying it.`;
     } else {
       const carry = metric === "gainers" ? "carrying it" : "weighing on it";
       lead =
         shown.length > 1
-          ? `${cap(numberToWords(shown.length))} names are ${carry}${when}.`
-          : `One name is ${carry}${when}.`;
+          ? `A handful of names are ${carry}${when}.`
+          : `Just the one name is ${carry}${when}.`;
     }
 
     const list = listSentence(shown, day);
@@ -194,7 +194,7 @@ export class Bramwell {
     if (held.length === 0) {
       return {
         spoken:
-          "Nothing worth reporting. Add a name and I'll keep an eye on it.",
+          "Nothing to report just yet — add a name and I'll keep an eye on it for you.",
         screen: { kind: "none" },
       };
     }
@@ -207,12 +207,12 @@ export class Bramwell {
 
     let spoken: string;
     if (downs === n) {
-      spoken = `The ${numberToWords(n)} holdings you follow are all lower${when}, ${rangePhrase(changes)}. It looks sector-wide rather than specific to any of them.`;
+      spoken = `All ${numberToWords(n)} of the names you follow are lower${when}, ${rangePhrase(changes)} — it looks sector-wide rather than about any one of them.`;
     } else if (ups === n) {
-      spoken = `The ${numberToWords(n)} holdings you follow are all higher${when}, ${rangePhrase(changes)}. Broad rather than any one of them in particular.`;
+      spoken = `All ${numberToWords(n)} of the names you follow are higher${when}, ${rangePhrase(changes)} — broad, rather than any one in particular.`;
     } else {
       const dv = downs === 1 ? "is" : "are";
-      spoken = `Of the ${numberToWords(n)} holdings you follow, ${numberToWords(downs)} ${dv} down and ${numberToWords(ups)} up${when}. ${mixedTail(held, day)}`;
+      spoken = `Of the ${numberToWords(n)} names you follow, ${numberToWords(downs)} ${dv} down and ${numberToWords(ups)} up${when}. ${mixedTail(held, day)}`;
     }
 
     return {
@@ -230,16 +230,16 @@ export class Bramwell {
     if (!i) return this.notUnderstood(symbol);
 
     const change = day === "yesterday" ? i.prevChangePct : i.changePct;
-    const when = day === "yesterday" ? " yesterday" : "";
+    const when = day === "yesterday" ? " yesterday" : " today";
     // Resolve out loud: name the company even if the user used the symbol.
-    let spoken = `${cap(i.name)} is ${spokenChange(change)}${when}.`;
+    let spoken = `${cap(i.name)}'s ${spokenChange(change)}${when}.`;
 
     if (day === "today") {
       if (i.cause) {
         spoken += ` ${cap(i.cause.text)}.`;
       } else if (Math.abs(change) >= 3) {
         // A notable move with nothing behind it — say so, never invent one.
-        spoken += ` I don't have a reason for it yet — no filing, no wire story. I'll tell you when there is one.`;
+        spoken += ` I don't have a reason for it yet, I'm afraid — nothing on the wire. I'll let you know the moment there is.`;
       }
     }
 
@@ -257,7 +257,7 @@ export class Bramwell {
     const res = this.market.resolve(text);
     if (res.status === "ok") {
       const i = res.instrument;
-      const cause = i.cause ? ` — ${i.cause.text}` : "";
+      const cause = i.cause ? ` ${cap(i.cause.text)}.` : "";
       this.session.subject = {
         universe: "nasdaq",
         metric: this.session.subject?.metric ?? "gainers",
@@ -265,15 +265,15 @@ export class Bramwell {
         symbol: i.symbol,
       };
       return {
-        spoken: `That's not mine to say. I can tell you ${cap(i.name)} is ${spokenChange(
+        spoken: `That's not mine to say, I'm afraid — but I can tell you ${cap(i.name)}'s ${spokenChange(
           i.changePct,
-        )} today${cause}.`,
+        )} today.${cause}`,
         screen: { kind: "quote", instrument: i },
       };
     }
     return {
       spoken:
-        "That's not mine to say. Name the instrument and I'll give you the facts I have.",
+        "That's not mine to say, I'm afraid. Name the company and I'll give you the facts I have.",
       screen: { kind: "none" },
     };
   }
@@ -288,7 +288,7 @@ export class Bramwell {
       // Don't guess which to watch; ask, but plainly (no pending quote here).
       const [a, b] = distinct(res.options);
       return {
-        spoken: `${a.name}, or ${b.name}? Tell me which and I'll ${
+        spoken: `Which would that be — ${a.name}, or ${b.name}? Say the word and I'll ${
           add ? "add it" : "take it off"
         }.`,
         screen: { kind: "none" },
@@ -300,25 +300,25 @@ export class Bramwell {
     if (add) {
       if (this.market.isWatched(i.symbol)) {
         return {
-          spoken: `${cap(i.name)} is already on the list.`,
+          spoken: `${cap(i.name)}'s already on your list.`,
           screen: { kind: "quote", instrument: i },
         };
       }
       this.market.watch(i.symbol);
       return {
-        spoken: `Done. I'll keep an eye on ${cap(i.name)}.`,
+        spoken: `Of course. I'll keep an eye on ${cap(i.name)} for you.`,
         screen: { kind: "quote", instrument: i },
       };
     }
 
     if (!this.market.unwatch(i.symbol)) {
       return {
-        spoken: `${cap(i.name)} wasn't on the list.`,
+        spoken: `${cap(i.name)} wasn't on your list to begin with.`,
         screen: { kind: "none" },
       };
     }
     return {
-      spoken: `Off the list — ${cap(i.name)}.`,
+      spoken: `Consider it done — ${cap(i.name)}'s off your list.`,
       screen: { kind: "none" },
     };
   }
@@ -328,7 +328,7 @@ export class Bramwell {
     const held = this.market.held();
     if (held.length === 0) {
       return {
-        spoken: "Nothing on your watch yet — add a few names and I'll keep the book.",
+        spoken: "Nothing on your watch just yet — add a few names and I'll keep the book for you.",
         screen: { kind: "none" },
       };
     }
@@ -339,22 +339,22 @@ export class Bramwell {
 
     const parts: string[] = [];
     parts.push(
-      `Of the ${numberToWords(held.length)} names you follow, ${numberToWords(ups.length)} ${
-        ups.length === 1 ? "is" : "are"
-      } up and ${numberToWords(downs.length)} down.`,
+      `Here's where things stand: of the ${numberToWords(held.length)} names you follow, ${numberToWords(
+        ups.length,
+      )} ${ups.length === 1 ? "is" : "are"} up and ${numberToWords(downs.length)} down.`,
     );
     if (topUp) {
       parts.push(
-        `${shortName(topUp)} leads, ${spokenChange(topUp.changePct)}${
-          topUp.cause ? ` — ${topUp.cause.text}` : ""
-        }.`,
+        `${shortName(topUp)}'s leading, ${spokenChange(topUp.changePct)}.${
+          topUp.cause ? ` ${cap(topUp.cause.text)}.` : ""
+        }`,
       );
     }
     if (topDown && topDown.symbol !== topUp?.symbol) {
       parts.push(
-        `${shortName(topDown)} is the weakest, ${spokenChange(topDown.changePct)}${
-          topDown.cause ? ` — ${topDown.cause.text}` : ""
-        }.`,
+        `${shortName(topDown)}'s the softest, ${spokenChange(topDown.changePct)}.${
+          topDown.cause ? ` ${cap(topDown.cause.text)}.` : ""
+        }`,
       );
     }
     if (!topUp && !topDown) {
@@ -377,7 +377,7 @@ export class Bramwell {
     }
     if (resolved.length < 2) {
       return {
-        spoken: "Name two I follow and I'll set them side by side.",
+        spoken: "Give me two names I follow and I'll set them side by side.",
         screen: { kind: "none" },
       };
     }
@@ -386,9 +386,9 @@ export class Bramwell {
     const gap = Math.abs(a.changePct - b.changePct);
     const tail = gap >= 0.1 ? `, by ${percentInWords(gap)}` : "";
     return {
-      spoken: `${shortName(a)} is ${spokenChange(a.changePct)}; ${shortName(b)} is ${spokenChange(
+      spoken: `${shortName(a)}'s ${spokenChange(a.changePct)}, ${shortName(b)}'s ${spokenChange(
         b.changePct,
-      )}. ${shortName(stronger)} has the better of it today${tail}.`,
+      )} — ${shortName(stronger)} has the better of it today${tail}.`,
       screen: { kind: "table", title: `${a.symbol} vs ${b.symbol}`, rows: [a, b] },
     };
   }
@@ -429,7 +429,7 @@ export class Bramwell {
   private helpReply(): Reply {
     return {
       spoken:
-        "I watch the tickers and indices you set, and I speak up when something is worth it. Ask me how a name is doing, or what's moving today.",
+        "I keep an eye on the names and indices you set, and I speak up when something's worth it. Ask me how a name's doing, what's moving today, or to watch a level — I'll handle the rest.",
       screen: { kind: "none" },
     };
   }
@@ -439,7 +439,7 @@ export class Bramwell {
     const [a, b] = distinct(options);
     this.pending = [a, b];
     return {
-      spoken: `${a.name}, or ${b.name}?`,
+      spoken: `Do you mean ${a.name}, or ${b.name}?`,
       screen: { kind: "none" },
       awaitingChoice: true,
     };
@@ -455,7 +455,7 @@ export class Bramwell {
     if (heard) {
       // Repeat what was heard; don't ask them to repeat themselves (§10).
       return {
-        spoken: `I heard "${heard}." I don't have anything by that name.`,
+        spoken: `I heard "${heard}" — I don't have anything by that name, I'm afraid.`,
         screen: { kind: "none" },
       };
     }
@@ -464,7 +464,7 @@ export class Bramwell {
 
   private outOfScope(_text: string): Reply {
     return {
-      spoken: "That's outside what I follow.",
+      spoken: "That's a little outside what I follow, I'm afraid.",
       screen: { kind: "none" },
     };
   }
@@ -512,7 +512,7 @@ function distinct(options: Instrument[]): [Instrument, Instrument] {
 function listSentence(items: Instrument[], day: Day): string {
   const parts = items.map((i, idx) => {
     const c = day === "yesterday" ? i.prevChangePct : i.changePct;
-    if (idx === 0) return `${shortName(i)} is ${spokenChange(c)}`;
+    if (idx === 0) return `${shortName(i)}'s ${spokenChange(c)}`;
     return `${shortName(i)} ${magnitudeInWords(c)}`;
   });
   if (parts.length === 1) return `${parts[0]}.`;

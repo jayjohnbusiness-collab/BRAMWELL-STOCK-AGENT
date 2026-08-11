@@ -43,10 +43,12 @@ export function describeTrigger(t: Trigger): string {
 /** The butler's line when a trigger fires. */
 export function firedLine(t: Trigger, q: TriggerQuote): string {
   const name = cap(t.name);
-  if (t.kind === "above") return `${name} is above ${fmt(t.value)} — now ${q.price.toFixed(2)}.`;
-  if (t.kind === "below") return `${name} is below ${fmt(t.value)} — now ${q.price.toFixed(2)}.`;
+  if (t.kind === "above")
+    return `A quick word — ${name}'s crossed above ${fmt(t.value)}; it's at ${q.price.toFixed(2)} now.`;
+  if (t.kind === "below")
+    return `A quick word — ${name}'s slipped below ${fmt(t.value)}; it's at ${q.price.toFixed(2)} now.`;
   const dir = q.changePct >= 0 ? "up" : "down";
-  return `${name} is ${Math.abs(q.changePct).toFixed(2)}% ${dir} today — past your ${fmt(
+  return `A quick word — ${name}'s moved ${Math.abs(q.changePct).toFixed(2)}% ${dir} today, past your ${fmt(
     t.value,
   )}% mark.`;
 }

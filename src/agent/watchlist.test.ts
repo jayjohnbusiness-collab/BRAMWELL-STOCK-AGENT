@@ -55,20 +55,20 @@ describe("editing the watchlist by asking Bramwell", () => {
   it("notices a name already on the list", () => {
     const b = new Bramwell(new Market(FIXTURE));
     const r = b.respond("Add Sunrise Micro."); // SUN is a default holding
-    expect(r.spoken).toMatch(/already on the list/i);
+    expect(r.spoken).toMatch(/already on your list/i);
   });
 
   it("removes a name", () => {
     const b = new Bramwell(new Market(FIXTURE));
     const r = b.respond("Stop watching Autohaus.");
-    expect(r.spoken).toMatch(/off the list/i);
+    expect(r.spoken).toMatch(/off your list/i);
     expect(b.market.isWatched("AUTO")).toBe(false);
   });
 
   it("declines to add a name it doesn't know", () => {
     const b = new Bramwell(new Market(FIXTURE));
     const r = b.respond("Watch Meridian.");
-    expect(r.spoken).toContain('I heard "Meridian."');
+    expect(r.spoken).toContain('I heard "Meridian"');
     expect(b.market.watchlistSymbols()).not.toContain("MERIDIAN");
   });
 });

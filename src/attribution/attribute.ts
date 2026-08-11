@@ -77,7 +77,7 @@ export function attributeFromNews(
 
   if (best.major) {
     return {
-      text: `the move followed a ${source} report: ${headline}`,
+      text: `a ${source} report has it — ${headline}`,
       source,
       url: best.item.url,
       confidence: "reported",
@@ -85,7 +85,7 @@ export function attributeFromNews(
   }
   // Thin reporting: attribute, but flag it plainly as unconfirmed.
   return {
-    text: `there's unconfirmed reporting from ${source}: ${headline}`,
+    text: `there's unconfirmed reporting from ${source} — ${headline}`,
     source,
     url: best.item.url,
     confidence: "unconfirmed",
