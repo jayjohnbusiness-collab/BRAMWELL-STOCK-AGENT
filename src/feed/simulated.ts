@@ -1,6 +1,7 @@
-import type { Feed, LookupResult, MarketEvent, Quote } from "./types";
+import type { Feed, LookupResult, MarketEvent, NewsHeadline, Quote } from "./types";
 import type { Instrument } from "../agent/types";
 import { SEED } from "../agent/seed";
+import { SIM_NEWS } from "../attribution/news";
 
 /*
  * The simulated feed. The "story of the day" (changePct + cause) holds steady;
@@ -44,6 +45,19 @@ export class SimulatedFeed implements Feed {
       .slice(0, 6)
       .map((s) => ({ symbol: s.i.symbol, name: s.i.name }));
     return scored;
+  }
+
+  async news(symbol: string): Promise<NewsHeadline[]> {
+    const stories = SIM_NEWS[symbol.toUpperCase()] ?? [];
+    const now = Date.now();
+    return stories
+      .map((s) => ({
+        headline: s.headline,
+        source: s.source,
+        url: s.url,
+        datetime: now - s.minutesAgo * 60_000,
+      }))
+      .sort((a, b) => b.datetime - a.datetime);
   }
 
   async events(symbols: string[]): Promise<MarketEvent[]> {

@@ -40,6 +40,15 @@ export interface LookupResult {
   changePct: number;
 }
 
+/** A recent news headline for a company. */
+export interface NewsHeadline {
+  headline: string;
+  source: string;
+  url?: string;
+  /** Epoch milliseconds. */
+  datetime: number;
+}
+
 /** An upcoming dated event for a symbol (earnings today; more feeds later). */
 export interface MarketEvent {
   symbol: string;
@@ -78,4 +87,9 @@ export interface Feed {
    * supply them. Empty array when it can't.
    */
   events?(symbols: string[]): Promise<MarketEvent[]>;
+  /**
+   * Recent news headlines for a single company, newest first. Empty when the
+   * feed has none (or can't fetch news).
+   */
+  news?(symbol: string): Promise<NewsHeadline[]>;
 }

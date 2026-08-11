@@ -229,6 +229,29 @@ export function isPortfolioValueQuery(input: string): boolean {
   return PF_SUBJECT.test(t) && PF_ASK.test(t);
 }
 
+/*
+ * News phrasing: "recent news on Palantir", "what's the latest on NVDA",
+ * "any headlines for Tesla", "what's new with Apple". Returns the company to
+ * look up, or null when it isn't a news request (or no name was given).
+ */
+const NEWS_WORD = /\b(news|headlines?|updates?|developments?|latest|what'?s new)\b/i;
+
+export function parseNews(input: string): { namePhrase: string } | null {
+  const t = input.trim().replace(WAKE, "");
+  if (!NEWS_WORD.test(t)) return null;
+  const namePhrase = t
+    .replace(NEWS_WORD, " ")
+    .replace(
+      /\b(the|recent|any|some|on|about|for|with|of|regarding|around|what'?s|whats|what|is|are|there|me|give|tell|show|get|pull|find|please|latest|new|company|stock|shares?|today|now|currently|going on)\b/gi,
+      " ",
+    )
+    .replace(/[^\w.\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!namePhrase) return null;
+  return { namePhrase };
+}
+
 // A request for the session summary.
 const BRIEF =
   /\b(catch me up|catch up|brief me|briefing|the rundown|rundown|fill me in|what'?s the story|state of play|where (do|does) (things|we|it) stand|how'?s everything|how are things|give me the (rundown|summary|picture)|summar(y|ise|ize)|the picture|bring me up to speed)\b/i;

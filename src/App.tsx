@@ -1,7 +1,14 @@
 import { useRef, useState } from "react";
 import { Bramwell } from "./agent/bramwell";
 import { Market } from "./agent/market";
-import { isPortfolioValueQuery, parse, parsePosition, parseTrigger, watchTarget } from "./agent/nlu";
+import {
+  isPortfolioValueQuery,
+  parse,
+  parseNews,
+  parsePosition,
+  parseTrigger,
+  watchTarget,
+} from "./agent/nlu";
 import type { Instrument, ScreenPayload } from "./agent/types";
 import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
@@ -132,6 +139,13 @@ export default function App() {
     const pos = parsePosition(text);
     if (pos) {
       void setPositionFromChat(pos);
+      return;
+    }
+
+    // "What's the recent news on Palantir?"
+    const newsAsk = parseNews(text);
+    if (newsAsk) {
+      void newsFromChat(newsAsk.namePhrase);
       return;
     }
 
@@ -271,6 +285,54 @@ export default function App() {
       : "";
     const today = ` Today it's ${t.dayAbs >= 0 ? "up" : "down"} ${money(Math.abs(t.dayAbs))}.`;
     say(`Your book is worth ${money(t.marketValue)}.${overall}${today}`);
+  }
+
+  // "What's the recent news on X" — resolve the company (without adding it to
+  // the watchlist) and read back the freshest headlines.
+  async function newsFromChat(namePhrase: string) {
+    const feed = feedRef.current;
+    if (!feed.news) {
+      say("I can only pull news with live data connected.");
+      return;
+    }
+    setWorking(true);
+
+    // Resolve to a symbol without watching it.
+    let symbol: string | undefined;
+    let name = namePhrase.trim();
+    const res = market.resolve(namePhrase);
+    if (res.status === "ok") {
+      symbol = res.instrument.symbol;
+      name = res.instrument.name;
+    } else {
+      const candidate = symbolCandidate(namePhrase);
+      let hit = candidate && feed.lookup ? await feed.lookup(candidate) : null;
+      if (!hit && feed.search) {
+        const s = await feed.search(namePhrase);
+        if (s && feed.lookup) hit = await feed.lookup(s.symbol);
+      }
+      if (hit) {
+        symbol = hit.symbol;
+        name = hit.name;
+      }
+    }
+    if (!symbol) {
+      setWorking(false);
+      say(`I couldn't find a company called "${namePhrase.trim()}".`);
+      return;
+    }
+
+    const items = await feed.news(symbol);
+    setWorking(false);
+    if (items.length === 0) {
+      say(`I don't see anything recent on ${cap(name)}.`);
+      return;
+    }
+    const top = items.slice(0, 3);
+    const lines = top
+      .map((n) => `“${n.headline}” — ${n.source}, ${relTime(n.datetime)}`)
+      .join("  •  ");
+    say(`The latest on ${cap(name)}. ${lines}`);
   }
 
   // The shared add engine. Known names resolve through the registry; an unknown
@@ -505,4 +567,13 @@ function cap(s: string): string {
 /** "100" or "12.5" shares — drop a trailing ".0". */
 function trimShares(n: number): string {
   return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(4)));
+}
+
+/** A short relative time for a headline: "12m ago", "3h ago", "yesterday". */
+function relTime(ms: number): string {
+  const s = Math.max(0, (Date.now() - ms) / 1000);
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))}m ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  const d = Math.round(s / 86400);
+  return d <= 1 ? "yesterday" : `${d}d ago`;
 }

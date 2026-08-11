@@ -1,4 +1,11 @@
-import type { Feed, FeedDiagnostics, LookupResult, MarketEvent, Quote } from "./types";
+import type {
+  Feed,
+  FeedDiagnostics,
+  LookupResult,
+  MarketEvent,
+  NewsHeadline,
+  Quote,
+} from "./types";
 import { SEED } from "../agent/seed";
 
 /*
@@ -146,6 +153,38 @@ export class FinnhubFeed implements Feed {
         if (out.length >= 6) break;
       }
       return out;
+    } catch {
+      return [];
+    }
+  }
+
+  /** Recent company-news headlines, newest first (last ~7 days). */
+  async news(symbol: string): Promise<NewsHeadline[]> {
+    const now = Date.now();
+    const from = isoDay(now - 7 * 24 * 60 * 60 * 1000);
+    const to = isoDay(now);
+    try {
+      const res = await fetch(
+        `${BASE}/company-news?symbol=${encodeURIComponent(symbol)}&from=${from}&to=${to}&token=${this.token}`,
+      );
+      if (!res.ok) return [];
+      const raw = (await res.json()) as Array<{
+        headline?: string;
+        source?: string;
+        url?: string;
+        datetime?: number; // epoch SECONDS
+      }>;
+      if (!Array.isArray(raw)) return [];
+      return raw
+        .filter((r) => r.headline && r.datetime)
+        .map((r) => ({
+          headline: (r.headline as string).trim(),
+          source: r.source?.trim() || "unknown",
+          url: r.url,
+          datetime: (r.datetime as number) * 1000,
+        }))
+        .sort((a, b) => b.datetime - a.datetime)
+        .slice(0, 8);
     } catch {
       return [];
     }

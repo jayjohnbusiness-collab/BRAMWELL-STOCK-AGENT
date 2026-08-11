@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { isPortfolioValueQuery, parse, parsePosition, parseTrigger, watchTarget } from "./nlu";
+import {
+  isPortfolioValueQuery,
+  parse,
+  parseNews,
+  parsePosition,
+  parseTrigger,
+  watchTarget,
+} from "./nlu";
 
 /*
  * The command layer: conversational "add / watch" phrasings must classify as a
@@ -114,6 +121,20 @@ describe("parsePosition — recording a holding", () => {
   it("ignores non-position sentences", () => {
     expect(parsePosition("how's NVDA?")).toBeNull();
     expect(parsePosition("I have a question about Tesla")).toBeNull(); // no share count
+  });
+});
+
+describe("parseNews — asking for company news", () => {
+  it("pulls the company from common phrasings", () => {
+    expect(parseNews("what is the recent news on Palantir")?.namePhrase).toBe("Palantir");
+    expect(parseNews("Hey Bramwell, any headlines for Tesla")?.namePhrase).toBe("Tesla");
+    expect(parseNews("what's the latest on NVDA")?.namePhrase).toBe("NVDA");
+    expect(parseNews("what's new with Apple")?.namePhrase).toBe("Apple");
+  });
+
+  it("ignores non-news questions and news with no company", () => {
+    expect(parseNews("how's NVDA?")).toBeNull();
+    expect(parseNews("what's the news today")).toBeNull();
   });
 });
 
