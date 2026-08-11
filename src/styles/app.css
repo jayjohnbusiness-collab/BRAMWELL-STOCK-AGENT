@@ -88,6 +88,50 @@
   padding: var(--space-2) var(--space-2) var(--space-5) 0;
 }
 
+/*
+ * Quiet, thin scrollbars so the pane edge doesn't read as a hard divider.
+ * Transparent track, a soft rounded thumb that darkens only on hover.
+ */
+.messages,
+.screen-pane {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: transparent transparent;
+}
+.messages:hover,
+.messages:focus-within,
+.screen-pane:hover,
+.screen-pane:focus-within {
+  scrollbar-color: var(--rule) transparent;
+}
+.messages::-webkit-scrollbar,
+.screen-pane::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.messages::-webkit-scrollbar-track,
+.screen-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+.messages::-webkit-scrollbar-thumb,
+.screen-pane::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.messages:hover::-webkit-scrollbar-thumb,
+.messages:focus-within::-webkit-scrollbar-thumb,
+.screen-pane:hover::-webkit-scrollbar-thumb,
+.screen-pane:focus-within::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  background-clip: padding-box;
+}
+.messages:hover::-webkit-scrollbar-thumb:hover,
+.screen-pane:hover::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-soft);
+  background-clip: padding-box;
+}
+
 .msg {
   max-width: 46ch;
 }
