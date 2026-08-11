@@ -80,6 +80,12 @@ export const CARD_META: Record<CardType, CardMeta> = {
     blurb: "How your book's value is weighted.",
     defaultSize: "sm",
   },
+  chart: {
+    type: "chart",
+    title: "Price chart",
+    blurb: "A line chart for one name, over 1D / 1W / 1M.",
+    defaultSize: "md",
+  },
 };
 
 export const ALL_CARD_TYPES: CardType[] = [
@@ -94,4 +100,5 @@ export const ALL_CARD_TYPES: CardType[] = [
   "triggers",
   "portfolio",
   "allocation",
+  "chart",
 ];

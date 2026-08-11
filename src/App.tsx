@@ -621,6 +621,8 @@ export default function App() {
               watchSuggest: handleSuggest,
               earnings: (symbols) => feedRef.current.events?.(symbols) ?? Promise.resolve([]),
               openDetail: (symbol) => setDetailSymbol(symbol),
+              candles: (symbol, range) =>
+                feedRef.current.candles?.(symbol, range) ?? Promise.resolve(null),
               triggers: {
                 all: () => triggerStore.all(),
                 add: (input) => {

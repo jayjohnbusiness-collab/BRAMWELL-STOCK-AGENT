@@ -11,6 +11,7 @@ import { EventsCard } from "./cards/EventsCard";
 import { TriggersCard } from "./cards/TriggersCard";
 import { PortfolioCard } from "./cards/PortfolioCard";
 import { AllocationCard } from "./cards/AllocationCard";
+import { PriceChartCard } from "./cards/PriceChartCard";
 
 /*
  * The board: a grid of cards the user composes. Add via the picker, remove via
@@ -217,6 +218,8 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
       return <PortfolioCard ctx={ctx} size={size} />;
     case "allocation":
       return <AllocationCard ctx={ctx} size={size} />;
+    case "chart":
+      return <PriceChartCard ctx={ctx} size={size} />;
     default:
       return null;
   }

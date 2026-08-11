@@ -1,0 +1,130 @@
+/* Price chart card — themed from the shared tokens, light and dark. */
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chart-pick {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chart-symbol {
+  appearance: none;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: 2px 24px 2px 8px;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  /* A small chevron drawn with a background gradient (no external asset). */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
+    linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+  background-position:
+    calc(100% - 13px) 55%,
+    calc(100% - 8px) 55%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.chart-symbol:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-color: var(--brass);
+}
+
+.chart-name {
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-quote {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.chart-price {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.chart-ranges {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--flat-tint);
+  border-radius: var(--radius-pill);
+  align-self: flex-start;
+}
+
+.chart-range-btn {
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.76rem;
+  padding: 2px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background var(--fade), color var(--fade);
+}
+
+.chart-range-btn:hover {
+  color: var(--ink);
+}
+
+.chart-range-btn.on {
+  background: var(--paper);
+  color: var(--brass);
+  box-shadow: 0 1px 2px rgba(20, 28, 40, 0.08);
+}
+
+.chart-range-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.chart-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+}
+
+.chart-foot {
+  color: var(--ink-soft);
+}

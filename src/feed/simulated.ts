@@ -1,4 +1,6 @@
 import type {
+  Candle,
+  ChartRange,
   Feed,
   LookupResult,
   MarketEvent,
@@ -108,6 +110,36 @@ export class SimulatedFeed implements Feed {
       week52Low,
       marketCapM: Math.round(price * 1000 * (2 + pseudo(i.symbol, 23) * 8)),
     };
+  }
+
+  async candles(symbol: string, range: ChartRange): Promise<Candle[] | null> {
+    const i = this.book.find((x) => x.symbol === symbol.trim().toUpperCase());
+    if (!i) return null;
+    // A deterministic Brownian bridge: a random walk whose endpoints are pinned
+    // (start → today's price) with no snap, so the line is smooth, stable across
+    // redraws, and consistent with the live figure. No Math.random.
+    const points = range === "1D" ? 78 : range === "1W" ? 70 : 66;
+    const spanMs = range === "1D" ? 86_400_000 : range === "1W" ? 7 * 86_400_000 : 31 * 86_400_000;
+    const end = i.basePrice;
+    const drift = range === "1D" ? i.changePct / 100 : (i.changePct / 100) * (range === "1W" ? 2.2 : 3.4);
+    const start = end / (1 + drift);
+    const vol = end * (range === "1D" ? 0.006 : range === "1W" ? 0.01 : 0.014);
+
+    // Accumulate zero-mean increments, then subtract the linear tilt so the
+    // deviation is zero at both ends (a bridge). The trend line carries start→end.
+    const n = points;
+    const walk: number[] = [0];
+    for (let k = 1; k < n; k++) {
+      walk.push(walk[k - 1] + (pseudo(i.symbol + range, k) - 0.5) * 2 * vol);
+    }
+    const last = walk[n - 1];
+    const now = Date.now();
+    return walk.map((w, k) => {
+      const f = k / (n - 1);
+      const bridge = w - f * last; // 0 at k=0 and k=n-1
+      const trend = start + (end - start) * f;
+      return { t: now - spanMs + f * spanMs, c: Math.max(0.01, trend + bridge) };
+    });
   }
 
   async quotes(symbols: string[]): Promise<Quote[]> {

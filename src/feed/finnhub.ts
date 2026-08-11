@@ -1,4 +1,6 @@
 import type {
+  Candle,
+  ChartRange,
   Feed,
   FeedDiagnostics,
   LookupResult,
@@ -262,6 +264,35 @@ export class FinnhubFeed implements Feed {
       ]);
 
       return out;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * A price series for the chart card. Finnhub's candle endpoint is a paid
+   * feature; on the free tier it 403s. We attempt it and return null on any
+   * failure, so the chart falls back gracefully rather than showing nothing.
+   */
+  async candles(symbol: string, range: ChartRange): Promise<Candle[] | null> {
+    const now = Math.floor(Date.now() / 1000);
+    const span = range === "1D" ? 86_400 : range === "1W" ? 7 * 86_400 : 31 * 86_400;
+    const resolution = range === "1D" ? "5" : range === "1W" ? "30" : "D";
+    const from = now - span;
+    try {
+      const res = await fetch(
+        `${BASE}/stock/candle?symbol=${encodeURIComponent(symbol)}&resolution=${resolution}&from=${from}&to=${now}&token=${this.token}`,
+      );
+      if (!res.ok) return null;
+      const d = (await res.json()) as { s?: string; c?: number[]; t?: number[] };
+      if (d?.s !== "ok" || !Array.isArray(d.c) || !Array.isArray(d.t)) return null;
+      const out: Candle[] = [];
+      for (let i = 0; i < d.c.length; i++) {
+        const c = d.c[i];
+        const t = d.t[i];
+        if (typeof c === "number" && typeof t === "number") out.push({ t: t * 1000, c });
+      }
+      return out.length >= 2 ? out : null;
     } catch {
       return null;
     }

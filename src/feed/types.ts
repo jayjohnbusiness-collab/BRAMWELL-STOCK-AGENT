@@ -40,6 +40,17 @@ export interface LookupResult {
   changePct: number;
 }
 
+/** The ranges the price chart card can request. */
+export type ChartRange = "1D" | "1W" | "1M";
+
+/** One point on a price chart: a timestamp and the close at it. */
+export interface Candle {
+  /** Epoch milliseconds. */
+  t: number;
+  /** Close (or last) price at that time. */
+  c: number;
+}
+
 /** A recent news headline for a company. */
 export interface NewsHeadline {
   headline: string;
@@ -120,4 +131,11 @@ export interface Feed {
    * detail drawer. Null when the symbol can't be profiled.
    */
   profile?(symbol: string): Promise<SymbolProfile | null>;
+  /**
+   * A price series for the chart card, oldest first. Null when the feed can't
+   * supply history for that range (e.g. a data plan without intraday candles) —
+   * the chart then falls back to the session tape for the intraday range and
+   * says so for the wider ones, rather than drawing an invented line.
+   */
+  candles?(symbol: string, range: ChartRange): Promise<Candle[] | null>;
 }
