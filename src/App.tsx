@@ -28,10 +28,10 @@ import { Bell } from "./brand/Bell";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
 import { CardBoard } from "./components/CardBoard";
+import type { CardContext } from "./cards/types";
 import { TickerDetail } from "./components/TickerDetail";
+import { AccountPanel } from "./components/AccountPanel";
 import { VoiceOverlay } from "./components/VoiceOverlay";
-import { LiveDataControl } from "./components/LiveDataControl";
-import { ThemeToggle } from "./components/ThemeToggle";
 import "./styles/global.css";
 import "./styles/app.css";
 
@@ -122,6 +122,8 @@ export default function App() {
   const [awaitingChoice, setAwaitingChoice] = useState(false);
   // The symbol whose detail drawer is open, if any.
   const [detailSymbol, setDetailSymbol] = useState<string | null>(null);
+  // Whether the Account panel (holdings, watchlist, settings) is open.
+  const [accountOpen, setAccountOpen] = useState(false);
   const [, forceRender] = useState(0);
 
   // Voice dispatches spoken commands through the same pipeline as typing.
@@ -590,6 +592,50 @@ export default function App() {
           }`
         : `no prices — ${feedStatus.error ?? "request failed"}`;
 
+  // The shared context both the board and the Account panel read from.
+  const cardCtx: CardContext = {
+    market,
+    screen,
+    alert,
+    onAck: ack,
+    watchAdd: handleAdd,
+    watchRemove: handleRemove,
+    watchSuggest: handleSuggest,
+    earnings: (symbols) => feedRef.current.events?.(symbols) ?? Promise.resolve([]),
+    openDetail: (symbol) => setDetailSymbol(symbol),
+    candles: (symbol, range) =>
+      feedRef.current.candles?.(symbol, range) ?? Promise.resolve(null),
+    triggers: {
+      all: () => triggerStore.all(),
+      add: (input) => {
+        triggerStore.add(input);
+        forceRender((n) => n + 1);
+      },
+      remove: (id) => {
+        triggerStore.remove(id);
+        forceRender((n) => n + 1);
+      },
+      rearm: (id) => {
+        triggerStore.rearm(id);
+        forceRender((n) => n + 1);
+      },
+      notifyState: notifyState(),
+      requestNotify: () => requestNotify().then(() => forceRender((n) => n + 1)),
+    },
+    portfolio: {
+      all: () => portfolioStore.all(),
+      set: (symbol, shares, cost) => {
+        portfolioStore.set(symbol, shares, cost);
+        forceRender((n) => n + 1);
+      },
+      remove: (symbol) => {
+        portfolioStore.remove(symbol);
+        forceRender((n) => n + 1);
+      },
+    },
+    version: feedStatus?.at ?? 0,
+  };
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -605,8 +651,14 @@ export default function App() {
               {liveDetail}
             </span>
           ) : null}
-          <LiveDataControl />
-          <ThemeToggle />
+          <button
+            type="button"
+            className="chip account-btn"
+            onClick={() => setAccountOpen(true)}
+            title="Holdings, watchlist, and settings"
+          >
+            <AccountIcon /> Account
+          </button>
         </div>
       </header>
       <hr className="rule" />
@@ -629,50 +681,7 @@ export default function App() {
         </section>
 
         <div className="screen-pane">
-          <CardBoard
-            ctx={{
-              market,
-              screen,
-              alert,
-              onAck: ack,
-              watchAdd: handleAdd,
-              watchRemove: handleRemove,
-              watchSuggest: handleSuggest,
-              earnings: (symbols) => feedRef.current.events?.(symbols) ?? Promise.resolve([]),
-              openDetail: (symbol) => setDetailSymbol(symbol),
-              candles: (symbol, range) =>
-                feedRef.current.candles?.(symbol, range) ?? Promise.resolve(null),
-              triggers: {
-                all: () => triggerStore.all(),
-                add: (input) => {
-                  triggerStore.add(input);
-                  forceRender((n) => n + 1);
-                },
-                remove: (id) => {
-                  triggerStore.remove(id);
-                  forceRender((n) => n + 1);
-                },
-                rearm: (id) => {
-                  triggerStore.rearm(id);
-                  forceRender((n) => n + 1);
-                },
-                notifyState: notifyState(),
-                requestNotify: () => requestNotify().then(() => forceRender((n) => n + 1)),
-              },
-              portfolio: {
-                all: () => portfolioStore.all(),
-                set: (symbol, shares, cost) => {
-                  portfolioStore.set(symbol, shares, cost);
-                  forceRender((n) => n + 1);
-                },
-                remove: (symbol) => {
-                  portfolioStore.remove(symbol);
-                  forceRender((n) => n + 1);
-                },
-              },
-              version: feedStatus?.at ?? 0,
-            }}
-          />
+          <CardBoard ctx={cardCtx} />
         </div>
       </div>
 
@@ -691,6 +700,10 @@ export default function App() {
         />
       ) : null}
 
+      {accountOpen ? (
+        <AccountPanel ctx={cardCtx} onClose={() => setAccountOpen(false)} />
+      ) : null}
+
       {voice.enabled ? (
         <VoiceOverlay
           interim={voice.interim}
@@ -702,6 +715,22 @@ export default function App() {
         />
       ) : null}
     </div>
+  );
+}
+
+/** A small person glyph for the header Account button. */
+function AccountIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.4" fill="currentColor" />
+      <path
+        d="M5 19.5a7 7 0 0 1 14 0"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
   );
 }
 

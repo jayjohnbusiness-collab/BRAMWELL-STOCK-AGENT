@@ -196,6 +196,7 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
           onRemove={ctx.watchRemove}
           onSuggest={ctx.watchSuggest}
           onOpen={ctx.openDetail}
+          readOnly
         />
       );
     case "spotlight":
@@ -215,7 +216,7 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
     case "triggers":
       return <TriggersCard ctx={ctx} size={size} />;
     case "portfolio":
-      return <PortfolioCard ctx={ctx} size={size} />;
+      return <PortfolioCard ctx={ctx} size={size} readOnly />;
     case "allocation":
       return <AllocationCard ctx={ctx} size={size} />;
     case "chart":

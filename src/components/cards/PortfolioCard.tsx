@@ -9,7 +9,16 @@ import { cap, Empty, money, signedMoney } from "./parts";
  * market value, unrealized P/L, and today's dollar move — per name and in
  * total. Set a position here, or tell Bramwell ("I own 100 NVDA at 150").
  */
-export function PortfolioCard({ ctx, size }: { ctx: CardContext; size: CardSize }) {
+export function PortfolioCard({
+  ctx,
+  size,
+  readOnly = false,
+}: {
+  ctx: CardContext;
+  size: CardSize;
+  /** A view-only card (no add form, no remove) — editing lives in the Account panel. */
+  readOnly?: boolean;
+}) {
   const held = ctx.market.held();
   const [symbol, setSymbol] = useState("");
   const [shares, setShares] = useState("");
@@ -82,7 +91,11 @@ export function PortfolioCard({ ctx, size }: { ctx: CardContext; size: CardSize 
           </div>
         </div>
       ) : (
-        <Empty>No positions yet. Add one below, or tell me "I own 100 NVDA at 150".</Empty>
+        <Empty>
+          {readOnly
+            ? 'No positions yet. Add holdings in your Account, or tell me "I own 100 NVDA at 150".'
+            : 'No positions yet. Add one below, or tell me "I own 100 NVDA at 150".'}
+        </Empty>
       )}
 
       {shown.length > 0 ? (
@@ -92,8 +105,10 @@ export function PortfolioCard({ ctx, size }: { ctx: CardContext; size: CardSize 
               <button
                 type="button"
                 className="pf-name"
-                title="Edit this position"
-                onClick={() => edit(v.symbol, v.shares, v.cost)}
+                title={readOnly ? `Open ${v.symbol} details` : "Edit this position"}
+                onClick={() =>
+                  readOnly ? ctx.openDetail(v.symbol) : edit(v.symbol, v.shares, v.cost)
+                }
               >
                 <span className="label" style={{ color: "var(--ink)" }}>
                   {v.symbol}
@@ -118,15 +133,17 @@ export function PortfolioCard({ ctx, size }: { ctx: CardContext; size: CardSize 
                   </span>
                 )}
               </span>
-              <button
-                type="button"
-                className="chip pf-x"
-                aria-label={`Remove ${cap(v.name)} position`}
-                title="Remove"
-                onClick={() => ctx.portfolio.remove(v.symbol)}
-              >
-                ×
-              </button>
+              {readOnly ? null : (
+                <button
+                  type="button"
+                  className="chip pf-x"
+                  aria-label={`Remove ${cap(v.name)} position`}
+                  title="Remove"
+                  onClick={() => ctx.portfolio.remove(v.symbol)}
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
           {hidden > 0 ? (
@@ -137,7 +154,7 @@ export function PortfolioCard({ ctx, size }: { ctx: CardContext; size: CardSize 
         </div>
       ) : null}
 
-      {held.length === 0 ? (
+      {readOnly ? null : held.length === 0 ? (
         <p className="small" style={{ color: "var(--ink-soft)", margin: 0 }}>
           Add a name to your watchlist first, then record what you hold.
         </p>

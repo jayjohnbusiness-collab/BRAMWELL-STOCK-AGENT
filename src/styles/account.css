@@ -1,0 +1,196 @@
+/*
+ * The Account panel — a right-hand slide-in over a dim scrim, mirroring the
+ * detail drawer's chrome and reading the same tokens (light and dark).
+ */
+
+.account-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(15, 20, 27, 0.44);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: flex-end;
+  animation: account-fade 160ms ease;
+}
+
+@keyframes account-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.account-panel {
+  width: min(460px, 94vw);
+  height: 100%;
+  overflow-y: auto;
+  background: var(--paper);
+  border-left: var(--hairline) solid var(--rule);
+  box-shadow: -12px 0 40px rgba(15, 20, 27, 0.18);
+  padding: var(--space-5) var(--space-5) var(--space-7);
+  animation: account-slide 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes account-slide {
+  from {
+    transform: translateX(24px);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-scrim,
+  .account-panel {
+    animation: none;
+  }
+}
+
+.account-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.account-title {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 1.15rem;
+}
+
+.account-sub {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+
+.account-section {
+  margin-top: var(--space-5);
+  border-top: var(--hairline) solid var(--rule);
+  padding-top: var(--space-4);
+}
+
+.account-section-title {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-3);
+}
+
+.account-line {
+  margin: 0 0 var(--space-3);
+  color: var(--ink);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.account-muted {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+/* --- Live data --- */
+.account-live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.account-live-form {
+  display: flex;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.account-live-form input {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.account-live-form input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-color: var(--brass);
+}
+
+/* --- Preferences --- */
+.account-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.account-pref {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.account-pref-label {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+/* A small two-option segmented control (theme). */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--flat-tint);
+  border-radius: var(--radius-pill);
+}
+
+.seg-btn {
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 3px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background var(--fade), color var(--fade);
+}
+
+.seg-btn:hover {
+  color: var(--ink);
+}
+
+.seg-btn.on {
+  background: var(--paper);
+  color: var(--brass);
+  box-shadow: 0 1px 2px rgba(20, 28, 40, 0.08);
+}
+
+.seg-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* The header Account button. */
+.account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}

@@ -18,6 +18,7 @@ export function WatchlistManager({
   onSuggest,
   onOpen,
   size = "lg",
+  readOnly = false,
 }: {
   watched: Instrument[];
   /** Returns a message to show (empty on success). May look a ticker up live. */
@@ -28,6 +29,8 @@ export function WatchlistManager({
   /** Open the detail drawer for a name; makes each row's label clickable. */
   onOpen?: (symbol: string) => void;
   size?: CardSize;
+  /** A view-only list (no add form, no remove) — editing lives in the Account panel. */
+  readOnly?: boolean;
 }) {
   const limit = rowLimit(size, { sm: 3, md: 6, lg: 99 });
   const shown = watched.slice(0, limit);
@@ -99,7 +102,9 @@ export function WatchlistManager({
     <>
       {watched.length === 0 ? (
         <p className="small" style={{ color: "var(--ink-soft)", margin: "0 0 var(--space-3)" }}>
-          Nothing on the watch yet. Add a name and I'll keep an eye on it.
+          {readOnly
+            ? "Nothing on the watch yet. Add names in your Account."
+            : "Nothing on the watch yet. Add a name and I'll keep an eye on it."}
         </p>
       ) : (
         <div style={{ marginBottom: "var(--space-4)" }}>
@@ -116,16 +121,18 @@ export function WatchlistManager({
               }}
             >
               <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                <button
-                  type="button"
-                  className="chip"
-                  aria-label={`Stop watching ${i.name}`}
-                  title={`Stop watching ${i.name}`}
-                  onClick={() => onRemove(i.symbol)}
-                  style={{ padding: "0 10px", lineHeight: 1.7 }}
-                >
-                  ×
-                </button>
+                {readOnly ? null : (
+                  <button
+                    type="button"
+                    className="chip"
+                    aria-label={`Stop watching ${i.name}`}
+                    title={`Stop watching ${i.name}`}
+                    onClick={() => onRemove(i.symbol)}
+                    style={{ padding: "0 10px", lineHeight: 1.7 }}
+                  >
+                    ×
+                  </button>
+                )}
                 {onOpen ? (
                   <button
                     type="button"
@@ -179,6 +186,8 @@ export function WatchlistManager({
         </div>
       )}
 
+      {readOnly ? null : (
+      <>
       <form onSubmit={submit} className="composer-row">
         <div className="typeahead">
           {/* Ghost layer behind the (transparent) input: the typed text is
@@ -227,6 +236,8 @@ export function WatchlistManager({
           {note}
         </p>
       ) : null}
+      </>
+      )}
     </>
   );
 }
