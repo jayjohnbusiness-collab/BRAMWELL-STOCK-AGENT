@@ -103,7 +103,11 @@ export default function App() {
   // A ref breaks the definition cycle (the hook needs the handler, the handler
   // needs the hook's speak/cancel).
   const dispatchRef = useRef<(text: string) => void>(() => {});
-  const voice = useVoice((text) => dispatchRef.current(text));
+  const wakeAckRef = useRef<() => void>(() => {});
+  const voice = useVoice(
+    (text) => dispatchRef.current(text),
+    () => wakeAckRef.current(),
+  );
 
   function nextId(): string {
     idRef.current += 1;
@@ -182,6 +186,14 @@ export default function App() {
     }, 650);
   }
   dispatchRef.current = handleSend;
+
+  // Woken by name with no question yet — Bramwell acknowledges and waits.
+  wakeAckRef.current = () => {
+    voice.cancel();
+    const line = "At your service. What can I do for you?";
+    setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
+    voice.speak(line);
+  };
 
   // A fired trigger: Bramwell speaks up in chat, and (if allowed) a browser
   // notification reaches the user even when the tab isn't focused.

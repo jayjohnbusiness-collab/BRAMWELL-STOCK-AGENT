@@ -19,6 +19,8 @@ export interface RecognizerHandlers {
   onInterim?: (text: string) => void;
   /** Fires the instant the user starts speaking — used to stop Bramwell. */
   onSpeechStart?: () => void;
+  /** Woken by name with no command yet — Bramwell acknowledges and waits. */
+  onWake?: () => void;
   onError?: (error: string) => void;
 }
 
@@ -120,8 +122,13 @@ export class Recognizer {
     }
 
     if (woke) {
-      if (command) this.deliver(command);
-      else this.open(); // silent acknowledgement; await the command
+      if (command) {
+        this.deliver(command);
+      } else {
+        // Woken by name with nothing after it: acknowledge and wait.
+        this.open();
+        this.h.onWake?.();
+      }
       return;
     }
     // Not the wake word: only a command if the follow-up window is open.

@@ -18,7 +18,7 @@ import { Voice } from "../speech/synthesis";
  * for amplitude metering is deliberately avoided — on some browsers it starves
  * SpeechRecognition of audio, which reads as "Bramwell doesn't respond."
  */
-export function useVoice(onCommand: (text: string) => void) {
+export function useVoice(onCommand: (text: string) => void, onWake?: () => void) {
   const [available] = useState(() => Recognizer.supported());
   const [enabled, setEnabled] = useState(false);
   const [listening, setListening] = useState(false);
@@ -31,6 +31,8 @@ export function useVoice(onCommand: (text: string) => void) {
   const enabledRef = useRef(false);
   const commandRef = useRef(onCommand);
   commandRef.current = onCommand;
+  const wakeRef = useRef(onWake);
+  wakeRef.current = onWake;
 
   useEffect(() => {
     voiceRef.current = Voice.supported() ? new Voice(setSpeaking) : null;
@@ -53,6 +55,11 @@ export function useVoice(onCommand: (text: string) => void) {
         onInterim: setInterim,
         onListeningChange: setListening,
         onSpeechStart: () => voiceRef.current?.cancel(), // barge-in, mid-word
+        onWake: () => {
+          setError("");
+          setInterim("");
+          wakeRef.current?.();
+        },
         onError: (e) => {
           const message = friendlyError(e);
           if (message) setError(message);
