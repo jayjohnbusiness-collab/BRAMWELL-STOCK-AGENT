@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bramwell } from "./agent/bramwell";
 import { Market } from "./agent/market";
+import { composeMorningBriefing } from "./agent/briefing";
 import {
   isPortfolioValueQuery,
   parse,
@@ -17,7 +18,7 @@ import { useVoice } from "./hooks/useVoice";
 import { loadWatchlist, saveWatchlist, loadCustom, saveCustom } from "./watchlist/storage";
 import { hasToken } from "./feed/token";
 import { TriggerStore } from "./triggers/store";
-import { firedLine, type Trigger, type TriggerKind } from "./triggers/types";
+import { firedLine, triggerFires, type Trigger, type TriggerKind } from "./triggers/types";
 import { fireNotification, notifyState, requestNotify } from "./notify";
 import { PortfolioStore } from "./portfolio/store";
 import { valuePosition, portfolioTotals } from "./portfolio/types";
@@ -85,7 +86,7 @@ export default function App() {
   if (portfolioStoreRef.current === null) portfolioStoreRef.current = new PortfolioStore();
   const portfolioStore = portfolioStoreRef.current;
 
-  const { alert, ack, feedStatus } = useMarketFeed(
+  const { alert, ack, feedStatus, hydrated } = useMarketFeed(
     market,
     feedRef.current,
     attributorRef.current,
@@ -94,6 +95,9 @@ export default function App() {
   );
 
   const idRef = useRef(1);
+  // Guards the once-per-mount morning briefing (a localStorage date guards it
+  // once per calendar day across reloads).
+  const briefedRef = useRef(false);
   const [messages, setMessages] = useState<ChatMessage[]>([INTRO]);
   const [working, setWorking] = useState(false);
   const [screen, setScreen] = useState<ScreenPayload>({ kind: "none" });
@@ -160,6 +164,12 @@ export default function App() {
     // brain, so it can look a real ticker up live — exactly like the watchlist
     // field. Everything else goes to Bramwell as before.
     const intent = parse(text);
+    // "Brief me / the rundown" — the fuller briefing (book + earnings + alerts),
+    // assembled here where the portfolio and feed are reachable.
+    if (intent.kind === "brief") {
+      void briefFromChat();
+      return;
+    }
     if (intent.kind === "watch") {
       const target = watchTarget(text);
       if (target) {
@@ -189,6 +199,25 @@ export default function App() {
     }, 650);
   }
   dispatchRef.current = handleSend;
+
+  // The morning briefing: once prices have hydrated (first poll done), and at
+  // most once per calendar day, Bramwell greets the user unprompted with the
+  // day's posture, the book, earnings due today, and any alert already met.
+  useEffect(() => {
+    if (briefedRef.current || !hydrated) return;
+    briefedRef.current = true;
+    const today = isoToday();
+    if (loadBriefedOn() === today) return; // already greeted today
+    void buildBriefing(true).then(({ text }) => {
+      saveBriefedOn(today);
+      if (text) {
+        setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text }]);
+        voice.speak(text); // a no-op unless voice mode is already on
+      }
+    });
+    // buildBriefing reads stable refs; run once, when prices first hydrate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   // Woken by name with no question yet — Bramwell acknowledges and waits.
   wakeAckRef.current = () => {
@@ -303,6 +332,74 @@ export default function App() {
       line += ` — ${day}.`;
     }
     say(line);
+  }
+
+  // Assemble the morning briefing inputs from the live snapshot: the watchlist
+  // posture, the book's totals, today's earnings among the user's names, and any
+  // standing alert whose condition is already met. The wording lives in the
+  // (pure, tested) composer; this only gathers the facts.
+  async function buildBriefing(
+    firstOfDay: boolean,
+  ): Promise<{ text: string | null; heldRows: Instrument[] }> {
+    const held = market.held();
+
+    // The book's totals, when anything is recorded.
+    const values = portfolioStore.all().map((p) => {
+      const i = market.bySymbol(p.symbol);
+      return valuePosition(p, {
+        price: i?.basePrice ?? 0,
+        changePct: i?.changePct ?? 0,
+        name: i?.name ?? p.symbol,
+      });
+    });
+    const t = values.length ? portfolioTotals(values) : null;
+    const book = t
+      ? { dayAbs: t.dayAbs, hasBasis: t.hasBasis, plAbs: t.plAbs, plPct: t.plPct, marketValue: t.marketValue }
+      : null;
+
+    // Earnings today among the names followed.
+    let earningsToday: string[] = [];
+    const events = await (feedRef.current.events?.(held.map((i) => i.symbol)) ?? Promise.resolve([]));
+    const today = isoToday();
+    const dueSymbols = new Set(events.filter((e) => e.date === today).map((e) => e.symbol.toUpperCase()));
+    earningsToday = held.filter((i) => dueSymbols.has(i.symbol)).map((i) => i.name);
+
+    // Standing alerts whose condition is already met right now.
+    const alertsMet = triggerStore
+      .all()
+      .filter((tr) => {
+        const i = market.bySymbol(tr.symbol);
+        return i ? triggerFires(tr, { price: i.basePrice, changePct: i.changePct }) : false;
+      })
+      .map((tr) => tr.name);
+    const uniqueAlerts = [...new Set(alertsMet)];
+
+    const text = composeMorningBriefing({
+      hour: new Date().getHours(),
+      firstOfDay,
+      held: held.map((i) => ({
+        symbol: i.symbol,
+        name: i.name,
+        changePct: i.changePct,
+        cause: i.cause,
+      })),
+      book,
+      earningsToday,
+      alertsMet: uniqueAlerts,
+    });
+    return { text, heldRows: held };
+  }
+
+  // On-demand "brief me": the fuller briefing, with the holdings on screen.
+  async function briefFromChat() {
+    setWorking(true);
+    const { text, heldRows } = await buildBriefing(false);
+    setWorking(false);
+    const line =
+      text ?? "Nothing on your watch just yet — add a few names and I'll keep the book for you.";
+    setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
+    voice.speak(line);
+    if (heldRows.length) setScreen({ kind: "table", title: "Your holdings", rows: heldRows });
   }
 
   // "What's the recent news on X" — resolve the company (without adding it to
@@ -585,6 +682,33 @@ export default function App() {
       ) : null}
     </div>
   );
+}
+
+/** Today's date as YYYY-MM-DD (local), for the once-a-day briefing guard. */
+function isoToday(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+const BRIEFED_KEY = "bramwell.briefedOn";
+
+/** The date Bramwell last gave the morning briefing, if any. */
+function loadBriefedOn(): string | null {
+  try {
+    return window.localStorage.getItem(BRIEFED_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveBriefedOn(date: string): void {
+  try {
+    window.localStorage.setItem(BRIEFED_KEY, date);
+  } catch {
+    /* private mode or storage full — the briefing simply repeats next load */
+  }
 }
 
 /** A plausible ticker from typed text (e.g. "googl" → "GOOGL", "brk.b" → "BRK.B"). */

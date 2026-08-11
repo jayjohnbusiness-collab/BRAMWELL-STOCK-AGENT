@@ -40,6 +40,10 @@ export function useMarketFeed(
 ) {
   const [alert, setAlert] = useState<Alert | null>(null);
   const [feedStatus, setFeedStatus] = useState<FeedStatus | null>(null);
+  // True once the first poll has overlaid quotes onto the Market — the signal
+  // that on-load features (the morning briefing) may read live prices. Distinct
+  // from feedStatus, which only some feeds report.
+  const [hydrated, setHydrated] = useState(false);
   const [, setVersion] = useState(0);
   const dismissed = useRef<Set<string>>(new Set());
   const armed = useRef(false);
@@ -122,6 +126,7 @@ export function useMarketFeed(
         recordQuotes(quotes, Date.now()); // feed the intraday sparkline tape
         const diag = feed.lastDiagnostics?.();
         if (diag) setFeedStatus({ ...diag, at: Date.now() });
+        setHydrated(true); // first quotes are in; on-load features may run
         setVersion((v) => v + 1);
         pruneStaleCauses();
         attributionPass();
@@ -161,5 +166,5 @@ export function useMarketFeed(
     setAlert(null);
   }
 
-  return { alert, ack, feedStatus };
+  return { alert, ack, feedStatus, hydrated };
 }
