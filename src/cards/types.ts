@@ -23,7 +23,6 @@ export type CardType =
   | "causes"
   | "clock"
   | "events"
-  | "triggers"
   | "portfolio"
   | "allocation"
   | "chart";

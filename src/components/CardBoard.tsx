@@ -8,7 +8,6 @@ import { WatchlistManager } from "./WatchlistManager";
 import { SpotlightCard, AlertsCard, MoversCard, BreadthCard, CausesCard } from "./cards/simpleCards";
 import { ClockCard } from "./cards/ClockCard";
 import { EventsCard } from "./cards/EventsCard";
-import { TriggersCard } from "./cards/TriggersCard";
 import { PortfolioCard } from "./cards/PortfolioCard";
 import { AllocationCard } from "./cards/AllocationCard";
 import { PriceChartCard } from "./cards/PriceChartCard";
@@ -213,8 +212,6 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
       return <ClockCard size={size} />;
     case "events":
       return <EventsCard market={ctx.market} earnings={ctx.earnings} size={size} />;
-    case "triggers":
-      return <TriggersCard ctx={ctx} size={size} readOnly />;
     case "portfolio":
       return <PortfolioCard ctx={ctx} size={size} readOnly />;
     case "allocation":
