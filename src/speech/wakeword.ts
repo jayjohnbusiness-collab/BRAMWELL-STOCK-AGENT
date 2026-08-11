@@ -1,9 +1,11 @@
 /*
  * Wake-word detection (conversation spec §2).
  *
- * "Hey Bramwell" — also a bare "Bramwell". Three syllables with hard
- * consonants and no common English collision, for a low false-positive rate.
- * "Bram" alone is rejected: two phonemes is not enough separation.
+ * "Hey Bramwell" — also a bare "Bramwell". Because speech recognition often
+ * mangles the name, we also accept its common mishearings: "bram well",
+ * "bramwells", "bramwell's", and the frequent "well's"/"wells". A bare "well"
+ * (a very common English word) is deliberately NOT accepted, and "bram" alone
+ * stays rejected — too little separation.
  *
  * Pure and synchronous, so the rule that decides whether Bramwell was even
  * addressed is testable without a microphone.
@@ -16,9 +18,11 @@ export interface WakeResult {
   command: string;
 }
 
-// Optional leading "hey"/"ok"/"okay", then the whole word "bramwell",
-// then any trailing punctuation (including en/em dashes) and space.
-const WAKE = /^\s*(hey\s+|ok\s+|okay\s+)?bramwell\b[\s,.:;!?–—-]*/i;
+// Optional leading "hey"/"hi"/"ok"/"okay", then the name or a near-hearing of
+// it ("bramwell", "bram well", "bramwell's", "well's", "wells"), then any
+// trailing punctuation (including en/em dashes) and space.
+const WAKE =
+  /^\s*(?:hey\s+|hi\s+|ok\s+|okay\s+)?(?:bram\s?well(?:['’]s|s)?|well['’]s|wells)\b[\s,.:;!?–—-]*/i;
 
 export function detectWake(transcript: string): WakeResult {
   const t = transcript.trim();
