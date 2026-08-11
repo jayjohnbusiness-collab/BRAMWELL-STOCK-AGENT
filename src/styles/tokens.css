@@ -6,6 +6,7 @@
  * pills. Less exclusive, more approachable — the name carries the prestige.
  */
 :root {
+  color-scheme: light;
   /* Surfaces & text */
   --ground: #f4f6f8; /* cool grey workspace (page) */
   --paper: #ffffff; /* raised surfaces — the cards */
@@ -51,4 +52,33 @@
 
   /* Motion — prices cross-fade rather than flash. */
   --fade: 240ms ease;
+}
+
+/*
+ * Dark theme — a deep slate "night" version of Clarity. Only the color tokens
+ * change; every surface reads them, so the whole app swaps in one place. The
+ * data greens/reds are brightened for contrast on the dark ground.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ground: #0f141b;
+  --paper: #182029;
+  --ink: #e8eef4;
+  --ink-soft: #99a6b4;
+  --rule: #28323f;
+
+  --brass: #4a97e0;
+  --brass-strong: #66a9ea;
+  --accent-tint: #14273a;
+  --accent-line: #2c4a66;
+  --oxblood: #cf7a7a;
+
+  --data-up: #46c98a;
+  --data-down: #e2726f;
+  --up-tint: #14291f;
+  --down-tint: #2a1a1a;
+  --flat-tint: #1b232e;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
 }

@@ -7,8 +7,24 @@
       name="description"
       content="Bramwell — you'll hear from him when it matters. A market-monitoring agent with the manner of a butler."
     />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
     <title>Bramwell</title>
+    <script>
+      // Apply the saved (or OS) theme before first paint — no flash of light.
+      (function () {
+        try {
+          var t = localStorage.getItem("bramwell.theme");
+          if (t !== "dark" && t !== "light") {
+            t =
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          }
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

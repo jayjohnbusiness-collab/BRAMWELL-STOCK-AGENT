@@ -21,6 +21,7 @@ import { Composer } from "./components/Composer";
 import { CardBoard } from "./components/CardBoard";
 import { VoiceOverlay } from "./components/VoiceOverlay";
 import { LiveDataControl } from "./components/LiveDataControl";
+import { ThemeToggle } from "./components/ThemeToggle";
 import "./styles/global.css";
 import "./styles/app.css";
 
@@ -409,6 +410,7 @@ export default function App() {
             </span>
           ) : null}
           <LiveDataControl />
+          <ThemeToggle />
         </div>
       </header>
       <hr className="rule" />

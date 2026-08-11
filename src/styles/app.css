@@ -368,6 +368,22 @@
   color: var(--ink-soft);
 }
 
+/* Theme toggle — a quiet round icon button in the header. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.theme-toggle:hover {
+  color: var(--brass);
+  border-color: var(--brass);
+}
+
 /* The live indicator breathes with an expanding ring — a quiet "on air". */
 .live-dot {
   width: 8px;
