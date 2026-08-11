@@ -4,6 +4,7 @@ import { hasToken, getToken, setToken, clearToken } from "../feed/token";
 import { currentTheme, setTheme, type Theme } from "../theme";
 import { chimeMuted, setChimeMuted } from "../chime";
 import { PortfolioCard } from "./cards/PortfolioCard";
+import { TriggersCard } from "./cards/TriggersCard";
 import { WatchlistManager } from "./WatchlistManager";
 import "../styles/account.css";
 
@@ -57,6 +58,10 @@ export function AccountPanel({ ctx, onClose }: { ctx: CardContext; onClose: () =
             onSuggest={ctx.watchSuggest}
             size="lg"
           />
+        </Section>
+
+        <Section title="Alerts & triggers">
+          <TriggersCard ctx={ctx} size="lg" hideControls />
         </Section>
 
         <Section title="Live data">

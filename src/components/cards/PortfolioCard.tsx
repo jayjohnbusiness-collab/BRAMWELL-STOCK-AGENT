@@ -118,11 +118,10 @@ export function PortfolioCard({
                 </span>
               </button>
               <span className="pf-figures">
-                <span className="price tabular">{money(v.marketValue)}</span>
                 {v.hasBasis ? (
                   <span
                     className="small tabular"
-                    style={{ color: plColor(v.plAbs), minWidth: "6ch", textAlign: "right" }}
+                    style={{ color: plColor(v.plAbs), minWidth: "6ch", textAlign: "left" }}
                   >
                     {v.plPct >= 0 ? "+" : "−"}
                     {Math.abs(v.plPct).toFixed(1)}%
@@ -132,6 +131,7 @@ export function PortfolioCard({
                     —
                   </span>
                 )}
+                <span className="price tabular">{money(v.marketValue)}</span>
               </span>
               {readOnly ? null : (
                 <button

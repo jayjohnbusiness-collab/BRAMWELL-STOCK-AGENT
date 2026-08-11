@@ -214,7 +214,7 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
     case "events":
       return <EventsCard market={ctx.market} earnings={ctx.earnings} size={size} />;
     case "triggers":
-      return <TriggersCard ctx={ctx} size={size} />;
+      return <TriggersCard ctx={ctx} size={size} readOnly />;
     case "portfolio":
       return <PortfolioCard ctx={ctx} size={size} readOnly />;
     case "allocation":

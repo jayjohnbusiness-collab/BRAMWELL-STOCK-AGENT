@@ -11,7 +11,19 @@ import { Empty } from "./parts";
  * (or ask Bramwell — "tell me if NVDA drops below 200"); the live loop watches
  * and speaks up the moment it fires, with a browser notification if allowed.
  */
-export function TriggersCard({ ctx, size }: { ctx: CardContext; size: CardSize }) {
+export function TriggersCard({
+  ctx,
+  size,
+  readOnly = false,
+  hideControls = false,
+}: {
+  ctx: CardContext;
+  size: CardSize;
+  /** A view-only card (no add form, no remove/re-arm) — editing lives in the Account panel. */
+  readOnly?: boolean;
+  /** Hide the sound/notification header (the Account panel owns those in Preferences). */
+  hideControls?: boolean;
+}) {
   const held = ctx.market.held();
   const [symbol, setSymbol] = useState("");
   const [kind, setKind] = useState<TriggerKind>("below");
@@ -59,30 +71,36 @@ export function TriggersCard({ ctx, size }: { ctx: CardContext; size: CardSize }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-        {ctx.triggers.notifyState === "default" ? (
-          <button type="button" className="chip notify-cta" onClick={ctx.triggers.requestNotify}>
-            Enable browser notifications
+      {readOnly || hideControls ? null : (
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+          {ctx.triggers.notifyState === "default" ? (
+            <button type="button" className="chip notify-cta" onClick={ctx.triggers.requestNotify}>
+              Enable browser notifications
+            </button>
+          ) : ctx.triggers.notifyState === "denied" ? (
+            <p className="small" style={{ color: "var(--ink-soft)", margin: 0 }}>
+              Notifications are blocked in your browser — alerts still show here and in chat.
+            </p>
+          ) : null}
+          <button
+            type="button"
+            className="chip"
+            onClick={toggleSound}
+            aria-pressed={!muted}
+            title={muted ? "Alert sound is off" : "Alert sound is on"}
+            style={{ marginLeft: "auto" }}
+          >
+            {muted ? "🔕 Sound off" : "🔔 Sound on"}
           </button>
-        ) : ctx.triggers.notifyState === "denied" ? (
-          <p className="small" style={{ color: "var(--ink-soft)", margin: 0 }}>
-            Notifications are blocked in your browser — alerts still show here and in chat.
-          </p>
-        ) : null}
-        <button
-          type="button"
-          className="chip"
-          onClick={toggleSound}
-          aria-pressed={!muted}
-          title={muted ? "Alert sound is off" : "Alert sound is on"}
-          style={{ marginLeft: "auto" }}
-        >
-          {muted ? "🔕 Sound off" : "🔔 Sound on"}
-        </button>
-      </div>
+        </div>
+      )}
 
       {shown.length === 0 ? (
-        <Empty>No alerts set. Add one below, or ask me to watch a level.</Empty>
+        <Empty>
+          {readOnly
+            ? "No alerts set. Add them in your Account."
+            : "No alerts set. Add one below, or ask me to watch a level."}
+        </Empty>
       ) : (
         <div>
           {shown.map((t) => (
@@ -106,25 +124,29 @@ export function TriggersCard({ ctx, size }: { ctx: CardContext; size: CardSize }
                   )}
                 </span>
               </span>
-              {t.firedAt ? (
-                <button
-                  type="button"
-                  className="chip trigger-btn"
-                  onClick={() => ctx.triggers.rearm(t.id)}
-                  title="Re-arm this alert"
-                >
-                  re-arm
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className="chip trigger-x"
-                aria-label={`Remove ${t.symbol} ${describeTrigger(t)}`}
-                title="Remove"
-                onClick={() => ctx.triggers.remove(t.id)}
-              >
-                ×
-              </button>
+              {readOnly ? null : (
+                <>
+                  {t.firedAt ? (
+                    <button
+                      type="button"
+                      className="chip trigger-btn"
+                      onClick={() => ctx.triggers.rearm(t.id)}
+                      title="Re-arm this alert"
+                    >
+                      re-arm
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="chip trigger-x"
+                    aria-label={`Remove ${t.symbol} ${describeTrigger(t)}`}
+                    title="Remove"
+                    onClick={() => ctx.triggers.remove(t.id)}
+                  >
+                    ×
+                  </button>
+                </>
+              )}
             </div>
           ))}
           {hidden > 0 ? (
@@ -135,7 +157,7 @@ export function TriggersCard({ ctx, size }: { ctx: CardContext; size: CardSize }
         </div>
       )}
 
-      {held.length === 0 ? (
+      {readOnly ? null : held.length === 0 ? (
         <p className="small" style={{ color: "var(--ink-soft)", margin: 0 }}>
           Add a name to your watchlist first, then set an alert on it.
         </p>
