@@ -1,6 +1,7 @@
 import type {
   Candle,
   ChartRange,
+  DividendInfo,
   Feed,
   LookupResult,
   MarketEvent,
@@ -11,6 +12,7 @@ import type {
 import type { Instrument } from "../agent/types";
 import { SEED } from "../agent/seed";
 import { SIM_NEWS } from "../attribution/news";
+import { hashPhase, projectDates } from "../dividend/schedule";
 
 /*
  * The simulated feed. The "story of the day" (changePct + cause) holds steady;
@@ -110,6 +112,36 @@ export class SimulatedFeed implements Feed {
       week52Low,
       marketCapM: Math.round(price * 1000 * (2 + pseudo(i.symbol, 23) * 8)),
     };
+  }
+
+  async dividends(symbols: string[]): Promise<DividendInfo[]> {
+    // Indicated annual yields (%) for names that pay; anything not listed is
+    // treated as a non-payer, so the demo reads true to life.
+    const YIELD: Record<string, number> = {
+      AAPL: 0.5, MSFT: 0.8, AVGO: 1.2, JPM: 2.2, DAL: 1.0, DLA: 1.4,
+    };
+    const now = Date.now();
+    const out: DividendInfo[] = [];
+    for (const sym of symbols) {
+      const s = sym.toUpperCase();
+      const y = YIELD[s];
+      if (!y) continue;
+      const i = this.book.find((x) => x.symbol === s);
+      if (!i) continue;
+      const annualPerShare = (i.basePrice * y) / 100;
+      const dates = projectDates(hashPhase(s), now);
+      out.push({
+        symbol: s,
+        amount: annualPerShare / 4,
+        frequency: 4,
+        annualPerShare,
+        yieldPct: y,
+        exDate: dates.exDate,
+        payDate: dates.payDate,
+        estimated: false,
+      });
+    }
+    return out;
   }
 
   async candles(symbol: string, range: ChartRange): Promise<Candle[] | null> {

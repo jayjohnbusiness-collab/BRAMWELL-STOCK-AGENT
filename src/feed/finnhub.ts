@@ -1,6 +1,7 @@
 import type {
   Candle,
   ChartRange,
+  DividendInfo,
   Feed,
   FeedDiagnostics,
   LookupResult,
@@ -10,6 +11,7 @@ import type {
   SymbolProfile,
 } from "./types";
 import { SEED } from "../agent/seed";
+import { hashPhase, projectDates } from "../dividend/schedule";
 
 /*
  * A real market-data adapter (Finnhub).
@@ -296,6 +298,47 @@ export class FinnhubFeed implements Feed {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Dividend info from the metric endpoint (available on the free tier): the
+   * indicated annual dividend per share and yield. Finnhub's free tier has no
+   * forward dividend calendar, so the next ex-/pay-dates are projected and
+   * flagged estimated. Non-payers (no annual dividend) are dropped.
+   */
+  async dividends(symbols: string[]): Promise<DividendInfo[]> {
+    const now = Date.now();
+    const out: DividendInfo[] = [];
+    await Promise.all(
+      symbols.slice(0, 24).map(async (symbol) => {
+        const s = symbol.trim().toUpperCase();
+        try {
+          const res = await fetch(
+            `${BASE}/stock/metric?symbol=${encodeURIComponent(s)}&metric=all&token=${this.token}`,
+          );
+          if (!res.ok) return;
+          const d = (await res.json()) as { metric?: Record<string, number | undefined> };
+          const m = d.metric ?? {};
+          const annual = num(m.dividendPerShareAnnual);
+          const yieldPct = num(m.dividendYieldIndicatedAnnual) ?? num(m.currentDividendYieldTTM);
+          if (!annual || annual <= 0) return;
+          const dates = projectDates(hashPhase(s), now);
+          out.push({
+            symbol: s,
+            amount: annual / 4,
+            frequency: 4,
+            annualPerShare: annual,
+            yieldPct,
+            exDate: dates.exDate,
+            payDate: dates.payDate,
+            estimated: true,
+          });
+        } catch {
+          /* one symbol failing shouldn't sink the card */
+        }
+      }),
+    );
+    return out;
   }
 
   /** Upcoming earnings dates for the given symbols (next ~6 weeks). */

@@ -80,6 +80,12 @@ export const CARD_META: Record<CardType, CardMeta> = {
     blurb: "A line chart for one name, over 1D / 1W / 1M.",
     defaultSize: "md",
   },
+  dividends: {
+    type: "dividends",
+    title: "Dividends",
+    blurb: "Upcoming payouts and the income they're worth to you.",
+    defaultSize: "md",
+  },
 };
 
 export const ALL_CARD_TYPES: CardType[] = [
@@ -94,4 +100,5 @@ export const ALL_CARD_TYPES: CardType[] = [
   "portfolio",
   "allocation",
   "chart",
+  "dividends",
 ];

@@ -83,6 +83,30 @@ export interface SymbolProfile {
   marketCapM?: number;
 }
 
+/**
+ * A company's dividend, for the dividend card. `amount` is per share for a
+ * single payment; `annualPerShare` is the yearly total. Dates are the next
+ * ex-/pay-dates — real when the feed has a calendar, otherwise projected
+ * (`estimated: true`).
+ */
+export interface DividendInfo {
+  symbol: string;
+  /** Dividend per share, per payment. */
+  amount: number;
+  /** Payments per year (4 = quarterly). */
+  frequency: number;
+  /** Dividend per share, per year. */
+  annualPerShare: number;
+  /** Indicated/trailing yield in percent, when known. */
+  yieldPct?: number;
+  /** Next ex-dividend date, YYYY-MM-DD. */
+  exDate: string;
+  /** Next pay date, YYYY-MM-DD. */
+  payDate: string;
+  /** Whether the dates are projected rather than from a real calendar. */
+  estimated: boolean;
+}
+
 /** An upcoming dated event for a symbol (earnings today; more feeds later). */
 export interface MarketEvent {
   symbol: string;
@@ -138,4 +162,9 @@ export interface Feed {
    * says so for the wider ones, rather than drawing an invented line.
    */
   candles?(symbol: string, range: ChartRange): Promise<Candle[] | null>;
+  /**
+   * Dividend info for the given symbols — amount, yield, and the next ex-/pay-
+   * dates. Only symbols that actually pay are returned; the rest are omitted.
+   */
+  dividends?(symbols: string[]): Promise<DividendInfo[]>;
 }

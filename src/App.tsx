@@ -3,6 +3,7 @@ import { Bramwell } from "./agent/bramwell";
 import { Market } from "./agent/market";
 import { composeMorningBriefing } from "./agent/briefing";
 import { marketStatus } from "./market/hours";
+import { joinIncome, totalAnnual, nextPayment, yieldOnValue } from "./dividend/income";
 import {
   isPortfolioValueQuery,
   parse,
@@ -181,6 +182,12 @@ export default function App() {
       return;
     }
 
+    // "How much dividend income will I get?"
+    if (isDividendQuery(text)) {
+      void answerDividends();
+      return;
+    }
+
     // An "add / watch" command is handled here rather than in the (network-free)
     // brain, so it can look a real ticker up live — exactly like the watchlist
     // field. Everything else goes to Bramwell as before.
@@ -354,6 +361,47 @@ export default function App() {
       line += ` — ${day}.`;
     }
     say(line);
+  }
+
+  // "How much do I make in dividends?" — total the income across held payers.
+  async function answerDividends() {
+    setWorking(true);
+    const positions = portfolioStore.all();
+    const symbols = Array.from(
+      new Set([...market.held().map((i) => i.symbol), ...positions.map((p) => p.symbol)]),
+    );
+    const infos = await (feedRef.current.dividends?.(symbols) ?? Promise.resolve([]));
+    setWorking(false);
+    if (infos.length === 0) {
+      say("None of your names pay a dividend just now.");
+      return;
+    }
+    const rows = joinIncome(infos, positions);
+    const annual = totalAnnual(rows);
+    const next = nextPayment(rows, Date.now());
+    const marketValue = positions.reduce(
+      (s, p) => s + p.shares * (market.bySymbol(p.symbol)?.basePrice ?? 0),
+      0,
+    );
+    const yld = yieldOnValue(annual, marketValue);
+    if (annual > 0) {
+      const top = [...rows].sort((a, b) => b.annualIncome - a.annualIncome)[0];
+      let line = `Roughly ${money(annual)} a year — a yield of ${yld.toFixed(1)}% on your book.`;
+      if (next) {
+        line = `Your next payout's about ${money(next.payment)} from ${cap(
+          market.bySymbol(next.symbol)?.name ?? next.symbol,
+        )} around ${spokenDate(next.payDate)}. ${line}`;
+      }
+      if (top && top.shares > 0) {
+        line += ` ${cap(market.bySymbol(top.symbol)?.name ?? top.symbol)}'s your biggest payer.`;
+      }
+      say(line);
+    } else {
+      const names = rows.map((r) => cap(market.bySymbol(r.symbol)?.name ?? r.symbol));
+      say(
+        `A few of your names pay — ${listPhrase(names)} — but you've nothing recorded, so there's no income to total yet.`,
+      );
+    }
   }
 
   // Assemble the morning briefing inputs from the live snapshot: the watchlist
@@ -611,6 +659,7 @@ export default function App() {
     openAccount: () => setAccountOpen(true),
     candles: (symbol, range) =>
       feedRef.current.candles?.(symbol, range) ?? Promise.resolve(null),
+    dividends: (symbols) => feedRef.current.dividends?.(symbols) ?? Promise.resolve([]),
     triggers: {
       all: () => triggerStore.all(),
       add: (input) => {
@@ -783,6 +832,29 @@ function saveBriefedOn(date: string): void {
   } catch {
     /* private mode or storage full — the briefing simply repeats next load */
   }
+}
+
+/** Whether the message is asking about dividends / dividend income. */
+function isDividendQuery(text: string): boolean {
+  return /\b(dividends?|payouts?|dividend income|div(?:vy| yield)?)\b/i.test(text);
+}
+
+/** "September 28" from a YYYY-MM-DD string, for a spoken line. */
+function spokenDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map((n) => parseInt(n, 10));
+  if (!y || !m || !d) return iso;
+  const months = [
+    "January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December",
+  ];
+  return `${months[m - 1]} ${d}`;
+}
+
+/** "A", "A and B", "A, B and C". */
+function listPhrase(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 /** A plausible ticker from typed text (e.g. "googl" → "GOOGL", "brk.b" → "BRK.B"). */

@@ -1,6 +1,6 @@
 import type { Market } from "../agent/market";
 import type { Alert, ScreenPayload } from "../agent/types";
-import type { Candle, ChartRange, MarketEvent } from "../feed/types";
+import type { Candle, ChartRange, DividendInfo, MarketEvent } from "../feed/types";
 import type { Trigger, TriggerKind } from "../triggers/types";
 import type { Position } from "../portfolio/types";
 import type { NotifyState } from "../notify";
@@ -25,7 +25,8 @@ export type CardType =
   | "events"
   | "portfolio"
   | "allocation"
-  | "chart";
+  | "chart"
+  | "dividends";
 
 export type CardSize = "sm" | "md" | "lg";
 
@@ -51,6 +52,8 @@ export interface CardContext {
   openAccount: () => void;
   /** Price history for the chart card; null when the feed can't supply it. */
   candles: (symbol: string, range: ChartRange) => Promise<Candle[] | null>;
+  /** Dividend info for the given symbols (only payers are returned). */
+  dividends: (symbols: string[]) => Promise<DividendInfo[]>;
   /** Price triggers: set, list, remove, re-arm, and manage notifications. */
   triggers: {
     all: () => Trigger[];
