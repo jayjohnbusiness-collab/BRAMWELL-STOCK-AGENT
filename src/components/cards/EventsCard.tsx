@@ -12,17 +12,19 @@ import { cap, Empty } from "./parts";
  * today forward. The user can add/remove their own; earnings are read-only.
  */
 type Agenda =
-  | { key: string; date: string; title: string; tag: string; removable: false }
+  | { key: string; date: string; title: string; tag: string; removable: false; symbol?: string }
   | { key: string; date: string; title: string; tag: string; removable: true; id: string };
 
 export function EventsCard({
   market,
   earnings,
   size,
+  onOpen,
 }: {
   market: Market;
   earnings: (symbols: string[]) => Promise<MarketEvent[]>;
   size: CardSize;
+  onOpen?: (symbol: string) => void;
 }) {
   const [feedEvents, setFeedEvents] = useState<MarketEvent[]>([]);
   const [custom, setCustom] = useState<CustomEvent[]>(() => loadEvents());
@@ -61,6 +63,7 @@ export function EventsCard({
       title: `${cap(nameOf(e.symbol))} earnings`,
       tag: whenLabel(e.when),
       removable: false as const,
+      symbol: e.symbol,
     })),
     ...custom.map((c) => ({
       key: `c-${c.id}`,
@@ -105,7 +108,19 @@ export function EventsCard({
           {shown.map((a) => (
             <div key={a.key} className="agenda-row">
               <span className="agenda-main">
-                <span className="agenda-title">{a.title}</span>
+                {!a.removable && a.symbol && onOpen ? (
+                  <button
+                    type="button"
+                    className="ticker-open agenda-title"
+                    onClick={() => onOpen(a.symbol!)}
+                    title={`Open ${a.symbol} details`}
+                    style={{ background: "none", border: "none", padding: 0, font: "inherit", textAlign: "left", cursor: "pointer" }}
+                  >
+                    {a.title}
+                  </button>
+                ) : (
+                  <span className="agenda-title">{a.title}</span>
+                )}
                 <span className="agenda-meta small">
                   {fmtDate(a.date)} · {a.tag}
                 </span>

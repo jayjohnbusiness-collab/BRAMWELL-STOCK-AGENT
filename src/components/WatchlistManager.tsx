@@ -17,6 +17,7 @@ export function WatchlistManager({
   onRemove,
   onSuggest,
   onOpen,
+  onManage,
   size = "lg",
   readOnly = false,
 }: {
@@ -28,6 +29,8 @@ export function WatchlistManager({
   onSuggest?: (query: string) => Promise<Suggestion[]>;
   /** Open the detail drawer for a name; makes each row's label clickable. */
   onOpen?: (symbol: string) => void;
+  /** Jump to the Account panel to edit — shown only in read-only mode. */
+  onManage?: () => void;
   size?: CardSize;
   /** A view-only list (no add form, no remove) — editing lives in the Account panel. */
   readOnly?: boolean;
@@ -186,7 +189,13 @@ export function WatchlistManager({
         </div>
       )}
 
-      {readOnly ? null : (
+      {readOnly ? (
+        onManage ? (
+          <button type="button" className="chip manage-link" onClick={onManage}>
+            Manage in Account
+          </button>
+        ) : null
+      ) : (
       <>
       <form onSubmit={submit} className="composer-row">
         <div className="typeahead">

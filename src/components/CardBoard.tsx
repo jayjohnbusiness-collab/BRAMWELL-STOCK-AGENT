@@ -195,6 +195,7 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
           onRemove={ctx.watchRemove}
           onSuggest={ctx.watchSuggest}
           onOpen={ctx.openDetail}
+          onManage={ctx.openAccount}
           readOnly
         />
       );
@@ -205,13 +206,20 @@ function renderBody(type: CardType, size: CardSize, ctx: CardContext) {
     case "movers":
       return <MoversCard market={ctx.market} size={size} onOpen={ctx.openDetail} />;
     case "breadth":
-      return <BreadthCard market={ctx.market} size={size} />;
+      return <BreadthCard market={ctx.market} size={size} onOpen={ctx.openDetail} />;
     case "causes":
-      return <CausesCard market={ctx.market} size={size} />;
+      return <CausesCard market={ctx.market} size={size} onOpen={ctx.openDetail} />;
     case "clock":
       return <ClockCard size={size} />;
     case "events":
-      return <EventsCard market={ctx.market} earnings={ctx.earnings} size={size} />;
+      return (
+        <EventsCard
+          market={ctx.market}
+          earnings={ctx.earnings}
+          size={size}
+          onOpen={ctx.openDetail}
+        />
+      );
     case "portfolio":
       return <PortfolioCard ctx={ctx} size={size} readOnly />;
     case "allocation":

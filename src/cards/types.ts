@@ -47,6 +47,8 @@ export interface CardContext {
   earnings: (symbols: string[]) => Promise<MarketEvent[]>;
   /** Open the ticker detail drawer for a symbol. */
   openDetail: (symbol: string) => void;
+  /** Open the Account panel (where holdings, watchlist, and alerts are managed). */
+  openAccount: () => void;
   /** Price history for the chart card; null when the feed can't supply it. */
   candles: (symbol: string, range: ChartRange) => Promise<Candle[] | null>;
   /** Price triggers: set, list, remove, re-arm, and manage notifications. */

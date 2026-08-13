@@ -247,6 +247,45 @@ a.detail-news-head:hover {
   font-size: 0.74rem;
 }
 
+/* The "Manage in Account" shortcut on read-only board cards. */
+.manage-link {
+  align-self: flex-start;
+  color: var(--ink-soft);
+}
+
+.manage-link::after {
+  content: " →";
+}
+
+.manage-link:hover {
+  color: var(--brass);
+  border-color: var(--brass);
+}
+
+/* An inline text link (a ticker name inside a sentence) that opens the drawer. */
+.link-inline {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 2px;
+}
+
+.link-inline:hover {
+  color: var(--brass);
+  text-decoration-color: var(--brass);
+}
+
+.link-inline:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-radius: 3px;
+}
+
 /* Make any ticker that opens the drawer feel clickable. */
 .ticker-open {
   cursor: pointer;

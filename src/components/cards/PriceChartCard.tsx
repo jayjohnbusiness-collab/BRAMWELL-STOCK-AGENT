@@ -88,7 +88,17 @@ export function PriceChartCard({ ctx, size }: { ctx: CardContext; size: CardSize
               </option>
             ))}
           </select>
-          {active ? <span className="chart-name small">{cap(active.name)}</span> : null}
+          {active ? (
+            <button
+              type="button"
+              className="ticker-open chart-name small"
+              onClick={() => ctx.openDetail(sym)}
+              title={`Open ${sym} details`}
+              style={{ background: "none", border: "none", padding: 0, font: "inherit", textAlign: "left", cursor: "pointer" }}
+            >
+              {cap(active.name)}
+            </button>
+          ) : null}
         </div>
         {active ? (
           <div className="chart-quote">
@@ -113,7 +123,7 @@ export function PriceChartCard({ ctx, size }: { ctx: CardContext; size: CardSize
         ))}
       </div>
 
-      <ChartCanvas data={data} tone={tone} height={HEIGHT[size]} />
+      <ChartCanvas data={data} tone={tone} height={HEIGHT[size]} range={range} />
 
       <div className="chart-foot small">
         {data === undefined
@@ -132,16 +142,29 @@ export function PriceChartCard({ ctx, size }: { ctx: CardContext; size: CardSize
 
 /* -------------------------------------------------------------- Canvas */
 
+interface PlotPoint {
+  x: number;
+  y: number;
+  price: number;
+  t: number;
+}
+
 function ChartCanvas({
   data,
   tone,
   height,
+  range,
 }: {
   data: Candle[] | null | undefined;
   tone: "up" | "down" | "flat";
   height: number;
+  range: ChartRange;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  // The plotted points in CSS pixels, kept so hover can hit-test and place the
+  // crosshair + tooltip without recomputing the projection.
+  const geom = useRef<{ pts: PlotPoint[]; cssW: number }>({ pts: [], cssW: 0 });
+  const [hover, setHover] = useState<number | null>(null);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -155,6 +178,7 @@ function ChartCanvas({
     canvas.height = Math.round(cssH * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssW, cssH);
+    geom.current = { pts: [], cssW };
     if (!data || data.length < 2) return;
 
     const prices = data.map((d) => d.c);
@@ -170,6 +194,11 @@ function ChartCanvas({
     const h = cssH - padY * 2;
     const x = (i: number) => padX + (i / (prices.length - 1)) * w;
     const y = (v: number) => padY + (1 - (v - min) / (max - min)) * h;
+
+    geom.current = {
+      cssW,
+      pts: data.map((d, i) => ({ x: x(i), y: y(d.c), price: d.c, t: d.t })),
+    };
 
     const stroke =
       tone === "down"
@@ -207,19 +236,78 @@ function ChartCanvas({
     ctx.lineJoin = "round";
     ctx.stroke();
 
-    // Latest dot.
+    // The hover crosshair, or the latest dot when idle.
+    const dotAt = hover != null && hover < prices.length ? hover : prices.length - 1;
+    if (hover != null && hover < prices.length) {
+      const hx = x(hover);
+      ctx.strokeStyle = withAlpha(cssVar("--ink-soft", "#5b6672"), 0.5);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(hx, padY);
+      ctx.lineTo(hx, cssH - padY);
+      ctx.stroke();
+      // A white ring around the marker so it stands off the line.
+      ctx.beginPath();
+      ctx.arc(hx, y(prices[hover]), 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = cssVar("--paper", "#ffffff");
+      ctx.fill();
+    }
     ctx.beginPath();
-    ctx.arc(x(prices.length - 1), y(prices[prices.length - 1]), 2.6, 0, Math.PI * 2);
+    ctx.arc(x(dotAt), y(prices[dotAt]), 3, 0, Math.PI * 2);
     ctx.fillStyle = stroke;
     ctx.fill();
-  }, [data, tone, height]);
+  }, [data, tone, height, hover]);
+
+  function onMove(e: React.MouseEvent) {
+    const canvas = ref.current;
+    const pts = geom.current.pts;
+    if (!canvas || pts.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    let best = 0;
+    let bestD = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      const d = Math.abs(pts[i].x - px);
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    setHover(best);
+  }
+
+  const hp = hover != null ? geom.current.pts[hover] : null;
+  const cssW = geom.current.cssW || 300;
 
   return (
-    <div className="chart-canvas-wrap" style={{ height }}>
+    <div
+      className="chart-canvas-wrap"
+      style={{ height }}
+      onMouseMove={onMove}
+      onMouseLeave={() => setHover(null)}
+    >
       <canvas ref={ref} className="chart-canvas" aria-hidden="true" />
       {data === null ? <div className="chart-empty small">No line to draw yet.</div> : null}
+      {hp ? (
+        <div
+          className="chart-tip"
+          style={{ left: `${Math.min(Math.max(hp.x, 44), cssW - 44)}px` }}
+        >
+          <span className="chart-tip-price tabular">{formatPrice(hp.price)}</span>
+          <span className="chart-tip-time">{fmtTipTime(hp.t, range)}</span>
+        </div>
+      ) : null}
     </div>
   );
+}
+
+/** The hover tooltip's time label: a clock for 1D, a date for wider ranges. */
+function fmtTipTime(ms: number, range: ChartRange): string {
+  const d = new Date(ms);
+  if (range === "1D") {
+    return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 /* -------------------------------------------------------------- helpers */

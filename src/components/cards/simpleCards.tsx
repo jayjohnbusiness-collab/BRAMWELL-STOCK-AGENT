@@ -163,7 +163,15 @@ export function MoversCard({
 
 /* ------------------------------------------------------------------ Breadth */
 /** How many of the user's names are up vs down today. */
-export function BreadthCard({ market, size }: { market: Market; size: CardSize }) {
+export function BreadthCard({
+  market,
+  size,
+  onOpen,
+}: {
+  market: Market;
+  size: CardSize;
+  onOpen?: (symbol: string) => void;
+}) {
   const held = market.held();
   const n = held.length;
   if (n === 0) return <Empty>Add some names and I'll show the day's balance.</Empty>;
@@ -188,8 +196,14 @@ export function BreadthCard({ market, size }: { market: Market; size: CardSize }
         </div>
       ) : null}
       <p className="small" style={{ color: "var(--ink-soft)", margin: 0 }}>
-        {cap(top.name)} is the mover, {top.changePct >= 0 ? "up" : "down"}{" "}
-        {Math.abs(top.changePct).toFixed(2)}%.
+        {onOpen ? (
+          <button type="button" className="link-inline" onClick={() => onOpen(top.symbol)}>
+            {cap(top.name)}
+          </button>
+        ) : (
+          cap(top.name)
+        )}{" "}
+        is the mover, {top.changePct >= 0 ? "up" : "down"} {Math.abs(top.changePct).toFixed(2)}%.
       </p>
     </div>
   );
@@ -208,7 +222,15 @@ function Stat({ n, label, tone }: { n: number; label: string; tone: "up" | "down
 
 /* ------------------------------------------------------------------- Causes */
 /** Recent attributed causes across the user's names. */
-export function CausesCard({ market, size }: { market: Market; size: CardSize }) {
+export function CausesCard({
+  market,
+  size,
+  onOpen,
+}: {
+  market: Market;
+  size: CardSize;
+  onOpen?: (symbol: string) => void;
+}) {
   const limit = rowLimit(size, { sm: 2, md: 4, lg: 99 });
   const withCause = market.held().filter((i) => i.cause);
   if (withCause.length === 0) {
@@ -225,9 +247,23 @@ export function CausesCard({ market, size }: { market: Market; size: CardSize })
           }}
         >
           <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)" }}>
-            <span className="label" style={{ color: "var(--ink)" }}>
-              {i.symbol}
-            </span>
+            {onOpen ? (
+              <button
+                type="button"
+                className="ticker-open"
+                onClick={() => onOpen(i.symbol)}
+                title={`Open ${i.symbol} details`}
+                style={{ background: "none", border: "none", padding: 0, font: "inherit", cursor: "pointer" }}
+              >
+                <span className="label" style={{ color: "var(--ink)" }}>
+                  {i.symbol}
+                </span>
+              </button>
+            ) : (
+              <span className="label" style={{ color: "var(--ink)" }}>
+                {i.symbol}
+              </span>
+            )}
             {i.cause?.confidence === "unconfirmed" ? (
               <span className="small" style={{ color: "var(--ink-soft)" }}>
                 unconfirmed

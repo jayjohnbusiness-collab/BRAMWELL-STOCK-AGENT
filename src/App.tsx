@@ -603,6 +603,7 @@ export default function App() {
     watchSuggest: handleSuggest,
     earnings: (symbols) => feedRef.current.events?.(symbols) ?? Promise.resolve([]),
     openDetail: (symbol) => setDetailSymbol(symbol),
+    openAccount: () => setAccountOpen(true),
     candles: (symbol, range) =>
       feedRef.current.candles?.(symbol, range) ?? Promise.resolve(null),
     triggers: {

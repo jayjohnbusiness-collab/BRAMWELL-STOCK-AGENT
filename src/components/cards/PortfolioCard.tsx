@@ -154,7 +154,11 @@ export function PortfolioCard({
         </div>
       ) : null}
 
-      {readOnly ? null : held.length === 0 ? (
+      {readOnly ? (
+        <button type="button" className="chip manage-link" onClick={ctx.openAccount}>
+          Manage in Account
+        </button>
+      ) : held.length === 0 ? (
         <p className="small" style={{ color: "var(--ink-soft)", margin: 0 }}>
           Add a name to your watchlist first, then record what you hold.
         </p>

@@ -114,6 +114,37 @@
   display: block;
   width: 100%;
   height: 100%;
+  cursor: crosshair;
+}
+
+/* Hover readout: price + time, floating near the crosshair. */
+.chart-tip {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 8px;
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.chart-tip-price {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.chart-tip-time {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
 }
 
 .chart-empty {
