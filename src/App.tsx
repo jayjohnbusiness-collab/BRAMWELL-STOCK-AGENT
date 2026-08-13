@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bramwell } from "./agent/bramwell";
 import { Market } from "./agent/market";
 import { composeMorningBriefing } from "./agent/briefing";
+import { marketStatus } from "./market/hours";
 import {
   isPortfolioValueQuery,
   parse,
@@ -407,6 +408,7 @@ export default function App() {
       book,
       earningsToday,
       alertsMet: uniqueAlerts,
+      marketPhase: marketStatus(new Date()).phase,
     });
     return { text, heldRows: held };
   }
@@ -576,6 +578,9 @@ export default function App() {
 
   const lastReply = [...messages].reverse().find((m) => m.from === "bramwell")?.text;
 
+  // The market phase for the header pill (refreshes as the app re-renders).
+  const mkt = marketStatus(new Date());
+
   // The live-feed status detail, shown beside the "Live data" badge. The badge
   // already carries the words "Live data", so this line drops that prefix.
   const liveError =
@@ -644,6 +649,13 @@ export default function App() {
         <span className="wordmark">Bramwell</span>
         <span className="tagline small state-note">Your market, kept in order.</span>
         <div className="header-right">
+          <span
+            className={`mkt-pill ${mkt.phase}`}
+            title={`${mkt.label} · ${mkt.detail}`}
+          >
+            <span className="mkt-dot" aria-hidden="true" />
+            {mkt.label}
+          </span>
           {liveDetail ? (
             <span
               className="small live-detail"

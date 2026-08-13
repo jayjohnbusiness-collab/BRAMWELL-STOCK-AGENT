@@ -620,6 +620,38 @@
   color: var(--ink-soft);
   background: var(--ground);
 }
+.clock-pill.ext {
+  color: var(--brass);
+  background: var(--accent-tint);
+}
+
+/* Compact market-phase pill in the header. */
+.mkt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--step-small);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.mkt-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+.mkt-pill.open .mkt-dot {
+  background: var(--data-up);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--data-up) 20%, transparent);
+}
+.mkt-pill.premarket .mkt-dot,
+.mkt-pill.afterhours .mkt-dot {
+  background: var(--brass);
+}
+.mkt-pill.closed .mkt-dot {
+  background: var(--ink-soft);
+}
 
 /* Events / agenda card */
 .agenda-row {

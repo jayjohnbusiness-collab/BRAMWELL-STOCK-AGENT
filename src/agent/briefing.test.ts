@@ -70,6 +70,23 @@ describe("morning briefing", () => {
     expect(out).toMatch(/NVIDIA has already hit a mark you set/);
   });
 
+  it("notes the market state when it isn't the regular session", () => {
+    const held = [{ symbol: "NVDA", name: "NVIDIA", changePct: 2 }];
+    expect(composeMorningBriefing({ ...base, held, marketPhase: "closed" })).toContain(
+      "The market's closed just now",
+    );
+    expect(composeMorningBriefing({ ...base, held, marketPhase: "premarket" })).toContain(
+      "pre-market",
+    );
+    expect(composeMorningBriefing({ ...base, held, marketPhase: "afterhours" })).toContain(
+      "after-hours",
+    );
+    // When open, no market clause is added.
+    expect(composeMorningBriefing({ ...base, held, marketPhase: "open" })).not.toMatch(
+      /pre-market|after-hours|closed just now/,
+    );
+  });
+
   it("still speaks when only a book exists (empty watchlist)", () => {
     const out = composeMorningBriefing({
       ...base,

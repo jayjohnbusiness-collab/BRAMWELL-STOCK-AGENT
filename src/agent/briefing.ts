@@ -1,4 +1,5 @@
 import { numberToWords, spokenChange } from "./format";
+import type { MarketPhase } from "../market/hours";
 
 /*
  * The morning briefing — Bramwell's unprompted greeting on the first open of
@@ -39,6 +40,8 @@ export interface BriefingInput {
   earningsToday: string[];
   /** Names whose standing alert condition is already met. */
   alertsMet: string[];
+  /** The market phase, so the greeting can note pre-market / after-hours / closed. */
+  marketPhase?: MarketPhase;
 }
 
 /**
@@ -55,9 +58,12 @@ export function composeMorningBriefing(input: BriefingInput): string | null {
 
   const parts: string[] = [];
 
-  // 1. Salutation.
+  // 1. Salutation, then a note on the market's state when it isn't open.
   if (input.firstOfDay) {
     parts.push(`${salutation(input.hour)}.`);
+  }
+  if (input.marketPhase && input.marketPhase !== "open") {
+    parts.push(marketClause(input.marketPhase));
   }
 
   // 2. The day's posture across the names followed, with the standout mover.
@@ -123,6 +129,13 @@ export function composeMorningBriefing(input: BriefingInput): string | null {
   }
 
   return parts.join(" ");
+}
+
+/** A short note on the market's state when it isn't in the regular session. */
+function marketClause(phase: MarketPhase): string {
+  if (phase === "premarket") return "We're pre-market — here's the overnight lay of the land.";
+  if (phase === "afterhours") return "We're after-hours now — here's where your names settled.";
+  return "The market's closed just now — here's where things stand."; // closed / weekend
 }
 
 /** "Good morning" / "Good afternoon" / "Good evening" by the hour. */
