@@ -253,9 +253,10 @@
 
 .detail-target-input:focus-within {
   border-color: var(--brass);
-  box-shadow: var(--focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brass) 28%, transparent);
 }
 
+.detail-target-input input:focus,
 .detail-target-input input:focus-visible {
   outline: none;
 }
