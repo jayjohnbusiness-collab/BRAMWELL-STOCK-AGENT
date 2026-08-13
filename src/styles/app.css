@@ -846,33 +846,24 @@
   gap: var(--space-3);
 }
 
-/* Tick flash: a value pulses green on an up-tick, red on a down-tick. */
-.tick {
-  border-radius: 5px;
-  padding: 1px 5px;
-  margin: -1px -5px;
-}
+/* Tick flash: the number's own colour pulses toward green on an up-tick, red
+   on a down-tick, then eases back to its base colour. No box. Specifying the
+   colour only at 0% lets it animate back to the element's own colour by 100%. */
 @keyframes tick-up-flash {
   0% {
-    background-color: var(--up-tint);
-  }
-  100% {
-    background-color: transparent;
+    color: var(--tick-up);
   }
 }
 @keyframes tick-down-flash {
   0% {
-    background-color: var(--down-tint);
-  }
-  100% {
-    background-color: transparent;
+    color: var(--tick-down);
   }
 }
 .tick-up {
-  animation: tick-up-flash 700ms ease-out;
+  animation: tick-up-flash 650ms ease-out;
 }
 .tick-down {
-  animation: tick-down-flash 700ms ease-out;
+  animation: tick-down-flash 650ms ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
   .tick-up,

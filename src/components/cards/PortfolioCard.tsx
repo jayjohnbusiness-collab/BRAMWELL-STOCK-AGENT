@@ -119,22 +119,25 @@ export function PortfolioCard({
                   {trim(v.shares)} sh{v.hasBasis ? ` @ ${v.cost.toFixed(2)}` : ""}
                 </span>
               </button>
-              <TickNumber className="pf-figures" value={v.marketValue}>
+              <span className="pf-figures">
                 {v.hasBasis ? (
-                  <span
+                  <TickNumber
+                    value={v.marketValue}
                     className="small tabular"
                     style={{ color: plColor(v.plAbs), minWidth: "6ch", textAlign: "left" }}
                   >
                     {v.plPct >= 0 ? "+" : "−"}
                     {Math.abs(v.plPct).toFixed(1)}%
-                  </span>
+                  </TickNumber>
                 ) : (
                   <span className="small" style={{ color: "var(--ink-soft)" }}>
                     —
                   </span>
                 )}
-                <span className="price tabular">{money(v.marketValue)}</span>
-              </TickNumber>
+                <TickNumber value={v.marketValue} className="price tabular">
+                  {money(v.marketValue)}
+                </TickNumber>
+              </span>
               {readOnly ? null : (
                 <button
                   type="button"
