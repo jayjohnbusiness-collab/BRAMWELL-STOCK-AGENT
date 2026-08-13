@@ -33,6 +33,8 @@ import { CardBoard } from "./components/CardBoard";
 import type { CardContext } from "./cards/types";
 import { TickerDetail } from "./components/TickerDetail";
 import { AccountPanel } from "./components/AccountPanel";
+import { Welcome } from "./components/Welcome";
+import { hasWelcomed, markWelcomed } from "./welcome";
 import { VoiceOverlay } from "./components/VoiceOverlay";
 import "./styles/global.css";
 import "./styles/app.css";
@@ -126,6 +128,8 @@ export default function App() {
   const [detailSymbol, setDetailSymbol] = useState<string | null>(null);
   // Whether the Account panel (holdings, watchlist, settings) is open.
   const [accountOpen, setAccountOpen] = useState(false);
+  // The one-time welcome, shown on a visitor's first arrival.
+  const [showWelcome, setShowWelcome] = useState(() => !hasWelcomed());
   const [, forceRender] = useState(0);
 
   // Voice dispatches spoken commands through the same pipeline as typing.
@@ -770,6 +774,20 @@ export default function App() {
             forceRender((n) => n + 1);
           }}
           onClose={() => setDetailSymbol(null)}
+        />
+      ) : null}
+
+      {showWelcome ? (
+        <Welcome
+          onClose={() => {
+            markWelcomed();
+            setShowWelcome(false);
+          }}
+          onConnect={() => {
+            markWelcomed();
+            setShowWelcome(false);
+            setAccountOpen(true);
+          }}
         />
       ) : null}
 
