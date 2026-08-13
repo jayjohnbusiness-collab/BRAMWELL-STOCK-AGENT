@@ -845,6 +845,41 @@
   align-items: baseline;
   gap: var(--space-3);
 }
+
+/* Tick flash: a value pulses green on an up-tick, red on a down-tick. */
+.tick {
+  border-radius: 5px;
+  padding: 1px 5px;
+  margin: -1px -5px;
+}
+@keyframes tick-up-flash {
+  0% {
+    background-color: var(--up-tint);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes tick-down-flash {
+  0% {
+    background-color: var(--down-tint);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.tick-up {
+  animation: tick-up-flash 700ms ease-out;
+}
+.tick-down {
+  animation: tick-down-flash 700ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tick-up,
+  .tick-down {
+    animation: none;
+  }
+}
 .pf-x {
   flex: none;
   width: 24px;

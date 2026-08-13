@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { CardContext, CardSize } from "../../cards/types";
 import { rowLimit } from "../../cards/types";
 import { valuePosition, portfolioTotals } from "../../portfolio/types";
-import { cap, Empty, money, signedMoney } from "./parts";
+import { cap, Empty, money, signedMoney, TickNumber } from "./parts";
 
 /*
  * Portfolio: your positions valued live. Shares at an average cost become
@@ -65,16 +65,18 @@ export function PortfolioCard({
       {values.length > 0 ? (
         <div className="pf-totals">
           <div className="pf-total">
-            <span className="pf-total-num">{money(totals.marketValue)}</span>
+            <TickNumber className="pf-total-num" value={totals.marketValue}>
+              {money(totals.marketValue)}
+            </TickNumber>
             <span className="small" style={{ color: "var(--ink-soft)" }}>
               value
             </span>
           </div>
           {totals.hasBasis ? (
             <div className="pf-total">
-              <span className="pf-total-num" style={{ color: plColor(totals.plAbs) }}>
+              <TickNumber className="pf-total-num" value={totals.plAbs} style={{ color: plColor(totals.plAbs) }}>
                 {signedMoney(totals.plAbs)}
-              </span>
+              </TickNumber>
               <span className="small" style={{ color: "var(--ink-soft)" }}>
                 overall ({totals.plPct >= 0 ? "+" : "−"}
                 {Math.abs(totals.plPct).toFixed(1)}%)
@@ -82,9 +84,9 @@ export function PortfolioCard({
             </div>
           ) : null}
           <div className="pf-total">
-            <span className="pf-total-num" style={{ color: plColor(totals.dayAbs) }}>
+            <TickNumber className="pf-total-num" value={totals.dayAbs} style={{ color: plColor(totals.dayAbs) }}>
               {signedMoney(totals.dayAbs)}
-            </span>
+            </TickNumber>
             <span className="small" style={{ color: "var(--ink-soft)" }}>
               today
             </span>
@@ -117,7 +119,7 @@ export function PortfolioCard({
                   {trim(v.shares)} sh{v.hasBasis ? ` @ ${v.cost.toFixed(2)}` : ""}
                 </span>
               </button>
-              <span className="pf-figures">
+              <TickNumber className="pf-figures" value={v.marketValue}>
                 {v.hasBasis ? (
                   <span
                     className="small tabular"
@@ -132,7 +134,7 @@ export function PortfolioCard({
                   </span>
                 )}
                 <span className="price tabular">{money(v.marketValue)}</span>
-              </span>
+              </TickNumber>
               {readOnly ? null : (
                 <button
                   type="button"

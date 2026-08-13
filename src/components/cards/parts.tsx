@@ -1,6 +1,43 @@
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { exactPercent } from "../../agent/format";
 
 /** Small shared bits for card bodies. */
+
+/*
+ * A value that flashes on each update — green on an up-tick, red on a down-tick,
+ * like a trading terminal. The flash direction follows whether `value` rose or
+ * fell since the last render, independent of the number's own sign, so a name at
+ * a loss still flashes green when its price ticks up. Reduced motion skips it.
+ */
+export function TickNumber({
+  value,
+  className,
+  style,
+  children,
+}: {
+  value: number;
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const prev = useRef(value);
+  useEffect(() => {
+    const delta = value - prev.current;
+    prev.current = value;
+    const el = ref.current;
+    if (!el || Math.abs(delta) < 1e-9) return;
+    // Restart the one-shot flash animation from the top.
+    el.classList.remove("tick-up", "tick-down");
+    void el.offsetWidth;
+    el.classList.add(delta > 0 ? "tick-up" : "tick-down");
+  }, [value]);
+  return (
+    <span ref={ref} className={`tick${className ? ` ${className}` : ""}`} style={style}>
+      {children}
+    </span>
+  );
+}
 
 export function cap(s: string): string {
   const t = s.replace(/^the\s+/i, "");
