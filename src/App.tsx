@@ -697,6 +697,17 @@ export default function App() {
           loadEvents={(symbols) =>
             feedRef.current.events?.(symbols) ?? Promise.resolve([])
           }
+          onSetTargetAlert={(sym, name, target) => {
+            const price = market.bySymbol(sym)?.basePrice ?? target;
+            triggerStore.add({
+              symbol: sym,
+              name,
+              kind: target >= price ? "above" : "below",
+              value: target,
+            });
+            requestNotify().then(() => forceRender((n) => n + 1));
+            forceRender((n) => n + 1);
+          }}
           onClose={() => setDetailSymbol(null)}
         />
       ) : null}

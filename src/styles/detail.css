@@ -214,6 +214,77 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* --- Your note & target --- */
+.detail-target-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.detail-target-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.detail-target-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: 3px 8px;
+}
+
+.detail-target-input input {
+  width: 6ch;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-target-input:focus-within {
+  border-color: var(--brass);
+  box-shadow: var(--focus);
+}
+
+.detail-target-input input:focus-visible {
+  outline: none;
+}
+
+.detail-note-text {
+  width: 100%;
+  margin-top: var(--space-3);
+  resize: vertical;
+  min-height: 2.4em;
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.detail-note-text::placeholder {
+  color: var(--ink-soft);
+}
+
+.detail-note-text:focus-visible {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: var(--focus);
+}
+
 /* --- News --- */
 .detail-news {
   list-style: none;

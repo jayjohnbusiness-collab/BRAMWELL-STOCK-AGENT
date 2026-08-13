@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Market } from "../agent/market";
 import type { MarketEvent, NewsHeadline, SymbolProfile } from "../feed/types";
 import { priceSeries, type Tick } from "../feed/history";
+import { getNote, setNote } from "../notes/storage";
 import { exactPercent, formatPrice } from "../agent/format";
 import { cap } from "./cards/parts";
 import "../styles/detail.css";
@@ -20,6 +21,7 @@ export function TickerDetail({
   loadProfile,
   loadNews,
   loadEvents,
+  onSetTargetAlert,
   onClose,
 }: {
   symbol: string;
@@ -27,6 +29,8 @@ export function TickerDetail({
   loadProfile: (symbol: string) => Promise<SymbolProfile | null>;
   loadNews: (symbol: string) => Promise<NewsHeadline[]>;
   loadEvents: (symbols: string[]) => Promise<MarketEvent[]>;
+  /** Turn the saved target price into a standing alert. */
+  onSetTargetAlert?: (symbol: string, name: string, target: number) => void;
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -34,6 +38,10 @@ export function TickerDetail({
   const [profile, setProfile] = useState<SymbolProfile | null>(null);
   const [news, setNews] = useState<NewsHeadline[] | null>(null);
   const [earn, setEarn] = useState<MarketEvent | null | undefined>(undefined);
+  // The user's own note + target for this name.
+  const [noteText, setNoteText] = useState("");
+  const [targetText, setTargetText] = useState("");
+  const [alertMsg, setAlertMsg] = useState("");
 
   // Focus the close button and wire Escape.
   useEffect(() => {
@@ -64,6 +72,19 @@ export function TickerDetail({
       live = false;
     };
   }, [symbol, loadProfile, loadNews, loadEvents]);
+
+  // Load this name's saved note + target when the symbol changes.
+  useEffect(() => {
+    const n = getNote(symbol);
+    setNoteText(n.note ?? "");
+    setTargetText(n.target != null ? String(n.target) : "");
+    setAlertMsg("");
+  }, [symbol]);
+
+  function persistNote() {
+    // An empty field clears that part (parseFloat("") is NaN → target removed).
+    setNote(symbol, { note: noteText, target: parseFloat(targetText) });
+  }
 
   // Prefer the live registry figures for the headline price (they tick), and
   // fall back to the profile snapshot for anything the registry doesn't carry.
@@ -101,6 +122,52 @@ export function TickerDetail({
         </div>
 
         <Sparkline series={series} tone={tone} />
+
+        <section className="detail-block detail-notes">
+          <span className="detail-block-title">Your note & target</span>
+          <div className="detail-target-row">
+            <label className="detail-target-label">
+              Target
+              <span className="detail-target-input">
+                <span aria-hidden="true">$</span>
+                <input
+                  inputMode="decimal"
+                  placeholder="—"
+                  value={targetText}
+                  onChange={(e) => setTargetText(e.target.value)}
+                  onBlur={persistNote}
+                  aria-label="Target price"
+                />
+              </span>
+            </label>
+            {onSetTargetAlert && targetNum(targetText) && price != null ? (
+              <button
+                type="button"
+                className="chip"
+                onClick={() => {
+                  const t = targetNum(targetText)!;
+                  persistNote();
+                  onSetTargetAlert(symbol, cap(name), t);
+                  setAlertMsg(
+                    `Alert set — I'll tell you when it ${t >= price ? "reaches" : "drops to"} ${formatPrice(t)}.`,
+                  );
+                }}
+              >
+                Set alert at target
+              </button>
+            ) : null}
+          </div>
+          {alertMsg ? <p className="detail-muted" style={{ marginTop: "var(--space-2)" }}>{alertMsg}</p> : null}
+          <textarea
+            className="detail-note-text"
+            placeholder="A thesis, a level to watch, a reminder…"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            onBlur={persistNote}
+            aria-label="Note"
+            rows={2}
+          />
+        </section>
 
         <section className="detail-ranges">
           <RangeBar
@@ -333,6 +400,12 @@ function Stats({ profile }: { profile: SymbolProfile | null }) {
 }
 
 /* --------------------------------------------------------------- helpers */
+
+/** A positive finite target from the field, or null. */
+function targetNum(text: string): number | null {
+  const n = parseFloat(text);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 /** Market cap in millions → "$1.42T" / "$284.0B" / "$620M". */
 function marketCap(m: number): string {
