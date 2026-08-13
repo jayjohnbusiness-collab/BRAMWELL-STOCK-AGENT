@@ -123,7 +123,16 @@ export function PriceChartCard({ ctx, size }: { ctx: CardContext; size: CardSize
         ))}
       </div>
 
-      <ChartCanvas data={data} tone={tone} height={HEIGHT[size]} range={range} />
+      <ChartCanvas
+        data={data}
+        tone={tone}
+        height={HEIGHT[size]}
+        range={range}
+        // Only frame the full day when we have day-spanning candles. The sparse
+        // session tape is spread to fill the width instead, so a short run of
+        // recent ticks doesn't sit as a stub in the middle of the day.
+        dayFrame={range === "1D" && source === "feed"}
+      />
 
       <div className="chart-foot small">
         {data === undefined
@@ -154,11 +163,14 @@ function ChartCanvas({
   tone,
   height,
   range,
+  dayFrame,
 }: {
   data: Candle[] | null | undefined;
   tone: "up" | "down" | "flat";
   height: number;
   range: ChartRange;
+  /** Whether to plot on a fixed full-day (12am–12am) time axis. */
+  dayFrame: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   // The plotted points in CSS pixels, kept so hover can hit-test and place the
@@ -182,9 +194,9 @@ function ChartCanvas({
     if (!data || data.length < 2) return;
 
     const DAY = 86_400_000;
-    const isDay = range === "1D";
-    // 1D frames the whole calendar day (local midnight → next midnight) and
-    // places each point at its actual time; only today's points are shown.
+    const isDay = dayFrame;
+    // The full-day frame runs local midnight → next midnight and places each
+    // point at its actual time; only today's points are shown.
     const dayStart = isDay ? startOfLocalDay(data[data.length - 1].t) : 0;
     const pd = isDay ? data.filter((d) => d.t >= dayStart && d.t < dayStart + DAY) : data;
     if (pd.length < 2) return;
@@ -287,7 +299,7 @@ function ChartCanvas({
     ctx.arc(pts[dotAt].x, pts[dotAt].y, 3, 0, Math.PI * 2);
     ctx.fillStyle = stroke;
     ctx.fill();
-  }, [data, tone, height, hover, range]);
+  }, [data, tone, height, hover, range, dayFrame]);
 
   function onMove(e: React.MouseEvent) {
     const canvas = ref.current;
