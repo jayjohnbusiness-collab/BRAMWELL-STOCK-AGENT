@@ -134,11 +134,22 @@ export class SimulatedFeed implements Feed {
     }
     const last = walk[n - 1];
     const now = Date.now();
+    // 1D runs from local midnight to now (so it plots on a full-day axis);
+    // wider ranges run back a fixed span from now.
+    let startT: number;
+    if (range === "1D") {
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+      startT = d.getTime();
+    } else {
+      startT = now - spanMs;
+    }
+    const totalMs = Math.max(1, now - startT);
     return walk.map((w, k) => {
       const f = k / (n - 1);
       const bridge = w - f * last; // 0 at k=0 and k=n-1
       const trend = start + (end - start) * f;
-      return { t: now - spanMs + f * spanMs, c: Math.max(0.01, trend + bridge) };
+      return { t: startT + f * totalMs, c: Math.max(0.01, trend + bridge) };
     });
   }
 

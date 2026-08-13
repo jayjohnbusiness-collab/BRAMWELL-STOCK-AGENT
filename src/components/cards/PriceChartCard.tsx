@@ -181,7 +181,15 @@ function ChartCanvas({
     geom.current = { pts: [], cssW };
     if (!data || data.length < 2) return;
 
-    const prices = data.map((d) => d.c);
+    const DAY = 86_400_000;
+    const isDay = range === "1D";
+    // 1D frames the whole calendar day (local midnight → next midnight) and
+    // places each point at its actual time; only today's points are shown.
+    const dayStart = isDay ? startOfLocalDay(data[data.length - 1].t) : 0;
+    const pd = isDay ? data.filter((d) => d.t >= dayStart && d.t < dayStart + DAY) : data;
+    if (pd.length < 2) return;
+
+    const prices = pd.map((d) => d.c);
     let min = Math.min(...prices);
     let max = Math.max(...prices);
     if (max - min < 1e-9) {
@@ -189,16 +197,20 @@ function ChartCanvas({
       max += 1;
     }
     const padX = 4;
-    const padY = 10;
+    const padTop = 10;
+    const showLabels = isDay && cssH >= 118;
+    const padBottom = showLabels ? 16 : 10;
     const w = cssW - padX * 2;
-    const h = cssH - padY * 2;
-    const x = (i: number) => padX + (i / (prices.length - 1)) * w;
-    const y = (v: number) => padY + (1 - (v - min) / (max - min)) * h;
+    const h = cssH - padTop - padBottom;
+    const bottom = cssH - padBottom;
+    const y = (v: number) => padTop + (1 - (v - min) / (max - min)) * h;
+    const xAt = (d: Candle, i: number) =>
+      isDay
+        ? padX + Math.min(Math.max((d.t - dayStart) / DAY, 0), 1) * w
+        : padX + (i / (pd.length - 1)) * w;
 
-    geom.current = {
-      cssW,
-      pts: data.map((d, i) => ({ x: x(i), y: y(d.c), price: d.c, t: d.t })),
-    };
+    const pts: PlotPoint[] = pd.map((d, i) => ({ x: xAt(d, i), y: y(d.c), price: d.c, t: d.t }));
+    geom.current = { cssW, pts };
 
     const stroke =
       tone === "down"
@@ -207,56 +219,75 @@ function ChartCanvas({
           ? cssVar("--data-up", "#1f7a4d")
           : cssVar("--ink-soft", "#5b6672");
 
-    // A faint baseline at the first price, so the trend reads at a glance.
+    // 1D: faint gridlines every six hours across the full day, with hour labels.
+    if (isDay) {
+      ctx.strokeStyle = withAlpha(cssVar("--rule", "#e4e9ef"), 0.8);
+      ctx.lineWidth = 1;
+      ctx.fillStyle = cssVar("--ink-soft", "#5b6672");
+      ctx.font = "10px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      for (const hr of [0, 6, 12, 18, 24]) {
+        const gx = padX + (hr / 24) * w;
+        ctx.beginPath();
+        ctx.moveTo(gx, padTop);
+        ctx.lineTo(gx, bottom);
+        ctx.stroke();
+        if (showLabels) {
+          ctx.fillText(hourLabel(hr), Math.min(Math.max(gx, 12), cssW - 12), cssH - 4);
+        }
+      }
+    }
+
+    // A faint baseline at the first visible price, so the trend reads at a glance.
     ctx.strokeStyle = withAlpha(cssVar("--rule", "#e4e9ef"), 1);
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(padX, y(prices[0]));
-    ctx.lineTo(cssW - padX, y(prices[0]));
+    ctx.moveTo(padX, pts[0].y);
+    ctx.lineTo(cssW - padX, pts[0].y);
     ctx.setLineDash([3, 3]);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Area fill.
+    // Area fill, bounded to where the data actually is.
     ctx.beginPath();
-    ctx.moveTo(x(0), y(prices[0]));
-    for (let i = 1; i < prices.length; i++) ctx.lineTo(x(i), y(prices[i]));
-    ctx.lineTo(x(prices.length - 1), cssH - padY);
-    ctx.lineTo(x(0), cssH - padY);
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.lineTo(pts[pts.length - 1].x, bottom);
+    ctx.lineTo(pts[0].x, bottom);
     ctx.closePath();
     ctx.fillStyle = withAlpha(stroke, 0.1);
     ctx.fill();
 
     // The line.
     ctx.beginPath();
-    ctx.moveTo(x(0), y(prices[0]));
-    for (let i = 1; i < prices.length; i++) ctx.lineTo(x(i), y(prices[i]));
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.strokeStyle = stroke;
     ctx.lineWidth = 1.75;
     ctx.lineJoin = "round";
     ctx.stroke();
 
     // The hover crosshair, or the latest dot when idle.
-    const dotAt = hover != null && hover < prices.length ? hover : prices.length - 1;
-    if (hover != null && hover < prices.length) {
-      const hx = x(hover);
+    const dotAt = hover != null && hover < pts.length ? hover : pts.length - 1;
+    if (hover != null && hover < pts.length) {
+      const hx = pts[hover].x;
       ctx.strokeStyle = withAlpha(cssVar("--ink-soft", "#5b6672"), 0.5);
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(hx, padY);
-      ctx.lineTo(hx, cssH - padY);
+      ctx.moveTo(hx, padTop);
+      ctx.lineTo(hx, bottom);
       ctx.stroke();
-      // A white ring around the marker so it stands off the line.
+      // A paper-colored ring around the marker so it stands off the line.
       ctx.beginPath();
-      ctx.arc(hx, y(prices[hover]), 4.5, 0, Math.PI * 2);
+      ctx.arc(hx, pts[hover].y, 4.5, 0, Math.PI * 2);
       ctx.fillStyle = cssVar("--paper", "#ffffff");
       ctx.fill();
     }
     ctx.beginPath();
-    ctx.arc(x(dotAt), y(prices[dotAt]), 3, 0, Math.PI * 2);
+    ctx.arc(pts[dotAt].x, pts[dotAt].y, 3, 0, Math.PI * 2);
     ctx.fillStyle = stroke;
     ctx.fill();
-  }, [data, tone, height, hover]);
+  }, [data, tone, height, hover, range]);
 
   function onMove(e: React.MouseEvent) {
     const canvas = ref.current;
@@ -313,7 +344,21 @@ function fmtTipTime(ms: number, range: ChartRange): string {
 /* -------------------------------------------------------------- helpers */
 
 function rangeLabel(range: ChartRange): string {
-  return range === "1D" ? "Past day" : range === "1W" ? "Past week" : "Past month";
+  return range === "1D" ? "Today · 12am–12am" : range === "1W" ? "Past week" : "Past month";
+}
+
+/** Local midnight (00:00) of the day the given timestamp falls in. */
+function startOfLocalDay(ms: number): number {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+/** Hour-of-day axis label: 0/24 → "12a", 12 → "12p", else "3a"/"9p". */
+function hourLabel(h: number): string {
+  if (h === 0 || h === 24) return "12a";
+  if (h === 12) return "12p";
+  return h < 12 ? `${h}a` : `${h - 12}p`;
 }
 
 interface ChartPrefs {
