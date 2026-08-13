@@ -256,9 +256,12 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brass) 28%, transparent);
 }
 
+/* The container owns the focus ring; the inner input must not draw its own
+   (the global :focus-visible box-shadow would nest a second ring inside). */
 .detail-target-input input:focus,
 .detail-target-input input:focus-visible {
   outline: none;
+  box-shadow: none;
 }
 
 .detail-note-text {
