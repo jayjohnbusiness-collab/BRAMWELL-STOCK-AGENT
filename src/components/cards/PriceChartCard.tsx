@@ -88,13 +88,15 @@ export function PriceChartCard({ ctx, size }: { ctx: CardContext; size: CardSize
               </option>
             ))}
           </select>
-          {active ? (
+          {active && active.name.trim().toUpperCase() !== sym.toUpperCase() ? (
             <button
               type="button"
               className="ticker-open chart-name small"
               onClick={() => ctx.openDetail(sym)}
               title={`Open ${sym} details`}
-              style={{ background: "none", border: "none", padding: 0, font: "inherit", textAlign: "left", cursor: "pointer" }}
+              // Left inset matches the dropdown's text (1px border + 8px padding),
+              // so the name lines up under the ticker rather than the box edge.
+              style={{ background: "none", border: "none", padding: "0 0 0 9px", font: "inherit", textAlign: "left", cursor: "pointer" }}
             >
               {cap(active.name)}
             </button>
