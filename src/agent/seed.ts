@@ -109,7 +109,8 @@ export const SEED: Instrument[] = [
   },
   {
     symbol: "AMD",
-    name: "AMD",
+    name: "Advanced Micro Devices",
+    aliases: ["amd"],
     kind: "equity",
     sector: "semiconductors",
     basePrice: 168.9,

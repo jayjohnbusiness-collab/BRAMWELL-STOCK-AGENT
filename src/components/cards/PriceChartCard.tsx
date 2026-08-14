@@ -80,7 +80,12 @@ export function PriceChartCard({ ctx, size }: { ctx: CardContext; size: CardSize
             className="chart-symbol"
             aria-label="Chart symbol"
             value={sym}
-            onChange={(e) => setSymbol(e.target.value)}
+            onChange={(e) => {
+              setSymbol(e.target.value);
+              // Drop focus so the picker collapses cleanly without leaving a
+              // lingering focus ring after a selection.
+              e.currentTarget.blur();
+            }}
           >
             {held.map((i) => (
               <option key={i.symbol} value={i.symbol}>
@@ -88,7 +93,7 @@ export function PriceChartCard({ ctx, size }: { ctx: CardContext; size: CardSize
               </option>
             ))}
           </select>
-          {active && active.name.trim().toUpperCase() !== sym.toUpperCase() ? (
+          {active ? (
             <button
               type="button"
               className="ticker-open chart-name small"

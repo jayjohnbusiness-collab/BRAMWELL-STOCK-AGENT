@@ -17,7 +17,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: flex-start; /* keep the dropdown sized to its ticker, not the name */
+  gap: var(--space-1);
 }
 
 .chart-symbol {
