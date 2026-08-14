@@ -14,7 +14,14 @@ body {
 }
 
 body {
-  background: var(--ground);
+  /* A soft ambient wash so the frosted cards have something to refract. The
+     accent-tinted glows are fixed, so they stay put as content scrolls. */
+  background:
+    radial-gradient(760px 520px at 8% -6%, color-mix(in srgb, var(--brass) 14%, transparent), transparent 55%),
+    radial-gradient(720px 560px at 108% 4%, color-mix(in srgb, var(--brass) 10%, transparent), transparent 52%),
+    radial-gradient(960px 760px at 50% 118%, color-mix(in srgb, var(--brass) 8%, transparent), transparent 55%),
+    var(--ground);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--step-body);
@@ -33,13 +40,23 @@ body {
   margin: 0;
 }
 
-/* A rounded white card with a soft shadow — the core surface of the new look. */
+/* A frosted-glass card: translucent, blurring the ambient wash behind it, with
+   a soft edge and a faint top sheen. Falls back to a solid tint where
+   backdrop-filter isn't supported. */
 .card {
-  background: var(--paper);
-  border: var(--hairline) solid var(--rule);
+  background: var(--glass-bg);
+  border: var(--hairline) solid var(--glass-border);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card), inset 0 1px 0 var(--glass-sheen);
   padding: var(--space-5);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .card {
+    background: var(--paper);
+  }
 }
 
 /* Change value as a tinted pill. Green/red stay reserved for change only. */

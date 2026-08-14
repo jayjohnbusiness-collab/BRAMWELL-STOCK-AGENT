@@ -51,6 +51,13 @@
   /* Soft card shadow. */
   --shadow-card: 0 1px 2px rgba(20, 28, 40, 0.04), 0 8px 24px rgba(20, 28, 40, 0.06);
 
+  /* Frosted-glass cards: a translucent surface, a soft edge, a top sheen, and
+     the blur radius applied behind them. Tuned per theme below. */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(20, 28, 40, 0.1);
+  --glass-sheen: rgba(255, 255, 255, 0.6);
+  --glass-blur: 16px;
+
   /* Focus — 2px accent outline, always visible. */
   --focus: 0 0 0 2px var(--ground), 0 0 0 4px var(--brass);
 
@@ -88,4 +95,9 @@
   --tick-down: #f87171;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.4);
+
+  /* Darker, cooler glass for night, with a faint light edge and sheen. */
+  --glass-bg: rgba(23, 31, 40, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-sheen: rgba(255, 255, 255, 0.07);
 }
