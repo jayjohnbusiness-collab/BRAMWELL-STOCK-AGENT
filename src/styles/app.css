@@ -161,6 +161,15 @@
   color: var(--ink-soft);
 }
 
+/* Time + date under each message; inherits the message's own alignment. */
+.msg-time {
+  margin-top: var(--space-1);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
 /* The working state: quiet, wordless. */
 .working {
   display: inline-flex;

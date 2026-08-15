@@ -4,6 +4,26 @@ export interface ChatMessage {
   id: string;
   from: "user" | "bramwell";
   text: string;
+  /** Epoch milliseconds when the message was sent. */
+  ts?: number;
+}
+
+/** "3:42 PM · Aug 15, 2026" — the time and date under a message. */
+function stamp(ms: number): string {
+  try {
+    const time = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(ms);
+    const date = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(ms);
+    return `${time} · ${date}`;
+  } catch {
+    return "";
+  }
 }
 
 /** The conversation transcript, plus the quiet, wordless working state. */
@@ -43,6 +63,7 @@ export function Conversation({
         <div key={m.id} className={`msg msg-${m.from}`}>
           <div className="label msg-who">{m.from === "user" ? "You" : "Bramwell"}</div>
           <p className="msg-body">{m.text}</p>
+          {m.ts ? <div className="msg-time">{stamp(m.ts)}</div> : null}
         </div>
       ))}
       {working ? (

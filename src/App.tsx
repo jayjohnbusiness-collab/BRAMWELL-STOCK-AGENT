@@ -120,7 +120,7 @@ export default function App() {
   // Guards the once-per-mount morning briefing (a localStorage date guards it
   // once per calendar day across reloads).
   const briefedRef = useRef(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([INTRO]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [{ ...INTRO, ts: Date.now() }]);
   const [working, setWorking] = useState(false);
   const [screen, setScreen] = useState<ScreenPayload>({ kind: "none" });
   const [awaitingChoice, setAwaitingChoice] = useState(false);
@@ -147,6 +147,11 @@ export default function App() {
     return `m${idRef.current}`;
   }
 
+  // A chat message, stamped with the moment it was sent.
+  function chatMsg(from: "user" | "bramwell", text: string): ChatMessage {
+    return { id: nextId(), from, text, ts: Date.now() };
+  }
+
   // Persist the watchlist (and any user-added tickers) and re-render.
   function persist() {
     saveWatchlist(market.watchlistSymbols());
@@ -156,7 +161,7 @@ export default function App() {
 
   function handleSend(text: string) {
     voice.cancel(); // a new request stops Bramwell mid-word
-    setMessages((prev) => [...prev, { id: nextId(), from: "user", text }]);
+    setMessages((prev) => [...prev, chatMsg("user", text)]);
 
     // A standing alert ("tell me if NVDA drops below 200") is set here so it
     // can resolve/track the name live and register a trigger.
@@ -219,7 +224,7 @@ export default function App() {
       if (reply.spoken.trim().length > 0) {
         setMessages((prev) => [
           ...prev,
-          { id: nextId(), from: "bramwell", text: reply.spoken },
+          chatMsg("bramwell", reply.spoken),
         ]);
         voice.speak(reply.spoken); // spoken aloud only when voice is on
       }
@@ -243,7 +248,7 @@ export default function App() {
     void buildBriefing(true).then(({ text }) => {
       saveBriefedOn(today);
       if (text) {
-        setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text }]);
+        setMessages((prev) => [...prev, chatMsg("bramwell", text)]);
         voice.speak(text); // a no-op unless voice mode is already on
       }
     });
@@ -255,7 +260,7 @@ export default function App() {
   wakeAckRef.current = () => {
     voice.cancel();
     const line = "At your service. What can I do for you?";
-    setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
+    setMessages((prev) => [...prev, chatMsg("bramwell", line)]);
     voice.speak(line);
   };
 
@@ -267,7 +272,7 @@ export default function App() {
       const i = market.bySymbol(t.symbol);
       const q = { price: i?.basePrice ?? t.value, changePct: i?.changePct ?? 0 };
       const line = firedLine(t, q);
-      setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
+      setMessages((prev) => [...prev, chatMsg("bramwell", line)]);
       voice.speak(line);
       fireNotification("Bramwell", line);
     }
@@ -287,7 +292,7 @@ export default function App() {
     const inst = r.instrument;
     if (!inst) {
       const msg = r.ok ? "I couldn't quite place that name." : r.message;
-      setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: msg }]);
+      setMessages((prev) => [...prev, chatMsg("bramwell", msg)]);
       voice.speak(msg);
       return;
     }
@@ -301,14 +306,14 @@ export default function App() {
       kind === "move"
         ? `Very good — I'll let you know if ${name} moves ${spec.value}% either way.`
         : `Very good — I'll tell you the moment ${name} goes ${kind} ${spec.value}.`;
-    setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
+    setMessages((prev) => [...prev, chatMsg("bramwell", line)]);
     voice.speak(line);
     setScreen({ kind: "quote", instrument: inst });
     forceRender((n) => n + 1);
   }
 
   function say(text: string) {
-    setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text }]);
+    setMessages((prev) => [...prev, chatMsg("bramwell", text)]);
     voice.speak(text);
   }
 
@@ -472,7 +477,7 @@ export default function App() {
     setWorking(false);
     const line =
       text ?? "Nothing on your watch just yet — add a few names and I'll keep the book for you.";
-    setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: line }]);
+    setMessages((prev) => [...prev, chatMsg("bramwell", line)]);
     voice.speak(line);
     if (heldRows.length) setScreen({ kind: "table", title: "Your holdings", rows: heldRows });
   }
@@ -607,7 +612,7 @@ export default function App() {
       : r.message;
 
     if (spoken.trim().length > 0) {
-      setMessages((prev) => [...prev, { id: nextId(), from: "bramwell", text: spoken }]);
+      setMessages((prev) => [...prev, chatMsg("bramwell", spoken)]);
       voice.speak(spoken);
     }
     if (r.instrument) setScreen({ kind: "quote", instrument: r.instrument });
