@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell } from "../brand/Bell";
 import { VoiceOrb } from "./VoiceOrb";
 import { Login } from "./Login";
@@ -12,6 +12,7 @@ import "../styles/landing.css";
  */
 export function Landing({ onEnter }: { onEnter: () => void }) {
   const [showLogin, setShowLogin] = useState(false);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   // Reveal elements as they scroll into view (skipped under reduced motion).
   useEffect(() => {
@@ -36,8 +37,63 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
     return () => io.disconnect();
   }, []);
 
+  // Scroll-driven motion: a progress line, gentle parallax on tagged layers.
+  // One rAF-throttled pass per frame; disabled entirely under reduced motion.
+  useEffect(() => {
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (reduced) return;
+
+    const layers = Array.from(document.querySelectorAll<HTMLElement>("[data-parallax]"));
+    let ticking = false;
+
+    const apply = () => {
+      ticking = false;
+      const y = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const p = max > 0 ? Math.min(1, y / max) : 0;
+      if (progressRef.current) progressRef.current.style.transform = `scaleX(${p})`;
+      for (const el of layers) {
+        const speed = Number(el.dataset.parallax) || 0;
+        el.style.transform = `translate3d(0, ${(y * speed).toFixed(1)}px, 0)`;
+      }
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(apply);
+      }
+    };
+
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
   return (
     <div className="lp">
+      {/* Scroll progress line — fills as the page is read. */}
+      <div className="lp-progress" aria-hidden="true">
+        <div ref={progressRef} className="lp-progress-fill" />
+      </div>
+
+      {/* Ambient drifting orbs behind everything (parallax + slow drift). */}
+      <div className="lp-orbs" aria-hidden="true">
+        <span className="lp-orb lp-orb-1" data-parallax="-0.12">
+          <i />
+        </span>
+        <span className="lp-orb lp-orb-2" data-parallax="0.08">
+          <i />
+        </span>
+        <span className="lp-orb lp-orb-3" data-parallax="-0.05">
+          <i />
+        </span>
+      </div>
+
       {/* ---------------------------------------------------------- Nav */}
       <header className="lp-nav">
         <a className="lp-brand" href="#home">
@@ -64,7 +120,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
 
       {/* --------------------------------------------------------- Hero */}
       <section className="lp-hero">
-        <div className="lp-hero-copy reveal">
+        <div className="lp-hero-copy reveal reveal-l">
           <span className="lp-eyebrow">Meet Bramwell</span>
           <h1 className="lp-h1">Your market, kept in order.</h1>
           <p className="lp-lead">
@@ -82,8 +138,10 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
           </div>
           <p className="lp-fineprint">No account. Runs in your browser. Sample data out of the box.</p>
         </div>
-        <div className="lp-hero-visual reveal">
-          <Preview />
+        <div className="lp-hero-visual reveal reveal-r">
+          <div className="lp-hero-float" data-parallax="-0.06">
+            <Preview />
+          </div>
         </div>
       </section>
 
@@ -123,10 +181,10 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
 
       {/* ------------------------------------------------------- Voice */}
       <section className="lp-voice">
-        <div className="lp-voice-orb reveal" aria-hidden="true">
+        <div className="lp-voice-orb reveal reveal-l" aria-hidden="true">
           <VoiceOrb speaking={false} working={false} listening={false} />
         </div>
-        <div className="lp-voice-copy reveal">
+        <div className="lp-voice-copy reveal reveal-r">
           <span className="lp-eyebrow">Hands-free</span>
           <h2 className="lp-h2">Talk to your market.</h2>
           <p className="lp-lead">
@@ -250,6 +308,7 @@ function Preview() {
       </div>
       <svg className="lp-preview-spark" viewBox="0 0 320 60" preserveAspectRatio="none" aria-hidden="true">
         <path
+          className="lp-preview-path"
           d="M0,44 L40,40 L70,46 L100,30 L130,34 L160,20 L190,26 L220,14 L250,18 L280,8 L320,12"
           fill="none"
           stroke="var(--data-up)"

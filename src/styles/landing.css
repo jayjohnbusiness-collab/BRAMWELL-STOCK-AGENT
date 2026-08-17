@@ -10,21 +10,164 @@
   color: var(--ink);
 }
 
-/* Scroll-reveal: elements rise and fade in as they enter the viewport. */
+/* Scroll-reveal: elements rise and fade in as they enter the viewport.
+   Direction variants let sections enter from the sides or scale up. */
 .reveal {
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0, 0, 1);
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0, 0, 1);
+  will-change: opacity, transform;
+}
+.reveal-l {
+  transform: translate3d(-34px, 0, 0);
+}
+.reveal-r {
+  transform: translate3d(34px, 0, 0);
+}
+.reveal-scale {
+  transform: scale(0.94);
 }
 .reveal.in {
   opacity: 1;
   transform: none;
 }
+
+/* --------------------------------------------------- Scroll progress line */
+.lp-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 40;
+  background: transparent;
+  pointer-events: none;
+}
+.lp-progress-fill {
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--brass), var(--brass-strong, var(--brass)));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--brass) 60%, transparent);
+}
+
+/* ----------------------------------------------------- Ambient orb backdrop */
+.lp-orbs {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.lp-orb {
+  position: absolute;
+  display: block;
+  will-change: transform;
+}
+/* Inner element carries the slow ambient drift so it composes with the
+   JS parallax transform on the outer .lp-orb. */
+.lp-orb i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  filter: blur(46px);
+  opacity: 0.5;
+}
+.lp-orb-1 {
+  top: -6%;
+  left: -4%;
+  width: 42vw;
+  height: 42vw;
+  max-width: 560px;
+  max-height: 560px;
+}
+.lp-orb-1 i {
+  background: radial-gradient(circle at 40% 40%, var(--brass), transparent 68%);
+  animation: lp-drift-a 22s ease-in-out infinite;
+}
+.lp-orb-2 {
+  top: 34%;
+  right: -8%;
+  width: 40vw;
+  height: 40vw;
+  max-width: 520px;
+  max-height: 520px;
+}
+.lp-orb-2 i {
+  background: radial-gradient(circle at 50% 50%, var(--data-up), transparent 66%);
+  opacity: 0.32;
+  animation: lp-drift-b 27s ease-in-out infinite;
+}
+.lp-orb-3 {
+  bottom: -8%;
+  left: 28%;
+  width: 34vw;
+  height: 34vw;
+  max-width: 460px;
+  max-height: 460px;
+}
+.lp-orb-3 i {
+  background: radial-gradient(circle at 50% 50%, var(--brass), transparent 70%);
+  opacity: 0.28;
+  animation: lp-drift-a 31s ease-in-out infinite reverse;
+}
+@keyframes lp-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 5%, 0) scale(1.08);
+  }
+}
+@keyframes lp-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-5%, -4%, 0) scale(1.1);
+  }
+}
+
+/* The page content sits above the orb backdrop. */
+.lp-nav,
+.lp-hero,
+.lp-section,
+.lp-voice,
+.lp-final,
+.lp-footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Sparkline draws itself in when the hero reveals. */
+.lp-preview-path {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+}
+.reveal.in .lp-preview-path {
+  animation: lp-draw 1.4s cubic-bezier(0.4, 0, 0.1, 1) 0.35s forwards;
+}
+@keyframes lp-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+  .lp-orb i {
+    animation: none;
+  }
+  .lp-preview-path {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
   }
 }
 
