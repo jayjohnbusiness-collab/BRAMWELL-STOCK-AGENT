@@ -209,6 +209,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             <div className="lp-price">
               $0<span className="lp-price-sub">/forever</span>
             </div>
+            <p className="lp-price-alt">no card, no catch</p>
             <ul className="lp-tier-list">
               {FREE.map((f) => (
                 <li key={f}>{f}</li>
@@ -222,8 +223,9 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             <div className="lp-tier-flag">Most popular</div>
             <div className="lp-tier-name">Pro</div>
             <div className="lp-price">
-              $12<span className="lp-price-sub">/month</span>
+              $7<span className="lp-price-sub">/mo, billed yearly</span>
             </div>
+            <p className="lp-price-alt">or $10 billed monthly</p>
             <ul className="lp-tier-list">
               {PRO.map((f) => (
                 <li key={f}>{f}</li>
@@ -235,7 +237,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
           </div>
         </div>
         <p className="lp-fineprint lp-center">
-          Pricing is illustrative — the live demo is fully free today.
+          Priced to sit below comparable market apps — the live demo is fully free today.
         </p>
       </section>
 
