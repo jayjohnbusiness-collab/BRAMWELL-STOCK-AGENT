@@ -4,13 +4,14 @@
  */
 
 .lp {
+  --lp-pad: clamp(var(--space-5), 5vw, 120px);
   width: 100%;
   margin: 0;
   /* Full-bleed: spans the whole viewport. Side padding grows on large
      monitors so content never touches the edge, but the page still fills
      the screen edge to edge. Text blocks stay readable via their own
      ch-based max-widths. */
-  padding: 0 clamp(var(--space-5), 5vw, 120px) var(--space-8);
+  padding: 0 var(--lp-pad) var(--space-8);
   color: var(--ink);
   /* Clip the side-entering reveals so they never widen the page (no stray
      horizontal scroll). `clip` — not `hidden` — leaves the sticky nav intact. */
@@ -186,7 +187,11 @@
   display: flex;
   align-items: center;
   gap: var(--space-5);
-  padding: var(--space-4) 0;
+  /* Full-bleed bar: stretch the background to the viewport edges by pulling
+     out of the page's side padding, then re-apply that padding to the content
+     so the brand and buttons stay aligned with everything below. */
+  margin-inline: calc(-1 * var(--lp-pad));
+  padding: var(--space-4) var(--lp-pad);
   margin-bottom: var(--space-5);
   background: color-mix(in srgb, var(--ground) 72%, transparent);
   -webkit-backdrop-filter: blur(10px);
