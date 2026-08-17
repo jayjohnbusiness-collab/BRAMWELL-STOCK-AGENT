@@ -1,0 +1,162 @@
+/*
+ * The sign-in card — same dim scrim, glass, and ink/brass/paper as the welcome
+ * card, kept deliberately compact. Light and dark from the tokens.
+ */
+
+.login-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(15, 20, 27, 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: login-fade 200ms ease;
+}
+
+@keyframes login-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.login-card {
+  width: min(380px, 100%);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card), 0 24px 60px rgba(15, 20, 27, 0.28);
+  padding: var(--space-6);
+  animation: login-rise 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes login-rise {
+  from {
+    transform: translateY(12px) scale(0.98);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-scrim,
+  .login-card {
+    animation: none;
+  }
+}
+
+.login-mark {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.login-word {
+  font-family: var(--font-display, var(--font-body));
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.login-title {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: 1.4rem;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.login-intro {
+  margin: 0 0 var(--space-5);
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.login-field span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+
+.login-field input {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--ground);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  transition: border-color var(--fade), box-shadow var(--fade);
+}
+
+.login-field input:focus-visible {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: var(--focus);
+}
+
+.login-error {
+  margin: 0;
+  color: var(--data-down);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.login-submit {
+  margin-top: var(--space-1);
+  padding: 10px 22px;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.login-submit:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.login-note {
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+  border-top: var(--hairline) solid var(--rule);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.login-linkbtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--brass);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-linkbtn:hover {
+  text-decoration: underline;
+}

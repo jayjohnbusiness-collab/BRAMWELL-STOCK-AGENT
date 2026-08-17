@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Bell } from "../brand/Bell";
 import { VoiceOrb } from "./VoiceOrb";
+import { Login } from "./Login";
 import "../styles/landing.css";
 
 /*
@@ -10,6 +11,8 @@ import "../styles/landing.css";
  * into the live app via onEnter.
  */
 export function Landing({ onEnter }: { onEnter: () => void }) {
+  const [showLogin, setShowLogin] = useState(false);
+
   // Reveal elements as they scroll into view (skipped under reduced motion).
   useEffect(() => {
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -48,14 +51,16 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
           <a href="#faq">FAQ</a>
         </nav>
         <div className="lp-nav-cta">
-          <button type="button" className="lp-ghost" onClick={onEnter}>
-            Launch app
+          <button type="button" className="lp-ghost" onClick={() => setShowLogin(true)}>
+            Log in
           </button>
           <button type="button" className="lp-btn" onClick={onEnter}>
             Try it free
           </button>
         </div>
       </header>
+
+      {showLogin ? <Login onClose={() => setShowLogin(false)} onSuccess={onEnter} /> : null}
 
       {/* --------------------------------------------------------- Hero */}
       <section className="lp-hero">
