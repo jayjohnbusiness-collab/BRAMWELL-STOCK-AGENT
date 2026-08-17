@@ -242,14 +242,18 @@
   border-radius: var(--radius);
   padding: 9px 20px;
   cursor: pointer;
-  transition: background var(--fade), transform var(--fade);
+  transition: background var(--fade), border-color var(--fade), box-shadow var(--fade),
+    translate var(--fade);
 }
 .lp-btn:hover {
   background: var(--brass-strong);
   border-color: var(--brass-strong);
+  translate: 0 -2px;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--brass) 38%, transparent);
 }
 .lp-btn:active {
-  transform: translateY(1px);
+  translate: 0 1px;
+  box-shadow: none;
 }
 .lp-btn-lg {
   padding: 13px 30px;
@@ -268,7 +272,10 @@
   border-radius: var(--radius);
   padding: 9px 18px;
   cursor: pointer;
-  transition: border-color var(--fade), color var(--fade);
+  transition: border-color var(--fade), color var(--fade), translate var(--fade);
+}
+.lp-ghost:hover {
+  translate: 0 -2px;
 }
 .lp-ghost:hover {
   border-color: var(--brass);
@@ -428,6 +435,12 @@
   box-shadow: var(--shadow-card), inset 0 1px 0 var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
+  /* Reveal (opacity/transform, slow) + hover (translate/shadow/border, quick).
+     Hover rides the independent `translate` property so it never fights the
+     reveal's `transform`. */
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0, 0, 1),
+    translate 0.24s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.24s ease,
+    border-color 0.24s ease;
 }
 .lp-icon {
   display: inline-flex;
@@ -513,6 +526,9 @@
   box-shadow: var(--shadow-card), inset 0 1px 0 var(--glass-sheen);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0, 0, 1),
+    translate 0.24s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.24s ease,
+    border-color 0.24s ease;
 }
 .lp-tier-pro {
   border-color: var(--accent-line);
@@ -635,5 +651,84 @@
   }
   .lp-links {
     display: none;
+  }
+}
+
+/* ------------------------------------------------- Hover interactions */
+/* Only where a real pointer can hover (skips touch, avoids sticky states). */
+@media (hover: hover) {
+  /* Feature cards lift, gain a brass edge and a deeper shadow; icon leans in. */
+  .lp-card:hover {
+    translate: 0 -6px;
+    border-color: color-mix(in srgb, var(--brass) 55%, var(--glass-border));
+    box-shadow: var(--shadow-card), inset 0 1px 0 var(--glass-sheen),
+      0 18px 40px rgba(20, 28, 40, 0.16);
+  }
+  .lp-icon {
+    transition: scale 0.24s cubic-bezier(0.2, 0, 0, 1), rotate 0.24s ease,
+      background 0.24s ease;
+  }
+  .lp-card:hover .lp-icon {
+    scale: 1.09;
+    rotate: -5deg;
+  }
+
+  /* Pricing tiers lift; the Pro tier keeps its brass ring, just deeper. */
+  .lp-tier:hover {
+    translate: 0 -6px;
+    box-shadow: var(--shadow-card), inset 0 1px 0 var(--glass-sheen),
+      0 22px 46px rgba(20, 28, 40, 0.18);
+  }
+  .lp-tier-pro:hover {
+    box-shadow: var(--shadow-card), 0 0 0 1px var(--brass),
+      0 22px 46px rgba(20, 28, 40, 0.2);
+  }
+
+  /* How-it-works: the number pops with a brass glow, the title warms. */
+  .lp-step-num {
+    transition: scale 0.24s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.24s ease;
+  }
+  .lp-step:hover .lp-step-num {
+    scale: 1.12;
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--brass) 45%, transparent);
+  }
+  .lp-step-title,
+  .lp-faq-q {
+    transition: color 0.2s ease;
+  }
+  .lp-step:hover .lp-step-title,
+  .lp-faq-item:hover .lp-faq-q {
+    color: var(--brass);
+  }
+
+  /* Preview card rows gently highlight under the cursor. */
+  .lp-preview-row {
+    border-radius: 8px;
+    transition: background 0.2s ease;
+  }
+  .lp-preview-row:hover {
+    background: color-mix(in srgb, var(--brass) 8%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-card,
+  .lp-tier,
+  .lp-icon,
+  .lp-step-num,
+  .lp-btn,
+  .lp-ghost {
+    transition: none;
+  }
+  .lp-card:hover,
+  .lp-tier:hover,
+  .lp-btn:hover,
+  .lp-ghost:hover {
+    translate: none;
+  }
+  .lp-card:hover .lp-icon,
+  .lp-step:hover .lp-step-num {
+    scale: none;
+    rotate: none;
   }
 }
