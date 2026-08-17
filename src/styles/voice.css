@@ -67,8 +67,10 @@
 /* The orb is a single canvas; it sizes itself and honours reduced motion.
    Also capped by height so it doesn't crowd the readout on short screens. */
 .voice-orb-canvas {
-  width: min(340px, 80vw, 46vh);
-  height: min(340px, 80vw, 46vh);
+  /* The canvas carries padding around the orb so the orrery never clips; sized
+     larger so the orb itself keeps its presence. */
+  width: min(440px, 92vw, 60vh);
+  height: min(440px, 92vw, 60vh);
   display: block;
   transform-origin: center;
   /* Settle back smoothly when the cursor leaves. */

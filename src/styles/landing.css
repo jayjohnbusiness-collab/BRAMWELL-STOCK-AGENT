@@ -524,8 +524,10 @@ html.lp-smooth-scroll {
   justify-content: center;
 }
 .lp-voice-orb canvas {
-  width: min(300px, 70vw);
-  height: min(300px, 70vw);
+  /* Enlarged so the orb keeps its size while the canvas carries margin for the
+     orrery — the extra room lives in the transparent canvas, not a smaller orb. */
+  width: min(390px, 84vw);
+  height: min(390px, 84vw);
 }
 
 /* Pricing */
