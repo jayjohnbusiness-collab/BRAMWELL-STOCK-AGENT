@@ -80,11 +80,17 @@ describe("submitWaitlist", () => {
     expect(hasRequestedAccess()).toBe(false);
   });
 
-  it("captures locally and marks requested when no endpoint is set", async () => {
-    const res = await submitWaitlist("jay@example.com", "The voice squawk that calls me");
-    expect(res.ok).toBe(true);
-    expect(res.local).toBe(true);
-    expect(hasRequestedAccess()).toBe(true);
+  it("captures locally when neither a JSON endpoint nor a Google Form is set", async () => {
+    const savedEmailField = GOOGLE_FORM.emailField;
+    GOOGLE_FORM.emailField = ""; // disable the Google path for this branch
+    try {
+      const res = await submitWaitlist("jay@example.com", "The voice squawk that calls me");
+      expect(res.ok).toBe(true);
+      expect(res.local).toBe(true);
+      expect(hasRequestedAccess()).toBe(true);
+    } finally {
+      GOOGLE_FORM.emailField = savedEmailField;
+    }
   });
 
   it("POSTs JSON to the configured endpoint on success", async () => {

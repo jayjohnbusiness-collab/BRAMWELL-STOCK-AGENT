@@ -32,8 +32,8 @@ const REQUESTED_KEY = "bramwell.waitlist.requested.v1";
 export const GOOGLE_FORM = {
   action:
     "https://docs.google.com/forms/d/e/1FAIpQLSflj0WPxx3txHvIT6EZeYBjQKodCxoH20qf345GiamNiF0NXQ/formResponse",
-  emailField: "", // e.g. "entry.1234567890"  — the email question
-  interestField: "", // e.g. "entry.0987654321" — the "$100/mo" question (optional)
+  emailField: "entry.1473565947", // the "Email" short-answer question
+  interestField: "entry.406979049", // the "$100/mo" multiple-choice question
 };
 
 export function googleFormConfigured(): boolean {

@@ -58,11 +58,11 @@ the current gate is met. Effort estimates assume a small team and are directiona
 - Capture real interest — **done**: the "Request early access" button opens a
   waitlist modal (`src/components/EarlyAccess.tsx`) that collects an email plus
   an optional "what would make it worth $100/mo?" signal, and POSTs to a
-  form-service endpoint you own. **To switch capture on, set the endpoint**
-  (`VITE_WAITLIST_ENDPOINT`, or `?waitlist=<url>`, or a `bramwell.waitlist.endpoint`
-  localStorage key — see the README). Until then, submissions are on-device only.
-  - *Immediate next step:* create a Formspree (or Google Form / serverless)
-    endpoint and set it, so signups actually reach you.
+  form you own. **Live** — wired to a Google Form (`src/waitlist.ts`,
+  `GOOGLE_FORM`); signups land in the linked responses sheet. A JSON endpoint
+  (`VITE_WAITLIST_ENDPOINT` / `?waitlist=<url>`) can override it for testing.
+  - *Next:* drive traffic to the page and watch the responses — especially
+    which "worth $100/mo" reason people pick (the hero-feature signal).
 - **Concierge MVP (Wizard-of-Oz):** hand-deliver spoken briefings + squawk-style
   alerts to the first 5–10 signups (manually, over the phone / voice notes).
   Charge a founding rate. See what they actually value and keep using.
