@@ -700,15 +700,7 @@
   .lp-faq-item:hover .lp-faq-q {
     color: var(--brass);
   }
-
-  /* Preview card rows gently highlight under the cursor. */
-  .lp-preview-row {
-    border-radius: 8px;
-    transition: background 0.2s ease;
-  }
-  .lp-preview-row:hover {
-    background: color-mix(in srgb, var(--brass) 8%, transparent);
-  }
+  /* The hero price-action preview stays static — no hover animation on the chart. */
 }
 
 @media (prefers-reduced-motion: reduce) {
