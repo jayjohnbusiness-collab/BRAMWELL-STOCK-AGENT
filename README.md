@@ -44,18 +44,33 @@ proxy the feed through a backend.)
 ### Concierge early-access waitlist
 
 The landing page's "Request early access" form (Phase 0 price validation for
-the $100 Concierge tier — see `docs/CONCIERGE_ROADMAP.md`) POSTs signups to a
-form-service endpoint you own (Formspree, Google Forms, Netlify Forms, a
-serverless function — anything that accepts a JSON POST). Point it at yours:
+the $100 Concierge tier — see `docs/CONCIERGE_ROADMAP.md`) sends signups (email
++ an optional "what would make it worth $100/mo" answer) to a form you own.
+Two transports are supported, in `src/waitlist.ts`:
+
+**Google Forms** (configured in the `GOOGLE_FORM` constant). Fill in the two
+field IDs from the form's *Get pre-filled link*:
+
+1. Open the form → **⋮** (top-right) → **Get pre-filled link**.
+2. Type a dummy email and pick an interest → **Get link** → **Copy link**.
+3. The copied URL contains `entry.<id>=<dummy>` pairs — the number before your
+   dummy email is `emailField`, the one before the interest is `interestField`.
+
+Submissions go to the form's `/formResponse` endpoint via a hidden iframe
+(Google sends no CORS headers, so the response is opaque — the entry still
+records, we just report success once it's sent).
+
+**JSON endpoint** (Formspree / Netlify / serverless — anything that accepts a
+JSON POST). Takes precedence over the Google Form when set, which is handy for
+testing:
 
 ```bash
 echo 'VITE_WAITLIST_ENDPOINT=https://formspree.io/f/your_id' >> .env.local
 ```
 
-You can also switch it on without a rebuild via `?waitlist=<url>` in the URL or
-a `bramwell.waitlist.endpoint` localStorage key. Until an endpoint is set,
-submissions are kept on-device only and the UI still confirms — so the flow is
-testable — but no lead reaches you.
+…or without a rebuild via `?waitlist=<url>` or a `bramwell.waitlist.endpoint`
+localStorage key. With neither configured, submissions are kept on-device only
+and the UI still confirms — so the flow is testable — but no lead reaches you.
 
 ## What's here
 

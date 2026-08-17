@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { hasRequestedAccess, looksLikeEmail, submitWaitlist, waitlistEndpoint } from "./waitlist";
+import {
+  GOOGLE_FORM,
+  googleFormConfigured,
+  googleFormFields,
+  hasRequestedAccess,
+  looksLikeEmail,
+  submitWaitlist,
+  waitlistEndpoint,
+} from "./waitlist";
 
 // Minimal in-memory globals so the browser-facing module runs in node (no jsdom).
 class MemStore {
@@ -101,5 +109,40 @@ describe("submitWaitlist", () => {
     const res = await submitWaitlist("jay@example.com", "All of it");
     expect(res.ok).toBe(false);
     expect(hasRequestedAccess()).toBe(false);
+  });
+});
+
+describe("Google Form target", () => {
+  const origEmail = GOOGLE_FORM.emailField;
+  const origInterest = GOOGLE_FORM.interestField;
+  afterEach(() => {
+    GOOGLE_FORM.emailField = origEmail;
+    GOOGLE_FORM.interestField = origInterest;
+  });
+
+  it("is not configured until an entry.<id> email field is set", () => {
+    GOOGLE_FORM.emailField = "";
+    expect(googleFormConfigured()).toBe(false);
+    GOOGLE_FORM.emailField = "entry.111";
+    expect(googleFormConfigured()).toBe(true);
+  });
+
+  it("action points at /formResponse, not /viewform", () => {
+    expect(GOOGLE_FORM.action).toContain("/formResponse");
+    expect(GOOGLE_FORM.action).not.toContain("/viewform");
+  });
+
+  it("maps only the configured fields to entry ids", () => {
+    GOOGLE_FORM.emailField = "entry.111";
+    GOOGLE_FORM.interestField = "entry.222";
+    expect(googleFormFields("jay@example.com", "All of it")).toEqual({
+      "entry.111": "jay@example.com",
+      "entry.222": "All of it",
+    });
+
+    GOOGLE_FORM.interestField = ""; // interest optional / not present on the form
+    expect(googleFormFields("jay@example.com", "All of it")).toEqual({
+      "entry.111": "jay@example.com",
+    });
   });
 });
