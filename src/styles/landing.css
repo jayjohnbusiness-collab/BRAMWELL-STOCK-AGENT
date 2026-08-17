@@ -3,6 +3,24 @@
  * glass, Archivo), restrained motion. Sits on the body's ambient wash.
  */
 
+/* Smooth-scroll the nav anchors (class is toggled while the landing is mounted). */
+html.lp-smooth-scroll {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.lp-smooth-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* Anchored sections land below the sticky nav, not tucked under it. */
+#features,
+#how,
+#pricing,
+#faq {
+  scroll-margin-top: 84px;
+}
+
 .lp {
   --lp-pad: clamp(var(--space-5), 5vw, 120px);
   width: 100%;

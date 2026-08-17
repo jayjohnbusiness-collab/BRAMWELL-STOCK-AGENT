@@ -16,6 +16,14 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
   const [showEarlyAccess, setShowEarlyAccess] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
 
+  // Smooth-scroll the nav anchors — but only while the landing is mounted, so
+  // it never leaks into the app. (CSS also honours reduced motion.)
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("lp-smooth-scroll");
+    return () => root.classList.remove("lp-smooth-scroll");
+  }, []);
+
   // Reveal elements as they scroll into view (skipped under reduced motion).
   useEffect(() => {
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
