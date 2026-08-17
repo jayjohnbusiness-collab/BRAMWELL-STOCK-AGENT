@@ -4,10 +4,17 @@
  */
 
 .lp {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 0 var(--space-5) var(--space-8);
+  width: 100%;
+  margin: 0;
+  /* Full-bleed: spans the whole viewport. Side padding grows on large
+     monitors so content never touches the edge, but the page still fills
+     the screen edge to edge. Text blocks stay readable via their own
+     ch-based max-widths. */
+  padding: 0 clamp(var(--space-5), 5vw, 120px) var(--space-8);
   color: var(--ink);
+  /* Clip the side-entering reveals so they never widen the page (no stray
+     horizontal scroll). `clip` — not `hidden` — leaves the sticky nav intact. */
+  overflow-x: clip;
 }
 
 /* Scroll-reveal: elements rise and fade in as they enter the viewport.
