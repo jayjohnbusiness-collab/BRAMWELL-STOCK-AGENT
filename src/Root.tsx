@@ -31,9 +31,15 @@ function hasEntered(): boolean {
 export function Root() {
   const [entered, setEntered] = useState(() => hasEntered());
 
-  // Keep in step with manual hash changes (e.g. someone types #home to preview).
+  // Only the explicit #app / #home hashes switch views. Section anchors on the
+  // landing (#features, #pricing, #how, #faq) must NOT flip a returning visitor
+  // into the app — they just scroll the landing page.
   useEffect(() => {
-    const onHash = () => setEntered(hasEntered());
+    const onHash = () => {
+      const h = window.location.hash;
+      if (h === "#app") setEntered(true);
+      else if (h === "#home") setEntered(false);
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
