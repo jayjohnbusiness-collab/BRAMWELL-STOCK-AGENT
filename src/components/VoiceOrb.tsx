@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import "../styles/voice.css";
 
 /*
  * The voice orb — a dark globe wrapped in a dense web of glowing amber
