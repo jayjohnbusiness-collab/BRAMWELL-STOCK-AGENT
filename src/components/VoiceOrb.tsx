@@ -162,8 +162,8 @@ export function VoiceOrb({
       const cr = ctx.createRadialGradient(cx, cy, R * 0.14, cx, cy, outer);
       cr.addColorStop(0, "rgba(10,8,6,0)");
       cr.addColorStop(0.32, "rgba(20,14,8,0)");
-      cr.addColorStop(0.5, `rgba(255,238,205,${0.5 + lv * 0.4})`);
-      cr.addColorStop(0.62, "rgba(255,168,70,0.3)");
+      cr.addColorStop(0.5, `rgba(255,238,205,${0.7 + lv * 0.3})`);
+      cr.addColorStop(0.62, "rgba(255,168,70,0.44)");
       cr.addColorStop(1, "rgba(120,50,10,0)");
       ctx.fillStyle = cr;
       ctx.beginPath();
@@ -189,7 +189,7 @@ export function VoiceOrb({
         const ex = cx + Math.cos(eo.a) * R * eo.orbit;
         const ey = cy + Math.sin(eo.a) * R * eo.orbit * eo.sq;
         const tw = 0.5 + 0.5 * Math.sin(t * 2 + eo.ph);
-        ctx.fillStyle = `rgba(255,230,180,${0.08 + tw * 0.3 * (0.6 + lv * 0.5)})`;
+        ctx.fillStyle = `rgba(255,230,180,${0.14 + tw * 0.42 * (0.6 + lv * 0.5)})`;
         ctx.beginPath();
         ctx.arc(ex, ey, eo.sz * (0.6 + tw * 0.7), 0, TAU);
         ctx.fill();
@@ -211,8 +211,8 @@ export function VoiceOrb({
           const p = pts[k2];
           const q = pts[k2 + 1];
           const f = ((p.z + q.z) / 2 + 1) / 2;
-          ctx.strokeStyle = `rgba(${RING_COL},${0.045 + f * f * (0.5 + lv * 0.2)})`;
-          ctx.lineWidth = (0.4 + f * 1.5) * p.pp;
+          ctx.strokeStyle = `rgba(${RING_COL},${0.1 + f * f * (0.75 + lv * 0.22)})`;
+          ctx.lineWidth = (0.55 + f * 1.7) * p.pp;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(q.x, q.y);
@@ -225,13 +225,13 @@ export function VoiceOrb({
           const pb = ptOnRing(u, v, bt + phase, rg.rad);
           const bp = project(pb[0], pb[1], pb[2], ay, ax, cx, cy, R);
           const bf = (bp.z + 1) / 2;
-          const a = (1 - tr / 7) * (0.28 + bf * 0.6);
+          const a = (1 - tr / 7) * (0.42 + bf * 0.58);
           ctx.fillStyle = `rgba(255,244,210,${a})`;
           ctx.beginPath();
           ctx.arc(bp.x, bp.y, (0.7 + bf * 1.8) * bp.pp * (1 - tr * 0.08), 0, TAU);
           ctx.fill();
           if (tr === 0) {
-            ctx.fillStyle = `rgba(255,200,110,${0.16 + bf * 0.24})`;
+            ctx.fillStyle = `rgba(255,200,110,${0.22 + bf * 0.28})`;
             ctx.beginPath();
             ctx.arc(bp.x, bp.y, (3 + bf * 4.5) * bp.pp, 0, TAU);
             ctx.fill();
@@ -243,7 +243,7 @@ export function VoiceOrb({
       const sw = R * (0.9 + pulse * 0.35 + lv * 0.2);
       const streak = ctx.createLinearGradient(cx - sw, cy, cx + sw, cy);
       streak.addColorStop(0, "rgba(255,190,90,0)");
-      streak.addColorStop(0.5, `rgba(255,236,200,${0.12 + lv * 0.24})`);
+      streak.addColorStop(0.5, `rgba(255,236,200,${0.2 + lv * 0.26})`);
       streak.addColorStop(1, "rgba(255,190,90,0)");
       ctx.fillStyle = streak;
       const hh = 1.2 + pulse * 1.6 + lv * 1.4;
