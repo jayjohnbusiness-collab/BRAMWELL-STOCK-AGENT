@@ -220,24 +220,24 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             </button>
           </div>
           <div className="lp-tier lp-tier-pro reveal">
-            <div className="lp-tier-flag">Most popular</div>
-            <div className="lp-tier-name">Pro</div>
+            <div className="lp-tier-flag">Coming soon</div>
+            <div className="lp-tier-name">Bramwell Concierge</div>
             <div className="lp-price">
-              $7<span className="lp-price-sub">/mo, billed yearly</span>
+              $100<span className="lp-price-sub">/month</span>
             </div>
-            <p className="lp-price-alt">or $10 billed monthly</p>
+            <p className="lp-price-alt">Founding access — lock in launch pricing</p>
             <ul className="lp-tier-list">
-              {PRO.map((f) => (
+              {CONCIERGE.map((f) => (
                 <li key={f}>{f}</li>
               ))}
             </ul>
             <button type="button" className="lp-btn lp-btn-block" onClick={onEnter}>
-              Go Pro
+              Request early access
             </button>
           </div>
         </div>
         <p className="lp-fineprint lp-center">
-          Priced to sit below comparable market apps — the live demo is fully free today.
+          Concierge is in active development — the Free demo is fully live today.
         </p>
       </section>
 
@@ -347,20 +347,22 @@ const FREE = [
   "One dashboard board",
 ];
 
-const PRO = [
+const CONCIERGE = [
   "Everything in Free",
-  "Live prices (your Finnhub key)",
-  "Unlimited alerts & triggers",
-  "Portfolio, P/L & dividends",
-  "Voice — “Hey Bramwell”",
-  "Morning briefings",
+  "Live spoken squawk — Bramwell calls you",
+  "AI analyst over filings & earnings",
+  "Your portfolio, linked & risk-watched",
+  "Licensed real-time market data",
+  "Proactive briefings, voice & unlimited alerts",
 ];
 
 const FAQ = [
   { q: "Do I need an account?", a: "No. Try everything right in the browser — your watchlist, holdings, and notes stay on your device." },
-  { q: "Do I need an API key?", a: "The demo runs on sample data. Connect a free Finnhub key any time for live prices." },
+  { q: "What is Bramwell Concierge?", a: "The premium tier: a voice-first analyst on call — licensed real-time data, a spoken squawk that phones you on your own holdings, and AI that reasons over filings and earnings. Request early access from Pricing." },
+  { q: "When does Concierge launch?", a: "It's in active development. Founding early-access members lock in launch pricing — the Free demo is fully live in the meantime." },
+  { q: "Do I need an API key?", a: "The Free demo runs on sample data. Connect a free Finnhub key any time for live prices; Concierge brings licensed real-time data with no key needed." },
   { q: "Which browsers handle voice?", a: "Voice works best in Chrome or Edge; everything else runs everywhere." },
-  { q: "Is my data private?", a: "Yes. There's no server — your data lives only in your browser, and you can clear it any time." },
+  { q: "Is my data private?", a: "On Free there's no server — your data lives only in your browser. Concierge links your portfolio securely so Bramwell can watch it for you." },
 ];
 
 /* ---------------------------------------------------------- small icons */
