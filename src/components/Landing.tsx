@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell } from "../brand/Bell";
 import { VoiceOrb } from "./VoiceOrb";
 import { Login } from "./Login";
+import { EarlyAccess } from "./EarlyAccess";
 import "../styles/landing.css";
 
 /*
@@ -12,6 +13,7 @@ import "../styles/landing.css";
  */
 export function Landing({ onEnter }: { onEnter: () => void }) {
   const [showLogin, setShowLogin] = useState(false);
+  const [showEarlyAccess, setShowEarlyAccess] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
 
   // Reveal elements as they scroll into view (skipped under reduced motion).
@@ -117,6 +119,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       </header>
 
       {showLogin ? <Login onClose={() => setShowLogin(false)} onSuccess={onEnter} /> : null}
+      {showEarlyAccess ? <EarlyAccess onClose={() => setShowEarlyAccess(false)} /> : null}
 
       {/* --------------------------------------------------------- Hero */}
       <section className="lp-hero">
@@ -231,7 +234,11 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
                 <li key={f}>{f}</li>
               ))}
             </ul>
-            <button type="button" className="lp-btn lp-btn-block" onClick={onEnter}>
+            <button
+              type="button"
+              className="lp-btn lp-btn-block"
+              onClick={() => setShowEarlyAccess(true)}
+            >
               Request early access
             </button>
           </div>

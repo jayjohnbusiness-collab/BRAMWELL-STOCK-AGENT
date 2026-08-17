@@ -54,14 +54,22 @@ the current gate is met. Effort estimates assume a small team and are directiona
 ### Phase 0 — Validate the price (before building anything heavy)
 **Goal:** prove people will pay $100 *before* paying for data licenses.
 - Ship the "Coming soon / Request early access" Concierge tier on the landing
-  page (**done** — this repo).
-- Capture real interest: waitlist email form → measure click-through and signups.
+  page — **done** (this repo).
+- Capture real interest — **done**: the "Request early access" button opens a
+  waitlist modal (`src/components/EarlyAccess.tsx`) that collects an email plus
+  an optional "what would make it worth $100/mo?" signal, and POSTs to a
+  form-service endpoint you own. **To switch capture on, set the endpoint**
+  (`VITE_WAITLIST_ENDPOINT`, or `?waitlist=<url>`, or a `bramwell.waitlist.endpoint`
+  localStorage key — see the README). Until then, submissions are on-device only.
+  - *Immediate next step:* create a Formspree (or Google Form / serverless)
+    endpoint and set it, so signups actually reach you.
 - **Concierge MVP (Wizard-of-Oz):** hand-deliver spoken briefings + squawk-style
-  alerts to the first 5–10 users (manually, over the phone / voice notes). Charge
-  a founding rate. See what they actually value and keep using.
+  alerts to the first 5–10 signups (manually, over the phone / voice notes).
+  Charge a founding rate. See what they actually value and keep using.
 - **Exit gate:** a credible number of waitlist signups + ≥5 users who'd pay a
   founding rate and stay engaged for 4+ weeks. If this fails, re-scope the price.
-- *Effort: 1–2 weeks + ongoing concierge time. COGS: ~nil.*
+- *Effort: capture shipped; remaining is the endpoint + ongoing concierge time.
+  COGS: ~nil.*
 
 ### Phase 1 — Backend foundation
 **Goal:** the platform everything else needs.

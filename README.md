@@ -41,6 +41,22 @@ exactly what makes Bramwell say "I don't have a reason for it yet." (The token
 rides in the browser for this dev scaffold; a production deployment should
 proxy the feed through a backend.)
 
+### Concierge early-access waitlist
+
+The landing page's "Request early access" form (Phase 0 price validation for
+the $100 Concierge tier — see `docs/CONCIERGE_ROADMAP.md`) POSTs signups to a
+form-service endpoint you own (Formspree, Google Forms, Netlify Forms, a
+serverless function — anything that accepts a JSON POST). Point it at yours:
+
+```bash
+echo 'VITE_WAITLIST_ENDPOINT=https://formspree.io/f/your_id' >> .env.local
+```
+
+You can also switch it on without a rebuild via `?waitlist=<url>` in the URL or
+a `bramwell.waitlist.endpoint` localStorage key. Until an endpoint is set,
+submissions are kept on-device only and the UI still confirms — so the flow is
+testable — but no lead reaches you.
+
 ## What's here
 
 The left pane is the conversation; the right pane is **the screen** — the same

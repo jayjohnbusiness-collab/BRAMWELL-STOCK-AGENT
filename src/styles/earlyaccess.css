@@ -1,0 +1,158 @@
+/*
+ * Early-access modal — same dim scrim, glass, and ink/brass/paper as the login
+ * and welcome cards. Light and dark from the tokens.
+ */
+
+.ea-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(15, 20, 27, 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: ea-fade 200ms ease;
+}
+
+@keyframes ea-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ea-card {
+  width: min(420px, 100%);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card), 0 24px 60px rgba(15, 20, 27, 0.28);
+  padding: var(--space-6);
+  animation: ea-rise 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes ea-rise {
+  from {
+    transform: translateY(12px) scale(0.98);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ea-scrim,
+  .ea-card {
+    animation: none;
+  }
+}
+
+.ea-mark {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ea-word {
+  font-family: var(--font-display, var(--font-body));
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.ea-title {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: 1.4rem;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ea-intro {
+  margin: 0 0 var(--space-5);
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ea-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ea-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ea-field span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+
+.ea-field input,
+.ea-field select {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--ground);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  transition: border-color var(--fade), box-shadow var(--fade);
+}
+
+.ea-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+}
+
+.ea-field input:focus-visible,
+.ea-field select:focus-visible {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: var(--focus);
+}
+
+.ea-error {
+  margin: 0;
+  color: var(--data-down);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.ea-submit {
+  margin-top: var(--space-1);
+  padding: 10px 22px;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.ea-submit:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.ea-note {
+  margin: var(--space-4) 0 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
