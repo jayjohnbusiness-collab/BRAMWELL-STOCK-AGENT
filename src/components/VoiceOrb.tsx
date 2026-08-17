@@ -102,12 +102,14 @@ export function VoiceOrb({
 
     const cx = CSS / 2;
     const cy = CSS / 2;
-    const R = CSS * 0.31;
+    // Sized so the outermost ring (widened by perspective) clears the canvas
+    // edge with margin — the orrery must never clip at the frame.
+    const R = CSS * 0.24;
 
     // Tilted orbital rings, each with a travelling bead.
     const rings = Array.from({ length: RN }, (_, i) => ({
       b: orthoBasis(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)),
-      rad: 1.0 + i * 0.1 + rnd(-0.03, 0.03),
+      rad: 0.9 + i * 0.072 + rnd(-0.02, 0.02),
       spin: rnd(0.16, 0.5) * (Math.random() < 0.5 ? 1 : -1),
       bead: Math.random() * TAU,
       beadSp: rnd(0.5, 1.15) * (Math.random() < 0.5 ? 1 : -1),
@@ -116,7 +118,7 @@ export function VoiceOrb({
     // Ember/debris field orbiting the core.
     const embers = Array.from({ length: EMBERS }, () => ({
       a: rnd(0, TAU),
-      orbit: rnd(1.0, 1.5),
+      orbit: rnd(0.95, 1.35),
       sp: rnd(0.05, 0.28) * (Math.random() < 0.5 ? 1 : -1),
       sz: rnd(0.3, 1.4),
       ph: rnd(0, TAU),
