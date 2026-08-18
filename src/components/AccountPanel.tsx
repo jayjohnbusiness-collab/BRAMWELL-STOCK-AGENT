@@ -193,6 +193,14 @@ function Preferences({ ctx }: { ctx: CardContext }) {
           >
             Dark
           </button>
+          <button
+            type="button"
+            className={`seg-btn${theme === "glass" ? " on" : ""}`}
+            aria-pressed={theme === "glass"}
+            onClick={() => chooseTheme("glass")}
+          >
+            Glass
+          </button>
         </div>
       </Pref>
 

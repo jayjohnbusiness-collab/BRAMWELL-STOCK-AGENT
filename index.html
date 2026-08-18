@@ -14,7 +14,7 @@
       (function () {
         try {
           var t = localStorage.getItem("bramwell.theme");
-          if (t !== "dark" && t !== "light") {
+          if (t !== "dark" && t !== "light" && t !== "glass") {
             t =
               window.matchMedia &&
               window.matchMedia("(prefers-color-scheme: dark)").matches

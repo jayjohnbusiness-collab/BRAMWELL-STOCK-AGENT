@@ -30,6 +30,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Glass theme: a richer, more colourful ambient wash so the clear cards have
+   real light and colour to refract — otherwise transparency reads as flat. */
+:root[data-theme="glass"] body {
+  background:
+    radial-gradient(820px 560px at 6% -8%, color-mix(in srgb, var(--brass) 30%, transparent), transparent 56%),
+    radial-gradient(760px 600px at 110% 2%, color-mix(in srgb, var(--data-up) 18%, transparent), transparent 54%),
+    radial-gradient(1000px 800px at 50% 120%, color-mix(in srgb, var(--brass) 20%, transparent), transparent 56%),
+    var(--ground);
+  background-attachment: fixed;
+}
+
 #root {
   min-height: 100vh;
 }

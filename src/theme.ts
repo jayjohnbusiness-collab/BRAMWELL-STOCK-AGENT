@@ -4,14 +4,18 @@
  * module is the React-side counterpart for reading and switching it.
  */
 
-export type Theme = "light" | "dark";
+export type Theme = "light" | "dark" | "glass";
 
 const KEY = "bramwell.theme";
+
+function isTheme(v: unknown): v is Theme {
+  return v === "dark" || v === "light" || v === "glass";
+}
 
 export function storedTheme(): Theme | null {
   try {
     const v = localStorage.getItem(KEY);
-    return v === "dark" || v === "light" ? v : null;
+    return isTheme(v) ? v : null;
   } catch {
     return null;
   }
@@ -32,7 +36,7 @@ export function initialTheme(): Theme {
 /** What's currently applied to the document (falls back to initial). */
 export function currentTheme(): Theme {
   const t = document.documentElement.dataset.theme;
-  return t === "dark" || t === "light" ? t : initialTheme();
+  return isTheme(t) ? t : initialTheme();
 }
 
 export function setTheme(theme: Theme): void {
