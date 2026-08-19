@@ -30,18 +30,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Glass theme: a bold, colourful ambient field so the clear cards have real
-   light and colour to refract. The glows are large and sit where cards land
-   (not just the corners), over a slightly lifted base, so the glass reads as
-   glass everywhere on the page. */
+/* Glass theme: a field of bright white light so the clear cards refract clean,
+   crystalline white. Large pools sit where cards land (not just the corners),
+   over a deep base, so the glass catches light everywhere on the page. */
 :root[data-theme="glass"] body {
   background:
-    radial-gradient(900px 640px at 14% 6%, color-mix(in srgb, var(--brass) 55%, transparent), transparent 62%),
-    radial-gradient(840px 660px at 90% 10%, color-mix(in srgb, var(--data-up) 40%, transparent), transparent 60%),
-    radial-gradient(820px 720px at 82% 86%, color-mix(in srgb, var(--brass) 46%, transparent), transparent 62%),
-    radial-gradient(760px 640px at 18% 94%, color-mix(in srgb, var(--oxblood) 32%, transparent), transparent 62%),
-    radial-gradient(1100px 900px at 50% 50%, color-mix(in srgb, var(--brass) 16%, transparent), transparent 66%),
-    #141c26;
+    radial-gradient(900px 640px at 13% 5%, rgba(255, 255, 255, 0.24), transparent 60%),
+    radial-gradient(840px 660px at 91% 9%, rgba(244, 249, 255, 0.18), transparent 60%),
+    radial-gradient(820px 720px at 83% 87%, rgba(255, 255, 255, 0.2), transparent 62%),
+    radial-gradient(760px 640px at 17% 95%, rgba(240, 246, 255, 0.14), transparent 62%),
+    radial-gradient(1200px 960px at 50% 48%, rgba(255, 255, 255, 0.09), transparent 66%),
+    #0e141d;
   background-attachment: fixed;
 }
 
