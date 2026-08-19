@@ -30,14 +30,18 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Glass theme: a richer, more colourful ambient wash so the clear cards have
-   real light and colour to refract — otherwise transparency reads as flat. */
+/* Glass theme: a bold, colourful ambient field so the clear cards have real
+   light and colour to refract. The glows are large and sit where cards land
+   (not just the corners), over a slightly lifted base, so the glass reads as
+   glass everywhere on the page. */
 :root[data-theme="glass"] body {
   background:
-    radial-gradient(820px 560px at 6% -8%, color-mix(in srgb, var(--brass) 30%, transparent), transparent 56%),
-    radial-gradient(760px 600px at 110% 2%, color-mix(in srgb, var(--data-up) 18%, transparent), transparent 54%),
-    radial-gradient(1000px 800px at 50% 120%, color-mix(in srgb, var(--brass) 20%, transparent), transparent 56%),
-    var(--ground);
+    radial-gradient(900px 640px at 14% 6%, color-mix(in srgb, var(--brass) 55%, transparent), transparent 62%),
+    radial-gradient(840px 660px at 90% 10%, color-mix(in srgb, var(--data-up) 40%, transparent), transparent 60%),
+    radial-gradient(820px 720px at 82% 86%, color-mix(in srgb, var(--brass) 46%, transparent), transparent 62%),
+    radial-gradient(760px 640px at 18% 94%, color-mix(in srgb, var(--oxblood) 32%, transparent), transparent 62%),
+    radial-gradient(1100px 900px at 50% 50%, color-mix(in srgb, var(--brass) 16%, transparent), transparent 66%),
+    #141c26;
   background-attachment: fixed;
 }
 
@@ -60,8 +64,8 @@ body {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card), inset 0 1px 0 var(--glass-sheen);
   padding: var(--space-5);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat, 140%));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat, 140%));
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
