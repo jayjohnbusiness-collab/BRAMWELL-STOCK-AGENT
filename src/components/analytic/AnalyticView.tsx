@@ -262,6 +262,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
           </div>
           <div className="ana-axis ana-ax-x ana-lab">{S.ax}</div>
           <div className="ana-axis ana-ax-y ana-lab">{S.ay}</div>
+          <div className="ana-drag-hint ana-lab">drag to rotate</div>
         </section>
 
         <aside className="ana-col ana-tiles">

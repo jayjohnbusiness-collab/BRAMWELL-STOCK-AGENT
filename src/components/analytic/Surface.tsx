@@ -128,6 +128,60 @@ export function Surface({
     }
     fit();
 
+    // Drag-to-rotate. Until the user grabs it, the terrain gently auto-orbits;
+    // once grabbed, they steer yaw (horizontal) and pitch (vertical), with a
+    // little inertia on release. Pitch is clamped so the terrain never clips.
+    let interacted = false;
+    let dragging = false;
+    let userYaw = 0.5;
+    let userPitch = 0.46;
+    let velYaw = 0;
+    let velPitch = 0;
+    let lastX = 0;
+    let lastY = 0;
+    const clampPitch = (p: number) => Math.max(0.16, Math.min(1.05, p));
+    const onDown = (e: PointerEvent) => {
+      dragging = true;
+      interacted = true;
+      velYaw = 0;
+      velPitch = 0;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      try {
+        canvas!.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      canvas!.style.cursor = "grabbing";
+      e.preventDefault();
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      velYaw = dx * 0.007;
+      velPitch = -dy * 0.006;
+      userYaw += velYaw;
+      userPitch = clampPitch(userPitch + velPitch);
+    };
+    const onUp = (e: PointerEvent) => {
+      dragging = false;
+      canvas!.style.cursor = "grab";
+      try {
+        canvas!.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    };
+    canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerup", onUp);
+    canvas.addEventListener("pointercancel", onUp);
+    canvas.style.cursor = "grab";
+    canvas.style.touchAction = "none";
+
     const BUCKETS = 26;
     const buckets: number[][] = [];
     let raf = 0;
@@ -144,12 +198,28 @@ export function Surface({
       // Sized and centred so the whole terrain — peak and spreading base — sits
       // inside the stage with margin; never touches the canvas edges.
       const cyB = Ht * 0.52;
-      const spanX = W * 0.3;
-      const spanZ = Ht * 0.3;
+      // Sized so the terrain clears the edges at any drag angle (the base
+      // diagonal is the worst case when yaw sweeps the square toward a corner).
+      const spanX = W * 0.245;
+      const spanZ = Ht * 0.245;
       const spanY = Ht * 0.42;
       const persp = Ht * 1.4; // large camera distance → near-orthographic, gentle peak blow-up
-      const yaw = reduced ? 0.5 : 0.5 + 0.28 * Math.sin(t * 0.00016);
-      const pitch = 0.46;
+      let yaw: number;
+      let pitch: number;
+      if (interacted) {
+        if (!dragging) {
+          // inertia glide after release, then settle
+          userYaw += velYaw;
+          velYaw *= 0.93;
+          userPitch = clampPitch(userPitch + velPitch);
+          velPitch *= 0.93;
+        }
+        yaw = userYaw;
+        pitch = userPitch;
+      } else {
+        yaw = reduced ? 0.5 : 0.5 + 0.28 * Math.sin(t * 0.00016);
+        pitch = 0.46;
+      }
       const cP = Math.cos(pitch);
       const sP = Math.sin(pitch);
       const cY = Math.cos(yaw);
@@ -198,8 +268,12 @@ export function Surface({
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerup", onUp);
+      canvas.removeEventListener("pointercancel", onUp);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="ana-surface-canvas" aria-label="Market surface" />;
+  return <canvas ref={canvasRef} className="ana-surface-canvas" aria-label="Market surface, drag to rotate" />;
 }
