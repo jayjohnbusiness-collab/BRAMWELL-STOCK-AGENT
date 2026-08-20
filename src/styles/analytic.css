@@ -43,6 +43,38 @@
 .ana *::after { box-sizing: border-box; }
 
 .ana-lab { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+
+/* -------------------------------------------------------- help ("?") dots */
+/* keep the label and its dot together as one inline group */
+.ana-with-help { display: inline-flex; align-items: center; }
+.ana-help { display: inline-flex; position: relative; pointer-events: auto; }
+.ana-help-dot {
+  margin-left: 6px; width: 14px; height: 14px; flex: none; border-radius: 50%;
+  border: 1px solid var(--line-2); background: none; color: var(--dim);
+  font-family: var(--m); font-size: 9px; line-height: 1; cursor: help; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  letter-spacing: 0; text-transform: none;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.ana-help-dot:hover,
+.ana-help-dot:focus-visible {
+  color: #05121c; background: var(--live); border-color: var(--live); outline: none;
+}
+.ana-help-card {
+  position: fixed; transform: translateX(-50%); z-index: 120;
+  display: block; max-width: 250px; width: max-content; padding: 10px 12px;
+  background: #0b0f18; border: 1px solid color-mix(in srgb, var(--live) 42%, var(--line-2));
+  border-radius: 10px; box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+.ana-help-card b {
+  display: block; color: var(--live); font-family: "Archivo", system-ui, sans-serif;
+  font-weight: 700; font-size: 11px; letter-spacing: 0.02em; text-transform: none; margin-bottom: 4px;
+}
+.ana-help-card span {
+  display: block; color: var(--ink); font-family: var(--m); font-size: 11px;
+  line-height: 1.5; letter-spacing: 0; text-transform: none;
+}
 .ana-num { font-variant-numeric: tabular-nums; }
 .ana-accent { color: var(--live); }
 /* Colour mode: up/down are brightness in mono, green/red in semantic. */

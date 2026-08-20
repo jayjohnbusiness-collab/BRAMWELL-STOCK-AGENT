@@ -44,6 +44,66 @@ function surfaceMeta(
   };
 }
 
+/*
+ * A small "?" beside a header. On hover or keyboard focus it shows a definition
+ * card. The card is position:fixed (positioned from the dot's screen rect each
+ * time it opens), so it never clips against a panel's overflow.
+ */
+function HelpDot({ term, def }: { term: string; def: string }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const show = () => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const x = Math.max(130, Math.min(window.innerWidth - 130, r.left + r.width / 2));
+    setPos({ x, y: r.bottom + 8 });
+  };
+  const hide = () => setPos(null);
+  return (
+    <span className="ana-help">
+      <button
+        ref={btnRef}
+        type="button"
+        className="ana-help-dot"
+        aria-label={`What is ${term}?`}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        onClick={(e) => { e.preventDefault(); pos ? hide() : show(); }}
+      >
+        ?
+      </button>
+      {pos ? (
+        <span className="ana-help-card" role="tooltip" style={{ left: pos.x, top: pos.y }}>
+          <b>{term}</b>
+          <span>{def}</span>
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/** Plain-language definitions for the terminal's finance jargon. */
+const DEFS = {
+  regime: "The market's overall risk posture right now — whether money is leaning toward risk (risk-on) or safety (risk-off), and whether that appetite is expanding or contracting.",
+  riskAppetite: "A 0–100 read of how eagerly the market is taking on risk. Higher means investors are favouring riskier assets; lower means they're retreating to safety.",
+  keyLevels: "Reference prices that often act as turning points: resistance (a ceiling sellers defend), support (a floor buyers defend), and the pivot (the day's balance point).",
+  unusualFlow: "Options trades running far above their normal size, measured in standard deviations (σ). Heavy call buying leans bullish, heavy put buying bearish — a positioning tell, not a guarantee.",
+  correlation: "How tightly your holdings move together over the last 20 days (ρ, 0 to 1). High correlation means your book rises and falls as one — less diversified than it may look.",
+  orderFlow: "Your watchlist as a live tape — last price, the day's change, and a mini trend for each name. Click a row to load it into the surface and charts.",
+  volatility: "The recent range width — how far price has swung between high and low over a rolling window. Wider means choppier, more uncertain trade.",
+} as const;
+
+/** The surface reading's definition, keyed to which surface is shown. */
+function surfaceDef(type: SurfaceType): { term: string; def: string } {
+  if (type === "liquidity")
+    return { term: "Liquidity Depth", def: "How much size rests on the order book at each price — the bid wall (buyers) and ask wall (sellers), with the thin trough between them being where price moves most easily." };
+  if (type === "correlation")
+    return { term: "Correlation Surface", def: "How each pair of your holdings has moved together, drawn as a landscape — the bright peaks are the most tightly linked pairs." };
+  return { term: "Implied Volatility", def: "The market's expected future movement across option strikes and expiries. The peak marks where traders are pricing in the most volatility." };
+}
+
 function useClock(): string {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -218,29 +278,29 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
       <div className="ana-main">
         <aside className="ana-col ana-tiles">
           <div className="ana-col-head">
-            <span className="ana-lab">Regime</span>
+            <span className="ana-lab ana-with-help">Regime<HelpDot term="Regime" def={DEFS.regime} /></span>
             <span className="ana-lab">signal</span>
           </div>
           <div className="ana-tile">
-            <span className="ana-lab">Risk appetite</span>
+            <span className="ana-lab ana-with-help">Risk appetite<HelpDot term="Risk appetite" def={DEFS.riskAppetite} /></span>
             <div className="ana-big ana-num">68<span className="ana-big-sub">/100</span></div>
             <span className="ana-lab ana-accent">Risk-on · expanding</span>
             <div className="ana-meter"><i style={{ width: "68%" }} /></div>
           </div>
           <div className="ana-tile">
-            <span className="ana-lab">Key levels · {selected}</span>
+            <span className="ana-lab ana-with-help">Key levels · {selected}<HelpDot term="Key levels" def={DEFS.keyLevels} /></span>
             <div className="ana-kv"><span className="dn">Resistance</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 1.021).toFixed(2)}</span></div>
             <div className="ana-kv"><span className="dn">Pivot</span><span className="ana-num">{(selInst?.basePrice ?? 100).toFixed(2)}</span></div>
             <div className="ana-kv"><span className="dn">Support</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 0.979).toFixed(2)}</span></div>
           </div>
           <div className="ana-tile">
-            <span className="ana-lab">Unusual flow</span>
+            <span className="ana-lab ana-with-help">Unusual flow<HelpDot term="Unusual flow" def={DEFS.unusualFlow} /></span>
             <div className="ana-kv"><span>NVDA</span><span className="ana-num up">+4.2σ calls</span></div>
             <div className="ana-kv"><span>TSLA</span><span className="ana-num dn">−2.1σ puts</span></div>
             <div className="ana-kv"><span>AAPL</span><span className="ana-num up">+1.6σ calls</span></div>
           </div>
           <div className="ana-tile">
-            <span className="ana-lab">Correlation · 20d</span>
+            <span className="ana-lab ana-with-help">Correlation · 20d<HelpDot term="Correlation" def={DEFS.correlation} /></span>
             <div className="ana-kv"><span className="dn">Your book ρ</span><span className="ana-num">0.74</span></div>
             <div className="ana-kv"><span className="dn">Concentration</span><span className="ana-num">61% tech</span></div>
           </div>
@@ -249,7 +309,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
         <section className="ana-stage">
           <Surface type={surface} mono={mono} symbol={selected} bias={selInst?.changePct ?? 0} />
           <div className="ana-stage-head">
-            <span className="ana-title">{S.title}</span>
+            <span className="ana-title ana-with-help">{S.title}<HelpDot term={surfaceDef(surface).term} def={surfaceDef(surface).def} /></span>
             <span className="ana-lab">{S.sub}</span>
           </div>
           <div className="ana-peak">
@@ -263,7 +323,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
 
         <aside className="ana-col ana-ledger">
           <div className="ana-col-head">
-            <span className="ana-lab">Order Flow</span>
+            <span className="ana-lab ana-with-help">Order Flow<HelpDot term="Order Flow" def={DEFS.orderFlow} /></span>
             <span className="ana-lab">60m</span>
           </div>
           <div className="ana-ledger-scroll">
@@ -342,7 +402,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
         </div>
         <div className="ana-pane">
           <div className="ana-pane-head">
-            <span className="ana-lab">{series.sym} · Volatility</span>
+            <span className="ana-lab ana-with-help">{series.sym} · Volatility<HelpDot term="Volatility" def={DEFS.volatility} /></span>
             <span className="ana-lab">{series.real ? "Finnhub · range" : "range width"}</span>
           </div>
           <VolatilityHaze candles={series.candles} mono={mono} symbol={series.sym} chg={series.chg} />
