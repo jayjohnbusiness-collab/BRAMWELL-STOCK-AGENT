@@ -145,10 +145,11 @@
 .ana-kv > span:first-child { color: var(--ink); }
 
 /* ------------------------------------------------------------ bottom band */
-.ana-band { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1px; background: var(--line); height: clamp(140px, 18vh, 176px); }
+.ana-band { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1px; background: var(--line); height: clamp(200px, 26vh, 300px); }
 .ana-pane { background: var(--panel); position: relative; display: flex; flex-direction: column; min-width: 0; }
-.ana-pane-head { display: flex; justify-content: space-between; gap: 10px; padding: 9px 15px 4px; flex: none; }
+.ana-pane-head { display: flex; justify-content: space-between; gap: 10px; padding: 9px 15px 4px; flex: none; z-index: 2; position: relative; }
 .ana-canvas { flex: 1; width: 100%; min-height: 0; display: block; }
+.ana-scrub-hint { position: absolute; bottom: 10px; left: 15px; z-index: 2; pointer-events: none; opacity: 0.5; }
 
 /* status */
 .ana-status { display: flex; align-items: center; gap: 18px; padding: 8px 18px; background: var(--void); color: var(--dim); font-size: 11px; flex-wrap: wrap; }
@@ -160,6 +161,6 @@
   .ana-main { grid-template-columns: 1fr; grid-auto-rows: minmax(0, auto); overflow-y: auto; }
   .ana-stage { min-height: 320px; }
   .ana-band { grid-template-columns: 1fr; height: auto; }
-  .ana-pane { height: 140px; }
+  .ana-pane { height: 200px; }
   .ana { overflow-y: auto; }
 }

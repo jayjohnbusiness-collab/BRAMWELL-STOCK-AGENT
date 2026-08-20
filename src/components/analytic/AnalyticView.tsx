@@ -305,14 +305,15 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
               {series.last.toFixed(2)} {series.chg >= 0 ? "▲" : "▼"} {series.chg >= 0 ? "+" : ""}{series.chg.toFixed(2)}%
             </span>
           </div>
-          <PathChart candles={series.candles} mono={mono} />
+          <LuminousChannel candles={series.candles} mono={mono} symbol={series.sym} />
+          <span className="ana-scrub-hint ana-lab">hover to scrub</span>
         </div>
         <div className="ana-pane">
           <div className="ana-pane-head">
-            <span className="ana-lab">{series.sym} · Intraday activity</span>
-            <span className="ana-lab">{series.real ? "Finnhub" : "sample"}</span>
+            <span className="ana-lab">{series.sym} · Volatility</span>
+            <span className="ana-lab">{series.real ? "Finnhub · range" : "range width"}</span>
           </div>
-          <ActivityBars candles={series.candles} mono={mono} />
+          <VolatilityHaze candles={series.candles} mono={mono} symbol={series.sym} chg={series.chg} />
         </div>
       </div>
 
@@ -326,83 +327,280 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
   );
 }
 
-/* ------------------------------------------------------------ mini charts */
+/* ------------------------------------------------------- luminous channel
+ * The intraday band, rendered in the surface's own visual language: the price
+ * is a stream of glowing particles over a bloom + mirror reflection, threaded
+ * by a bright white core line so the exact level stays crisp; the rolling
+ * high/low corridor is a field of drifting dust; a travelling glow and a live
+ * playhead keep it breathing; hover scrubs a time/price crosshair off the real
+ * candle timestamps. Mono paints it cyan; semantic tints the atmosphere
+ * green/red by the day's direction while the core line stays white.
+ */
 
-function PathChart({ candles, mono }: { candles: Candle[]; mono: boolean }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    const draw = () => {
-      const DPR = Math.min(2, window.devicePixelRatio || 1);
-      const r = c.getBoundingClientRect();
-      c.width = Math.max(2, r.width * DPR);
-      c.height = Math.max(2, r.height * DPR);
-      const ctx = c.getContext("2d");
-      if (!ctx || candles.length < 2) return;
-      const W = c.width, Ht = c.height, pad = 8 * DPR, n = candles.length;
-      const lo = Math.min(...candles.map((p) => p.c));
-      const hi = Math.max(...candles.map((p) => p.c)) || 1;
-      ctx.clearRect(0, 0, W, Ht);
-      ctx.strokeStyle = "rgba(255,255,255,0.05)";
-      ctx.lineWidth = 1;
-      for (let g = 1; g < 4; g++) { const yy = pad + (Ht - pad * 2) * g / 4; ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(W, yy); ctx.stroke(); }
-      const xs = (k: number) => pad + (W - pad * 2) * k / (n - 1);
-      const ys = (v: number) => Ht - pad - (Ht - pad * 2) * ((v - lo) / (hi - lo || 1)) * 0.92 - 3 * DPR;
-      ctx.beginPath(); ctx.moveTo(xs(0), ys(candles[0].c));
-      for (let k = 1; k < n; k++) ctx.lineTo(xs(k), ys(candles[k].c));
-      ctx.lineTo(xs(n - 1), Ht - pad); ctx.lineTo(xs(0), Ht - pad); ctx.closePath();
-      const line = mono ? "234,240,247" : candles[n - 1].c >= candles[0].c ? "70,201,138" : "226,114,111";
-      const grad = ctx.createLinearGradient(0, 0, 0, Ht);
-      grad.addColorStop(0, `rgba(${line},0.16)`);
-      grad.addColorStop(1, `rgba(${line},0)`);
-      ctx.fillStyle = grad; ctx.fill();
-      ctx.beginPath(); ctx.moveTo(xs(0), ys(candles[0].c));
-      for (let k = 1; k < n; k++) ctx.lineTo(xs(k), ys(candles[k].c));
-      ctx.strokeStyle = mono ? "#eaf0f7" : `rgb(${line})`; ctx.lineWidth = 1.4 * DPR; ctx.stroke();
-      const ex = xs(n - 1), ey = ys(candles[n - 1].c);
-      ctx.fillStyle = mono ? "#6fd1ff" : `rgb(${line})`; ctx.beginPath(); ctx.arc(ex, ey, 3 * DPR, 0, 6.28); ctx.fill();
-    };
-    draw();
-    window.addEventListener("resize", draw);
-    return () => window.removeEventListener("resize", draw);
-  }, [mono, candles]);
-  return <canvas ref={ref} className="ana-canvas" />;
+/** Rolling corridor (high/low over Wn), mean thread, and range width per bar. */
+function channelBands(closes: number[]) {
+  const N = closes.length;
+  const Wn = Math.max(4, Math.round(N * 0.12));
+  const Mn = Math.max(3, Math.round(N * 0.08));
+  const hiCh: number[] = [], loCh: number[] = [], meanL: number[] = [], width: number[] = [];
+  for (let w = 0; w < N; w++) {
+    const win = closes.slice(Math.max(0, w - Wn + 1), w + 1);
+    const mWin = closes.slice(Math.max(0, w - Mn + 1), w + 1);
+    const wHi = Math.max(...win), wLo = Math.min(...win);
+    hiCh.push(wHi); loCh.push(wLo);
+    meanL.push(mWin.reduce((x, y) => x + y, 0) / mWin.length);
+    width.push(wHi - wLo);
+  }
+  return { hiCh, loCh, meanL, width };
 }
 
-/** Per-interval price movement — a proxy for intraday activity, from the same series. */
-function ActivityBars({ candles, mono }: { candles: Candle[]; mono: boolean }) {
+const lerp = (arr: number[], fi: number) => {
+  const i = Math.floor(fi), f = fi - i, j = Math.min(arr.length - 1, i + 1);
+  return arr[i] + (arr[j] - arr[i]) * f;
+};
+
+function LuminousChannel({ candles, mono, symbol }: { candles: Candle[]; mono: boolean; symbol: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const bars = useMemo(() => {
-    const d: { v: number; up: boolean }[] = [];
-    for (let k = 1; k < candles.length; k++) d.push({ v: Math.abs(candles[k].c - candles[k - 1].c), up: candles[k].c >= candles[k - 1].c });
-    return d;
-  }, [candles]);
+  const monoRef = useRef(mono);
+  monoRef.current = mono;
   useEffect(() => {
     const c = ref.current;
-    if (!c) return;
-    const draw = () => {
-      const DPR = Math.min(2, window.devicePixelRatio || 1);
+    const pctx = c?.getContext("2d");
+    if (!c || !pctx || candles.length < 2) return;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const DPR = Math.min(2, window.devicePixelRatio || 1);
+    const N = candles.length;
+    const closes = candles.map((p) => p.c);
+    const times = candles.map((p) => p.t);
+    const lo = Math.min(...closes), hi = Math.max(...closes) || 1;
+    const up = closes[N - 1] >= closes[0];
+    const { hiCh, loCh, meanL } = channelBands(closes);
+    const deltas = closes.map((v, i) => (i ? Math.abs(v - closes[i - 1]) : 0));
+    const maxD = Math.max(...deltas) || 1;
+    const fmtTime = (fi: number) =>
+      new Date(lerp(times, fi)).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
+
+    const PAD = 8 * DPR, AX = 40 * DPR;
+    const fit = () => {
       const r = c.getBoundingClientRect();
-      c.width = Math.max(2, r.width * DPR);
-      c.height = Math.max(2, r.height * DPR);
-      const ctx = c.getContext("2d");
-      if (!ctx || !bars.length) return;
-      const W = c.width, Ht = c.height, pad = 8 * DPR, n = bars.length, bw = (W - pad * 2) / n;
-      const mx = Math.max(...bars.map((b) => b.v)) || 1;
-      ctx.clearRect(0, 0, W, Ht);
-      for (let k = 0; k < n; k++) {
-        const h = Math.max(1 * DPR, (bars[k].v / mx) * (Ht - pad * 2));
-        ctx.fillStyle = mono
-          ? `rgba(234,240,247,${0.22 + (bars[k].v / mx) * 0.5})`
-          : bars[k].up ? "rgba(70,201,138,0.75)" : "rgba(226,114,111,0.75)";
-        ctx.fillRect(pad + k * bw, Ht - pad - h, Math.max(1, bw - 1.5 * DPR), h);
-      }
-      ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.beginPath(); ctx.moveTo(0, Ht - pad); ctx.lineTo(W, Ht - pad); ctx.stroke();
+      c.width = Math.max(2, Math.round(r.width * DPR));
+      c.height = Math.max(2, Math.round(r.height * DPR));
     };
-    draw();
-    window.addEventListener("resize", draw);
-    return () => window.removeEventListener("resize", draw);
-  }, [mono, bars]);
-  return <canvas ref={ref} className="ana-canvas" />;
+    fit();
+
+    // particle systems — indices are float, resolved to px each frame
+    const corridor = Array.from({ length: 440 }, () => {
+      const side = Math.random() < 0.5, depth = Math.pow(Math.random(), 2);
+      return { fi: Math.random() * (N - 1), r: side ? 1 - depth * 0.55 : depth * 0.55, ph: Math.random() * 6.28, sp: 0.3 + Math.random() * 0.8 };
+    });
+    const stream = Array.from({ length: 180 }, () => ({
+      fi: Math.random() * (N - 1), j: (Math.random() - 0.5) * 6 * DPR, ph: Math.random() * 6.28, sz: 0.6 + Math.random() * 1.3,
+    }));
+
+    let hoverX: number | null = null;
+    const onMove = (e: PointerEvent) => { hoverX = (e.clientX - c.getBoundingClientRect().left) * DPR; };
+    const onLeave = () => { hoverX = null; };
+    c.addEventListener("pointermove", onMove);
+    c.addEventListener("pointerleave", onLeave);
+    c.style.cursor = "crosshair";
+    c.style.touchAction = "none";
+
+    const xs = (fi: number, W: number) => PAD + ((W - PAD * 2 - AX) * fi) / (N - 1);
+    const ys = (v: number, H: number) => H - PAD - (H - PAD * 2) * ((v - lo) / (hi - lo || 1)) * 0.9 - 4 * DPR;
+
+    let raf = 0, t0 = 0;
+    const draw = (ts: number) => {
+      if (!t0) t0 = ts;
+      const t = ts - t0;
+      const m = monoRef.current;
+      // atmosphere tints by mode/direction; the core line stays white for legibility
+      const glow = m ? "111,209,255" : up ? "70,201,138" : "226,114,111";
+      const dust = m ? "150,200,255" : up ? "120,205,160" : "230,150,150";
+      const W = c.width, H = c.height;
+      pctx.clearRect(0, 0, W, H);
+
+      // ambient wash
+      const amb = pctx.createRadialGradient(W * 0.62, H * 0.3, 0, W * 0.62, H * 0.3, W * 0.6);
+      amb.addColorStop(0, `rgba(${glow},0.10)`); amb.addColorStop(1, `rgba(${glow},0)`);
+      pctx.fillStyle = amb; pctx.fillRect(0, 0, W, H);
+
+      // faint corridor slab
+      pctx.beginPath(); pctx.moveTo(xs(0, W), ys(hiCh[0], H));
+      for (let i = 1; i < N; i++) pctx.lineTo(xs(i, W), ys(hiCh[i], H));
+      for (let b = N - 1; b >= 0; b--) pctx.lineTo(xs(b, W), ys(loCh[b], H));
+      pctx.closePath(); pctx.fillStyle = `rgba(${dust},0.04)`; pctx.fill();
+
+      pctx.globalCompositeOperation = "lighter";
+      // corridor dust
+      for (const cp of corridor) {
+        if (!reduced) { cp.fi += cp.sp * 0.02; if (cp.fi > N - 1) cp.fi -= N - 1; }
+        const val = lerp(loCh, cp.fi) + (lerp(hiCh, cp.fi) - lerp(loCh, cp.fi)) * cp.r;
+        const tw = 0.4 + 0.6 * Math.sin(t * 0.003 + cp.ph);
+        pctx.fillStyle = `rgba(${dust},${0.05 + tw * 0.12})`;
+        pctx.fillRect(xs(cp.fi, W), ys(val, H), 1.1 * DPR, 1.1 * DPR);
+      }
+      // rails glow
+      for (const arr of [hiCh, loCh]) {
+        pctx.strokeStyle = `rgba(${dust},0.12)`; pctx.lineWidth = 3 * DPR; pctx.beginPath();
+        for (let r2 = 0; r2 < N; r2++) { const x = xs(r2, W), y = ys(arr[r2], H); r2 === 0 ? pctx.moveTo(x, y) : pctx.lineTo(x, y); }
+        pctx.stroke();
+      }
+      // mean thread
+      pctx.strokeStyle = `rgba(${glow},0.5)`; pctx.lineWidth = 1 * DPR; pctx.beginPath();
+      for (let mm = 0; mm < N; mm++) { const x = xs(mm, W), y = ys(meanL[mm], H); mm === 0 ? pctx.moveTo(x, y) : pctx.lineTo(x, y); }
+      pctx.stroke();
+
+      const pricePath = () => {
+        pctx.beginPath();
+        for (let q = 0; q < N; q++) { const x = xs(q, W), y = ys(closes[q], H); q === 0 ? pctx.moveTo(x, y) : pctx.lineTo(x, y); }
+      };
+      // bloom
+      pctx.strokeStyle = `rgba(${glow},0.18)`; pctx.lineWidth = 8 * DPR; pctx.lineJoin = "round"; pricePath(); pctx.stroke();
+      // mirror reflection
+      pctx.save(); pctx.globalAlpha = 0.14; pctx.beginPath();
+      for (let q2 = 0; q2 < N; q2++) { const x = xs(q2, W), y = ys(closes[q2], H); const ry = y + (H - PAD - y) * 0.08 + 10 * DPR; q2 === 0 ? pctx.moveTo(x, ry) : pctx.lineTo(x, ry); }
+      pctx.strokeStyle = `rgb(${glow})`; pctx.lineWidth = 2 * DPR; pctx.stroke(); pctx.restore();
+      // white core line — keeps the exact level crisp
+      pctx.strokeStyle = "#eaf0f7"; pctx.lineWidth = 1.5 * DPR; pricePath(); pctx.stroke();
+
+      // stream particles + travelling glow
+      const glowPos = reduced ? N - 1 : (t * 0.02) % (N - 1);
+      for (const sp of stream) {
+        if (!reduced) { sp.fi += 0.03; if (sp.fi > N - 1) sp.fi -= N - 1; }
+        const x = xs(sp.fi, W), base = ys(lerp(closes, sp.fi), H);
+        const mo = lerp(deltas, sp.fi) / maxD;
+        const near = Math.max(0, 1 - Math.abs(sp.fi - glowPos) / 8);
+        const tw = 0.4 + 0.6 * Math.sin(t * 0.004 + sp.ph);
+        const a2 = (0.1 + mo * 0.4 + near * 0.5) * tw;
+        pctx.fillStyle = near > 0.4 ? `rgba(190,235,255,${a2})` : `rgba(234,240,247,${a2})`;
+        pctx.fillRect(x, base + sp.j, sp.sz * DPR, sp.sz * DPR);
+      }
+
+      // live playhead
+      const ex = xs(N - 1, W), ey = ys(closes[N - 1], H), pulse = reduced ? 1 : 0.55 + 0.45 * Math.sin(t * 0.004);
+      const pg = pctx.createRadialGradient(ex, ey, 0, ex, ey, 16 * DPR);
+      pg.addColorStop(0, `rgba(${glow},${0.5 * pulse})`); pg.addColorStop(1, `rgba(${glow},0)`);
+      pctx.fillStyle = pg; pctx.beginPath(); pctx.arc(ex, ey, 16 * DPR, 0, 6.28); pctx.fill();
+      pctx.fillStyle = "#eaf0f7"; pctx.beginPath(); pctx.arc(ex, ey, 3 * DPR, 0, 6.28); pctx.fill();
+
+      pctx.globalCompositeOperation = "source-over";
+      // price tag
+      pctx.fillStyle = `rgba(${glow},0.16)`; pctx.fillRect(W - AX, ey - 9 * DPR, AX, 18 * DPR);
+      pctx.fillStyle = "#eaf0f7"; pctx.font = `${10 * DPR}px 'Space Mono', monospace`; pctx.textBaseline = "middle"; pctx.textAlign = "left";
+      pctx.fillText(closes[N - 1].toFixed(2), W - AX + 4 * DPR, ey);
+
+      // hover crosshair + readout
+      if (hoverX != null) {
+        const fi = Math.max(0, Math.min(N - 1, ((hoverX - PAD) / (W - PAD * 2 - AX)) * (N - 1)));
+        const hx = xs(fi, W), hv = lerp(closes, fi), hy = ys(hv, H);
+        pctx.strokeStyle = "rgba(234,240,247,0.28)"; pctx.lineWidth = 1; pctx.setLineDash([3 * DPR, 3 * DPR]);
+        pctx.beginPath(); pctx.moveTo(hx, PAD); pctx.lineTo(hx, H - PAD); pctx.stroke();
+        pctx.beginPath(); pctx.moveTo(0, hy); pctx.lineTo(W - AX, hy); pctx.stroke(); pctx.setLineDash([]);
+        pctx.fillStyle = "#eaf0f7"; pctx.beginPath(); pctx.arc(hx, hy, 3.5 * DPR, 0, 6.28); pctx.fill();
+        pctx.strokeStyle = `rgba(${glow},0.7)`; pctx.lineWidth = 1.4 * DPR; pctx.beginPath(); pctx.arc(hx, hy, 6.5 * DPR, 0, 6.28); pctx.stroke();
+        const label = `${fmtTime(fi)}  ${hv.toFixed(2)}`;
+        pctx.font = `${10 * DPR}px 'Space Mono', monospace`;
+        const tw2 = pctx.measureText(label).width + 14 * DPR;
+        const bx = Math.min(W - AX - tw2, Math.max(0, hx + 8 * DPR)), by = Math.max(PAD, hy - 26 * DPR);
+        pctx.fillStyle = "rgba(8,12,20,0.9)"; pctx.strokeStyle = `rgba(${glow},0.4)`; pctx.lineWidth = 1;
+        pctx.fillRect(bx, by, tw2, 18 * DPR); pctx.strokeRect(bx, by, tw2, 18 * DPR);
+        pctx.fillStyle = "#eaf0f7"; pctx.textBaseline = "middle"; pctx.fillText(label, bx + 7 * DPR, by + 9 * DPR);
+      }
+
+      if (!reduced) raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    if (reduced) draw(0);
+    const onResize = () => fit();
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+      c.removeEventListener("pointermove", onMove);
+      c.removeEventListener("pointerleave", onLeave);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candles, symbol]);
+  return <canvas ref={ref} className="ana-canvas" aria-label="Intraday price, hover to scrub" />;
+}
+
+/*
+ * Volatility panel — the rolling range width read as a field of dust whose
+ * density tracks magnitude, capped by a ridge line. Same tinting rules.
+ */
+function VolatilityHaze({ candles, mono, symbol, chg }: { candles: Candle[]; mono: boolean; symbol: string; chg: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const monoRef = useRef(mono);
+  monoRef.current = mono;
+  useEffect(() => {
+    const c = ref.current;
+    const vctx = c?.getContext("2d");
+    if (!c || !vctx || candles.length < 2) return;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const DPR = Math.min(2, window.devicePixelRatio || 1);
+    const N = candles.length;
+    const closes = candles.map((p) => p.c);
+    const { width } = channelBands(closes);
+    const maxW = Math.max(...width) || 1;
+    const up = chg >= 0;
+
+    const PAD = 8 * DPR;
+    const fit = () => {
+      const r = c.getBoundingClientRect();
+      c.width = Math.max(2, Math.round(r.width * DPR));
+      c.height = Math.max(2, Math.round(r.height * DPR));
+    };
+    fit();
+
+    const haze = Array.from({ length: 360 }, () => {
+      const fi = Math.random() * (N - 1);
+      return { fi, r: Math.random(), ph: Math.random() * 6.28, live: Math.random() < (lerp(width, fi) / maxW) * 1.1 };
+    }).filter((h) => h.live);
+
+    const xsv = (fi: number, W: number) => PAD + ((W - PAD * 2) * fi) / (N - 1);
+    const ysv = (v: number, H: number) => H - PAD - (H - PAD * 2) * (v / maxW) * 0.88;
+
+    let raf = 0, t0 = 0;
+    const draw = (ts: number) => {
+      if (!t0) t0 = ts;
+      const t = ts - t0;
+      const m = monoRef.current;
+      const glow = m ? "111,209,255" : up ? "70,201,138" : "226,114,111";
+      const dust = m ? "150,205,255" : up ? "120,205,160" : "230,150,150";
+      const W = c.width, H = c.height;
+      vctx.clearRect(0, 0, W, H);
+      // ridge fill
+      vctx.beginPath(); vctx.moveTo(xsv(0, W), H - PAD);
+      for (let i = 0; i < N; i++) vctx.lineTo(xsv(i, W), ysv(width[i], H));
+      vctx.lineTo(xsv(N - 1, W), H - PAD); vctx.closePath();
+      const g = vctx.createLinearGradient(0, PAD, 0, H);
+      g.addColorStop(0, `rgba(${glow},0.08)`); g.addColorStop(1, `rgba(${glow},0)`);
+      vctx.fillStyle = g; vctx.fill();
+      // haze dust (density ~ width)
+      vctx.globalCompositeOperation = "lighter";
+      for (const hp of haze) {
+        if (!reduced) { hp.fi += 0.02; if (hp.fi > N - 1) hp.fi -= N - 1; }
+        const top = ysv(lerp(width, hp.fi), H), y = top + (H - PAD - top) * hp.r;
+        const tw = 0.4 + 0.6 * Math.sin(t * 0.003 + hp.ph);
+        vctx.fillStyle = `rgba(${dust},${0.05 + tw * 0.12})`;
+        vctx.fillRect(xsv(hp.fi, W), y, 1.2 * DPR, 1.2 * DPR);
+      }
+      // ridge line
+      vctx.strokeStyle = `rgba(${dust},0.6)`; vctx.lineWidth = 1.2 * DPR; vctx.beginPath();
+      for (let j = 0; j < N; j++) { const x = xsv(j, W), y = ysv(width[j], H); j === 0 ? vctx.moveTo(x, y) : vctx.lineTo(x, y); }
+      vctx.stroke();
+      vctx.globalCompositeOperation = "source-over";
+      if (!reduced) raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    if (reduced) draw(0);
+    const onResize = () => fit();
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candles, symbol]);
+  return <canvas ref={ref} className="ana-canvas" aria-label="Volatility range width" />;
 }
