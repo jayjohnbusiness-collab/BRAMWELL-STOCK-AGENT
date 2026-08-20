@@ -109,8 +109,11 @@ function useSeries(ctx: CardContext, sym: string, range: ChartRange): { sym: str
     return () => {
       alive = false;
     };
+    // Deliberately NOT keyed on ctx.version: the chart is stable and only
+    // reloads when the user changes the symbol or the interval, never on its
+    // own from a background feed poll.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sym, range, ctx.version]);
+  }, [sym, range]);
   const last = candles[candles.length - 1]?.c ?? 0;
   const first = candles[0]?.c ?? last;
   const chg = first ? ((last - first) / first) * 100 : 0;
@@ -211,8 +214,53 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
         </div>
       </header>
 
-      {/* main 3-col */}
+      {/* main 3-col — Regime left, surface centre, Order Flow right */}
       <div className="ana-main">
+        <aside className="ana-col ana-tiles">
+          <div className="ana-col-head">
+            <span className="ana-lab">Regime</span>
+            <span className="ana-lab">signal</span>
+          </div>
+          <div className="ana-tile">
+            <span className="ana-lab">Risk appetite</span>
+            <div className="ana-big ana-num">68<span className="ana-big-sub">/100</span></div>
+            <span className="ana-lab ana-accent">Risk-on · expanding</span>
+            <div className="ana-meter"><i style={{ width: "68%" }} /></div>
+          </div>
+          <div className="ana-tile">
+            <span className="ana-lab">Key levels · {selected}</span>
+            <div className="ana-kv"><span className="dn">Resistance</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 1.021).toFixed(2)}</span></div>
+            <div className="ana-kv"><span className="dn">Pivot</span><span className="ana-num">{(selInst?.basePrice ?? 100).toFixed(2)}</span></div>
+            <div className="ana-kv"><span className="dn">Support</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 0.979).toFixed(2)}</span></div>
+          </div>
+          <div className="ana-tile">
+            <span className="ana-lab">Unusual flow</span>
+            <div className="ana-kv"><span>NVDA</span><span className="ana-num up">+4.2σ calls</span></div>
+            <div className="ana-kv"><span>TSLA</span><span className="ana-num dn">−2.1σ puts</span></div>
+            <div className="ana-kv"><span>AAPL</span><span className="ana-num up">+1.6σ calls</span></div>
+          </div>
+          <div className="ana-tile">
+            <span className="ana-lab">Correlation · 20d</span>
+            <div className="ana-kv"><span className="dn">Your book ρ</span><span className="ana-num">0.74</span></div>
+            <div className="ana-kv"><span className="dn">Concentration</span><span className="ana-num">61% tech</span></div>
+          </div>
+        </aside>
+
+        <section className="ana-stage">
+          <Surface type={surface} mono={mono} symbol={selected} bias={selInst?.changePct ?? 0} />
+          <div className="ana-stage-head">
+            <span className="ana-title">{S.title}</span>
+            <span className="ana-lab">{S.sub}</span>
+          </div>
+          <div className="ana-peak">
+            <span className="ana-peak-tag">{S.tag}</span>
+            <span className="ana-peak-val ana-num">{S.val}</span>
+          </div>
+          <div className="ana-axis ana-ax-x ana-lab">{S.ax}</div>
+          <div className="ana-axis ana-ax-y ana-lab">{S.ay}</div>
+          <div className="ana-drag-hint ana-lab">drag to rotate</div>
+        </section>
+
         <aside className="ana-col ana-ledger">
           <div className="ana-col-head">
             <span className="ana-lab">Order Flow</span>
@@ -261,51 +309,6 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
             </table>
           </div>
           <div className="ana-hint">Click a name to load it · ↗ for detail</div>
-        </aside>
-
-        <section className="ana-stage">
-          <Surface type={surface} mono={mono} symbol={selected} bias={selInst?.changePct ?? 0} />
-          <div className="ana-stage-head">
-            <span className="ana-title">{S.title}</span>
-            <span className="ana-lab">{S.sub}</span>
-          </div>
-          <div className="ana-peak">
-            <span className="ana-peak-tag">{S.tag}</span>
-            <span className="ana-peak-val ana-num">{S.val}</span>
-          </div>
-          <div className="ana-axis ana-ax-x ana-lab">{S.ax}</div>
-          <div className="ana-axis ana-ax-y ana-lab">{S.ay}</div>
-          <div className="ana-drag-hint ana-lab">drag to rotate</div>
-        </section>
-
-        <aside className="ana-col ana-tiles">
-          <div className="ana-col-head">
-            <span className="ana-lab">Regime</span>
-            <span className="ana-lab">signal</span>
-          </div>
-          <div className="ana-tile">
-            <span className="ana-lab">Risk appetite</span>
-            <div className="ana-big ana-num">68<span className="ana-big-sub">/100</span></div>
-            <span className="ana-lab ana-accent">Risk-on · expanding</span>
-            <div className="ana-meter"><i style={{ width: "68%" }} /></div>
-          </div>
-          <div className="ana-tile">
-            <span className="ana-lab">Key levels · {selected}</span>
-            <div className="ana-kv"><span className="dn">Resistance</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 1.021).toFixed(2)}</span></div>
-            <div className="ana-kv"><span className="dn">Pivot</span><span className="ana-num">{(selInst?.basePrice ?? 100).toFixed(2)}</span></div>
-            <div className="ana-kv"><span className="dn">Support</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 0.979).toFixed(2)}</span></div>
-          </div>
-          <div className="ana-tile">
-            <span className="ana-lab">Unusual flow</span>
-            <div className="ana-kv"><span>NVDA</span><span className="ana-num up">+4.2σ calls</span></div>
-            <div className="ana-kv"><span>TSLA</span><span className="ana-num dn">−2.1σ puts</span></div>
-            <div className="ana-kv"><span>AAPL</span><span className="ana-num up">+1.6σ calls</span></div>
-          </div>
-          <div className="ana-tile">
-            <span className="ana-lab">Correlation · 20d</span>
-            <div className="ana-kv"><span className="dn">Your book ρ</span><span className="ana-num">0.74</span></div>
-            <div className="ana-kv"><span className="dn">Concentration</span><span className="ana-num">61% tech</span></div>
-          </div>
         </aside>
       </div>
 
@@ -451,12 +454,9 @@ function LuminousChannel({ candles, mono, symbol, range }: { candles: Candle[]; 
       const glow = m ? "111,209,255" : up ? "70,201,138" : "226,114,111";
       const dust = m ? "150,200,255" : up ? "120,205,160" : "230,150,150";
       const W = c.width, H = c.height;
+      // Clear to transparent so the pane's own --panel background shows through,
+      // keeping this card tonally identical to its neighbours (no ambient wash).
       pctx.clearRect(0, 0, W, H);
-
-      // ambient wash
-      const amb = pctx.createRadialGradient(W * 0.62, H * 0.3, 0, W * 0.62, H * 0.3, W * 0.6);
-      amb.addColorStop(0, `rgba(${glow},0.10)`); amb.addColorStop(1, `rgba(${glow},0)`);
-      pctx.fillStyle = amb; pctx.fillRect(0, 0, W, H);
 
       // faint corridor slab
       pctx.beginPath(); pctx.moveTo(xs(0, W), ys(hiCh[0], H));
@@ -500,7 +500,7 @@ function LuminousChannel({ candles, mono, symbol, range }: { candles: Candle[]; 
       // tracer pulse — a bright bead sweeps the line from the left and arrives
       // at the live point, then rests a beat before running again.
       if (!reduced) {
-        const CYCLE = 3400, SWEEP = 2600;
+        const CYCLE = 6200, SWEEP = 5000;
         const ph = (t % CYCLE) / SWEEP;
         if (ph <= 1) {
           const e = ph < 0.5 ? 2 * ph * ph : 1 - Math.pow(-2 * ph + 2, 2) / 2; // easeInOut
