@@ -111,13 +111,17 @@ export function Surface({ type, mono }: { type: SurfaceType; mono: boolean }) {
       const W = canvas!.width;
       const Ht = canvas!.height;
       const cx = W * 0.5;
-      const cyB = Ht * 0.66;
-      const spanX = W * 0.36;
-      const spanZ = Ht * 0.5;
-      const spanY = Ht * 0.62;
+      // Sized and centred so the whole terrain — peak and spreading base — sits
+      // inside the stage with margin; never touches the canvas edges.
+      const cyB = Ht * 0.52;
+      const spanX = W * 0.3;
+      const spanZ = Ht * 0.3;
+      const spanY = Ht * 0.42;
+      const persp = Ht * 1.4; // large camera distance → near-orthographic, gentle peak blow-up
       const yaw = reduced ? 0.5 : 0.5 + 0.28 * Math.sin(t * 0.00016);
-      const cP = Math.cos(0.52);
-      const sP = Math.sin(0.52);
+      const pitch = 0.46;
+      const cP = Math.cos(pitch);
+      const sP = Math.sin(pitch);
       const cY = Math.cos(yaw);
       const sY = Math.sin(yaw);
       ctx.clearRect(0, 0, W, Ht);
@@ -135,7 +139,7 @@ export function Surface({ type, mono }: { type: SurfaceType; mono: boolean }) {
           const Z1 = X * sY + Z * cY;
           const Y1 = Y * cP - Z1 * sP;
           const Z2 = Y * sP + Z1 * cP;
-          const pp = 900 / (900 + Z2);
+          const pp = persp / (persp + Z2);
           const sx = cx + X1 * pp;
           const sy = cyB + Y1 * pp;
           const hn = hh / HM;

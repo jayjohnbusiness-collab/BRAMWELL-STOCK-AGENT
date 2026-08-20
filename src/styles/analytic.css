@@ -25,7 +25,9 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 1px;
-  background: var(--line);
+  /* Opaque so the app board never bleeds through; the grid gaps show this as
+     subtle hairlines between the panels. */
+  background: #141922;
   color: var(--ink);
   font-family: var(--m);
   font-size: 13px;
