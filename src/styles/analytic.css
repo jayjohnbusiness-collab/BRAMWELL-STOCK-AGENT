@@ -147,9 +147,21 @@
 /* ------------------------------------------------------------ bottom band */
 .ana-band { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1px; background: var(--line); height: clamp(200px, 26vh, 300px); }
 .ana-pane { background: var(--panel); position: relative; display: flex; flex-direction: column; min-width: 0; }
-.ana-pane-head { display: flex; justify-content: space-between; gap: 10px; padding: 9px 15px 4px; flex: none; z-index: 2; position: relative; }
+.ana-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 15px 4px; flex: none; z-index: 2; position: relative; }
+.ana-pane-head-r { display: inline-flex; align-items: center; gap: 12px; }
 .ana-canvas { flex: 1; width: 100%; min-height: 0; display: block; }
 .ana-scrub-hint { position: absolute; bottom: 10px; left: 15px; z-index: 2; pointer-events: none; opacity: 0.5; }
+
+/* interval selector — a compact segmented control in the intraday head */
+.ana-iv { display: inline-flex; gap: 1px; padding: 1px; background: var(--void); border: 1px solid var(--line); border-radius: 7px; }
+.ana-iv button {
+  font-family: var(--m); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--dim); background: none; border: none; border-radius: 6px; padding: 3px 8px; cursor: pointer;
+  transition: color 0.14s, background 0.14s;
+}
+.ana-iv button:hover { color: var(--ink); }
+.ana-iv button.on { color: #05121c; background: var(--live); }
+.ana-iv button:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
 
 /* status */
 .ana-status { display: flex; align-items: center; gap: 18px; padding: 8px 18px; background: var(--void); color: var(--dim); font-size: 11px; flex-wrap: wrap; }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CardContext } from "../../cards/types";
-import type { Candle } from "../../feed/types";
+import type { Candle, ChartRange } from "../../feed/types";
 import { hasToken } from "../../feed/token";
 import { Surface, symSeed, type SurfaceType } from "./Surface";
 import "../../styles/analytic.css";
@@ -53,14 +53,25 @@ function useClock(): string {
   return new Date(now).toLocaleTimeString("en-US", { hour12: false });
 }
 
-/** A deterministic-enough intraday walk, used when no feed history is available. */
-function synth(base: number): Candle[] {
+/** Interval options for the intraday band. */
+const RANGES: { key: ChartRange; label: string; full: string }[] = [
+  { key: "1D", label: "1D", full: "1 Day" },
+  { key: "1W", label: "1W", full: "1 Week" },
+  { key: "1M", label: "1M", full: "1 Month" },
+];
+
+/** A deterministic-enough walk, used when no feed history is available. Its
+ * span and step follow the requested range so the tape reads sensibly. */
+function synth(base: number, range: ChartRange): Candle[] {
   const out: Candle[] = [];
   let c = base;
   const now = Date.now();
-  for (let k = 0; k < 80; k++) {
-    c = Math.max(base * 0.9, c + (Math.random() - 0.47) * base * 0.006);
-    out.push({ t: now - (80 - k) * 5 * 60000, c });
+  const n = 80;
+  const stepMs = range === "1D" ? 5 * 60000 : range === "1W" ? 2 * 3600000 : 9 * 3600000;
+  const vol = range === "1D" ? 0.006 : range === "1W" ? 0.011 : 0.016;
+  for (let k = 0; k < n; k++) {
+    c = Math.max(base * 0.85, c + (Math.random() - 0.47) * base * vol);
+    out.push({ t: now - (n - k) * stepMs, c });
   }
   return out;
 }
@@ -71,27 +82,27 @@ function synth(base: number): Candle[] {
  * otherwise). If the feed carries no intraday history (e.g. a free plan without
  * candles), we fall back to a local walk and label the source honestly.
  */
-function useSeries(ctx: CardContext, sym: string): { sym: string; candles: Candle[]; last: number; chg: number; real: boolean } {
+function useSeries(ctx: CardContext, sym: string, range: ChartRange): { sym: string; candles: Candle[]; last: number; chg: number; real: boolean } {
   const base = ctx.market.bySymbol(sym)?.basePrice ?? 100;
-  const [candles, setCandles] = useState<Candle[]>(() => synth(base));
+  const [candles, setCandles] = useState<Candle[]>(() => synth(base, range));
   const [fromFeed, setFromFeed] = useState(false);
   useEffect(() => {
     let alive = true;
     ctx
-      .candles(sym, "1D")
+      .candles(sym, range)
       .then((cs) => {
         if (!alive) return;
         if (cs && cs.length > 4) {
           setCandles(cs);
           setFromFeed(true);
         } else {
-          setCandles(synth(base));
+          setCandles(synth(base, range));
           setFromFeed(false);
         }
       })
       .catch(() => {
         if (alive) {
-          setCandles(synth(base));
+          setCandles(synth(base, range));
           setFromFeed(false);
         }
       });
@@ -99,7 +110,7 @@ function useSeries(ctx: CardContext, sym: string): { sym: string; candles: Candl
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sym, ctx.version]);
+  }, [sym, range, ctx.version]);
   const last = candles[candles.length - 1]?.c ?? 0;
   const first = candles[0]?.c ?? last;
   const chg = first ? ((last - first) / first) * 100 : 0;
@@ -109,6 +120,7 @@ function useSeries(ctx: CardContext, sym: string): { sym: string; candles: Candl
 export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () => void }) {
   const [mono, setMono] = useState(true);
   const [surface, setSurface] = useState<SurfaceType>("iv");
+  const [range, setRange] = useState<ChartRange>("1D");
   const clock = useClock();
 
   useEffect(() => {
@@ -152,7 +164,8 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
   }, [held.map((i) => i.symbol).join(",")]);
 
   const sparkColor = (up: boolean) => (mono ? (up ? "#eaf0f7" : "#737e8c") : up ? "#46c98a" : "#e2726f");
-  const series = useSeries(ctx, selected);
+  const series = useSeries(ctx, selected, range);
+  const rangeMeta = RANGES.find((r) => r.key === range) ?? RANGES[0];
   const selInst = ctx.market.bySymbol(selected);
   const S = surfaceMeta(surface, selected, selInst?.basePrice ?? 100, selInst?.changePct ?? 0);
 
@@ -300,12 +313,28 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
       <div className="ana-band">
         <div className="ana-pane">
           <div className="ana-pane-head">
-            <span className="ana-lab">{series.sym} · Intraday</span>
-            <span className={`ana-lab ana-num ${series.chg >= 0 ? "up" : "dn"}`}>
-              {series.last.toFixed(2)} {series.chg >= 0 ? "▲" : "▼"} {series.chg >= 0 ? "+" : ""}{series.chg.toFixed(2)}%
-            </span>
+            <span className="ana-lab">{series.sym} · {rangeMeta.full}</span>
+            <div className="ana-pane-head-r">
+              <div className="ana-iv" role="group" aria-label="Chart interval">
+                {RANGES.map((r) => (
+                  <button
+                    key={r.key}
+                    type="button"
+                    className={range === r.key ? "on" : ""}
+                    aria-pressed={range === r.key}
+                    onClick={() => setRange(r.key)}
+                    title={`View ${r.full}`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+              <span className={`ana-lab ana-num ${series.chg >= 0 ? "up" : "dn"}`}>
+                {series.last.toFixed(2)} {series.chg >= 0 ? "▲" : "▼"} {series.chg >= 0 ? "+" : ""}{series.chg.toFixed(2)}%
+              </span>
+            </div>
           </div>
-          <LuminousChannel candles={series.candles} mono={mono} symbol={series.sym} />
+          <LuminousChannel candles={series.candles} mono={mono} symbol={series.sym} range={range} />
           <span className="ana-scrub-hint ana-lab">hover to scrub</span>
         </div>
         <div className="ana-pane">
@@ -319,7 +348,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
 
       <footer className="ana-status">
         <span><span className="ana-accent">●</span> {series.real ? "Finnhub · live data" : "Simulated data"}</span>
-        <span>Charts · {series.sym} · 1D</span>
+        <span>Charts · {series.sym} · {range}</span>
         <span>Concierge · $100/mo tier</span>
         <span className="ana-status-r">Bramwell Analytic · v0.1</span>
       </footer>
@@ -359,7 +388,7 @@ const lerp = (arr: number[], fi: number) => {
   return arr[i] + (arr[j] - arr[i]) * f;
 };
 
-function LuminousChannel({ candles, mono, symbol }: { candles: Candle[]; mono: boolean; symbol: string }) {
+function LuminousChannel({ candles, mono, symbol, range }: { candles: Candle[]; mono: boolean; symbol: string; range: ChartRange }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const monoRef = useRef(mono);
   monoRef.current = mono;
@@ -377,8 +406,13 @@ function LuminousChannel({ candles, mono, symbol }: { candles: Candle[]; mono: b
     const { hiCh, loCh, meanL } = channelBands(closes);
     const deltas = closes.map((v, i) => (i ? Math.abs(v - closes[i - 1]) : 0));
     const maxD = Math.max(...deltas) || 1;
-    const fmtTime = (fi: number) =>
-      new Date(lerp(times, fi)).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
+    // On a single day, scrub reads a clock; over a week/month it reads a date.
+    const fmtTime = (fi: number) => {
+      const d = new Date(lerp(times, fi));
+      return range === "1D"
+        ? d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" })
+        : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    };
 
     const PAD = 8 * DPR, AX = 40 * DPR;
     const fit = () => {
@@ -463,6 +497,34 @@ function LuminousChannel({ candles, mono, symbol }: { candles: Candle[]; mono: b
       // white core line — keeps the exact level crisp
       pctx.strokeStyle = "#eaf0f7"; pctx.lineWidth = 1.5 * DPR; pricePath(); pctx.stroke();
 
+      // tracer pulse — a bright bead sweeps the line from the left and arrives
+      // at the live point, then rests a beat before running again.
+      if (!reduced) {
+        const CYCLE = 3400, SWEEP = 2600;
+        const ph = (t % CYCLE) / SWEEP;
+        if (ph <= 1) {
+          const e = ph < 0.5 ? 2 * ph * ph : 1 - Math.pow(-2 * ph + 2, 2) / 2; // easeInOut
+          const tp = e * (N - 1);
+          // comet trail behind the head
+          const TRAIL = 22;
+          for (let s = 0; s < TRAIL; s++) {
+            const fi = tp - s * 0.9;
+            if (fi < 0) break;
+            const x = xs(fi, W), y = ys(lerp(closes, fi), H);
+            const a = (1 - s / TRAIL) * 0.5;
+            pctx.fillStyle = `rgba(${glow},${a})`;
+            const rr = (2.4 - (s / TRAIL) * 1.8) * DPR;
+            pctx.beginPath(); pctx.arc(x, y, Math.max(0.4 * DPR, rr), 0, 6.28); pctx.fill();
+          }
+          // head bead + halo
+          const hx = xs(tp, W), hy = ys(lerp(closes, tp), H);
+          const halo = pctx.createRadialGradient(hx, hy, 0, hx, hy, 13 * DPR);
+          halo.addColorStop(0, `rgba(${glow},0.7)`); halo.addColorStop(1, `rgba(${glow},0)`);
+          pctx.fillStyle = halo; pctx.beginPath(); pctx.arc(hx, hy, 13 * DPR, 0, 6.28); pctx.fill();
+          pctx.fillStyle = "#f4fbff"; pctx.beginPath(); pctx.arc(hx, hy, 2.6 * DPR, 0, 6.28); pctx.fill();
+        }
+      }
+
       // stream particles + travelling glow
       const glowPos = reduced ? N - 1 : (t * 0.02) % (N - 1);
       for (const sp of stream) {
@@ -520,7 +582,7 @@ function LuminousChannel({ candles, mono, symbol }: { candles: Candle[]; mono: b
       c.removeEventListener("pointerleave", onLeave);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candles, symbol]);
+  }, [candles, symbol, range]);
   return <canvas ref={ref} className="ana-canvas" aria-label="Intraday price, hover to scrub" />;
 }
 
