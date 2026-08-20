@@ -1,0 +1,147 @@
+/*
+ * Bramwell Analytic Layout — a self-contained monochrome terminal (its own dark
+ * palette, independent of the app theme). Fits the viewport as a fixed grid so
+ * nothing clips; the ledger columns are fixed-width so the table never scrolls
+ * sideways. Semantic colour mode tints gains/losses green/red via .ana-semantic.
+ */
+
+.ana {
+  --void: #04060b;
+  --panel: #080b12;
+  --ink: #eaf0f7;
+  --dim: #737e8c;
+  --faint: #3c454f;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.12);
+  --live: #6fd1ff;
+  --ana-up: #46c98a;
+  --ana-down: #e2726f;
+  --m: "Space Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 1px;
+  background: var(--line);
+  color: var(--ink);
+  font-family: var(--m);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+.ana *,
+.ana *::before,
+.ana *::after { box-sizing: border-box; }
+
+.ana-lab { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+.ana-num { font-variant-numeric: tabular-nums; }
+.ana-accent { color: var(--live); }
+/* Colour mode: up/down are brightness in mono, green/red in semantic. */
+.ana-mono .up { color: var(--ink); }
+.ana-mono .dn { color: var(--dim); }
+.ana-semantic .up { color: var(--ana-up); }
+.ana-semantic .dn { color: var(--ana-down); }
+
+/* -------------------------------------------------------------- top strip */
+.ana-top { display: flex; align-items: center; gap: 20px; padding: 11px 18px; background: var(--void); flex-wrap: wrap; }
+.ana-brand { display: flex; align-items: baseline; gap: 9px; }
+.ana-brand b { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
+.ana-brand .ana-accent { letter-spacing: 0.14em; font-size: 10px; text-transform: uppercase; }
+.ana-live { display: inline-flex; align-items: center; gap: 8px; }
+.ana-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); box-shadow: 0 0 10px var(--live); animation: ana-blink 2.2s ease-in-out infinite; }
+@keyframes ana-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.ana-controls { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+.ana-seg { display: inline-flex; gap: 2px; padding: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; }
+.ana-seg button {
+  font-family: var(--m); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--dim); background: none; border: none; border-radius: 999px; padding: 5px 12px; cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.ana-seg button:hover { color: var(--ink); }
+.ana-seg button.on { color: #05121c; background: var(--live); }
+.ana-seg button:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+.ana-close {
+  font-family: var(--m); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--dim); background: none; border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 13px; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ana-close:hover { color: var(--ink); border-color: var(--live); }
+.ana-close:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+
+/* ----------------------------------------------------------------- main */
+.ana-main { display: grid; grid-template-columns: 340px minmax(0, 1fr) 244px; gap: 1px; background: var(--line); min-height: 0; }
+.ana-col { background: var(--panel); min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.ana-col-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid var(--line); flex: none; }
+
+/* ledger — fixed columns, no sideways scroll */
+.ana-ledger-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+.ana-ledger table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.ana-ledger th { text-align: right; font-weight: 400; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); padding: 8px 8px 6px; position: sticky; top: 0; background: var(--panel); }
+.ana-ledger th:first-child { text-align: left; padding-left: 15px; }
+.ana-ledger th:nth-child(1) { width: auto; }
+.ana-ledger th:nth-child(2) { width: 72px; }
+.ana-ledger th:nth-child(3) { width: 56px; }
+.ana-ledger th:nth-child(4) { width: 64px; }
+.ana-ledger th:nth-child(5) { width: 48px; }
+.ana-ledger td { padding: 7px 8px; border-top: 1px solid var(--line); white-space: nowrap; font-size: 12px; }
+.ana-ledger td:first-child { padding-left: 15px; }
+.ana-ledger td.r { overflow: hidden; text-overflow: ellipsis; }
+.ana-ledger .r { text-align: right; }
+.ana-sym { color: var(--ink); font-weight: 700; }
+.ana-ledger tbody tr { cursor: pointer; transition: background 0.12s; }
+.ana-ledger tbody tr:hover { background: color-mix(in srgb, var(--live) 9%, transparent); }
+.ana-ledger tbody tr:hover .ana-sym { box-shadow: inset 2px 0 0 var(--live); }
+.ana-ledger tbody tr:focus-visible { outline: 2px solid var(--live); outline-offset: -2px; }
+.ana-spark { display: block; margin-left: auto; }
+.ana-empty { color: var(--dim); text-align: center; padding: 22px 12px; }
+.ana-hint { flex: none; padding: 9px 15px; border-top: 1px solid var(--line); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+
+/* stage */
+.ana-stage { background: var(--panel); position: relative; overflow: hidden; min-width: 0; }
+.ana-surface-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ana-stage-head { position: absolute; top: 13px; left: 16px; right: 16px; display: flex; justify-content: space-between; gap: 10px; z-index: 2; pointer-events: none; }
+.ana-title { font-family: "Archivo", system-ui, sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 0.01em; }
+.ana-peak { position: absolute; top: 22%; left: 55%; z-index: 2; pointer-events: none; }
+.ana-peak-tag { color: var(--live); font-size: 11px; }
+.ana-peak-val { display: block; font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 18px; }
+.ana-peak::before { content: ""; position: absolute; left: -12px; top: 6px; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--live); box-shadow: 0 0 8px var(--live); }
+.ana-axis { position: absolute; z-index: 2; pointer-events: none; }
+.ana-ax-x { bottom: 14px; left: 50%; transform: translateX(-50%); }
+.ana-ax-y { top: 50%; left: 14px; transform: translateY(-50%) rotate(-90deg); transform-origin: left center; }
+
+/* tiles */
+.ana-tiles { overflow-y: auto; }
+.ana-tile { padding: 14px 15px; border-bottom: 1px solid var(--line); }
+.ana-big { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 42px; line-height: 1; margin: 6px 0 2px; letter-spacing: -0.01em; }
+.ana-big-sub { font-size: 17px; color: var(--dim); }
+.ana-meter { height: 4px; background: var(--line-2); border-radius: 2px; margin-top: 11px; overflow: hidden; }
+.ana-meter i { display: block; height: 100%; background: var(--live); box-shadow: 0 0 8px var(--live); }
+.ana-kv { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; }
+.ana-kv + .ana-kv { border-top: 1px solid var(--line); }
+.ana-kv .ana-num { font-weight: 700; }
+.ana-kv > span:first-child { color: var(--ink); }
+
+/* ------------------------------------------------------------ bottom band */
+.ana-band { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1px; background: var(--line); height: clamp(120px, 17vh, 168px); }
+.ana-pane { background: var(--panel); position: relative; display: flex; flex-direction: column; min-width: 0; }
+.ana-pane-head { display: flex; justify-content: space-between; gap: 10px; padding: 9px 15px 4px; flex: none; }
+.ana-canvas { flex: 1; width: 100%; min-height: 0; display: block; }
+
+/* status */
+.ana-status { display: flex; align-items: center; gap: 18px; padding: 8px 18px; background: var(--void); color: var(--dim); font-size: 11px; flex-wrap: wrap; }
+.ana-status-r { margin-left: auto; }
+
+@media (prefers-reduced-motion: reduce) { .ana-dot { animation: none; } }
+
+@media (max-width: 1040px) {
+  .ana-main { grid-template-columns: 1fr; grid-auto-rows: minmax(0, auto); overflow-y: auto; }
+  .ana-stage { min-height: 320px; }
+  .ana-band { grid-template-columns: 1fr; height: auto; }
+  .ana-pane { height: 140px; }
+  .ana { overflow-y: auto; }
+}

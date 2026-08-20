@@ -36,6 +36,8 @@ import { AccountPanel } from "./components/AccountPanel";
 import { Welcome } from "./components/Welcome";
 import { hasWelcomed, markWelcomed } from "./welcome";
 import { VoiceOverlay } from "./components/VoiceOverlay";
+import { AnalyticView } from "./components/analytic/AnalyticView";
+import { conciergeEnabled } from "./analytic/gate";
 import "./styles/global.css";
 import "./styles/app.css";
 
@@ -128,6 +130,8 @@ export default function App() {
   const [detailSymbol, setDetailSymbol] = useState<string | null>(null);
   // Whether the Account panel (holdings, watchlist, settings) is open.
   const [accountOpen, setAccountOpen] = useState(false);
+  // The Concierge-tier Analytic cockpit (full-screen), gated behind the tier.
+  const [analyticOpen, setAnalyticOpen] = useState(false);
   // The one-time welcome, shown on a visitor's first arrival.
   const [showWelcome, setShowWelcome] = useState(() => !hasWelcomed());
   const [, forceRender] = useState(0);
@@ -722,6 +726,16 @@ export default function App() {
               {liveDetail}
             </span>
           ) : null}
+          {conciergeEnabled() ? (
+            <button
+              type="button"
+              className="chip account-btn analytic-btn"
+              onClick={() => setAnalyticOpen(true)}
+              title="Bramwell Analytic — Concierge tier"
+            >
+              ◭ Analytic
+            </button>
+          ) : null}
           <button
             type="button"
             className="chip account-btn"
@@ -755,6 +769,10 @@ export default function App() {
           <CardBoard ctx={cardCtx} />
         </div>
       </div>
+
+      {analyticOpen ? (
+        <AnalyticView ctx={cardCtx} onClose={() => setAnalyticOpen(false)} />
+      ) : null}
 
       {detailSymbol ? (
         <TickerDetail
