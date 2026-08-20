@@ -23,7 +23,9 @@
   z-index: 55;
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  /* The stage keeps a floor height so on short screens the whole view scrolls
+     (the band stays reachable) instead of the stage crushing it out of sight. */
+  grid-template-rows: auto minmax(360px, 1fr) auto auto;
   gap: 1px;
   /* Opaque so the app board never bleeds through; the grid gaps show this as
      subtle hairlines between the panels. */
@@ -33,7 +35,8 @@
   font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .ana *,
 .ana *::before,
@@ -129,7 +132,7 @@
 .ana-kv > span:first-child { color: var(--ink); }
 
 /* ------------------------------------------------------------ bottom band */
-.ana-band { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1px; background: var(--line); height: clamp(120px, 17vh, 168px); }
+.ana-band { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1px; background: var(--line); height: clamp(140px, 18vh, 176px); }
 .ana-pane { background: var(--panel); position: relative; display: flex; flex-direction: column; min-width: 0; }
 .ana-pane-head { display: flex; justify-content: space-between; gap: 10px; padding: 9px 15px 4px; flex: none; }
 .ana-canvas { flex: 1; width: 100%; min-height: 0; display: block; }

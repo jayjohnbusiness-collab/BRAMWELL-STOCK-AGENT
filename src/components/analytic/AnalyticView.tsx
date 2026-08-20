@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CardContext } from "../../cards/types";
+import type { Candle } from "../../feed/types";
+import { hasToken } from "../../feed/token";
 import { Surface, type SurfaceType } from "./Surface";
 import "../../styles/analytic.css";
 
@@ -25,6 +27,61 @@ function useClock(): string {
     return () => window.clearInterval(id);
   }, []);
   return new Date(now).toLocaleTimeString("en-US", { hour12: false });
+}
+
+/** A deterministic-enough intraday walk, used when no feed history is available. */
+function synth(base: number): Candle[] {
+  const out: Candle[] = [];
+  let c = base;
+  const now = Date.now();
+  for (let k = 0; k < 80; k++) {
+    c = Math.max(base * 0.9, c + (Math.random() - 0.47) * base * 0.006);
+    out.push({ t: now - (80 - k) * 5 * 60000, c });
+  }
+  return out;
+}
+
+/*
+ * The bottom charts pull from the account's feed (ctx.candles → the Finnhub
+ * adapter when a key is set in Account → Live data; the simulated feed
+ * otherwise). If the feed carries no intraday history (e.g. a free plan without
+ * candles), we fall back to a local walk and label the source honestly.
+ */
+function useSeries(ctx: CardContext): { sym: string; candles: Candle[]; last: number; chg: number; real: boolean } {
+  const held = ctx.market.held();
+  const sym = held[0]?.symbol ?? "SPY";
+  const base = ctx.market.bySymbol(sym)?.basePrice ?? 100;
+  const [candles, setCandles] = useState<Candle[]>(() => synth(base));
+  const [fromFeed, setFromFeed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    ctx
+      .candles(sym, "1D")
+      .then((cs) => {
+        if (!alive) return;
+        if (cs && cs.length > 4) {
+          setCandles(cs);
+          setFromFeed(true);
+        } else {
+          setCandles(synth(base));
+          setFromFeed(false);
+        }
+      })
+      .catch(() => {
+        if (alive) {
+          setCandles(synth(base));
+          setFromFeed(false);
+        }
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sym, ctx.version]);
+  const last = candles[candles.length - 1]?.c ?? 0;
+  const first = candles[0]?.c ?? last;
+  const chg = first ? ((last - first) / first) * 100 : 0;
+  return { sym, candles, last, chg, real: fromFeed && hasToken() };
 }
 
 export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () => void }) {
@@ -66,6 +123,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
 
   const sparkColor = (up: boolean) => (mono ? (up ? "#eaf0f7" : "#737e8c") : up ? "#46c98a" : "#e2726f");
   const S = SURFACES[surface];
+  const series = useSeries(ctx);
 
   return (
     <div className={`ana ${mono ? "ana-mono" : "ana-semantic"}`} role="dialog" aria-label="Bramwell Analytic">
@@ -197,21 +255,29 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
         </aside>
       </div>
 
-      {/* bottom band */}
+      {/* bottom band — pulls from the account's feed (Finnhub when connected) */}
       <div className="ana-band">
         <div className="ana-pane">
-          <div className="ana-pane-head"><span className="ana-lab">SPX · Intraday path</span><span className="ana-lab ana-num up">5,411.62 ▲ +0.86%</span></div>
-          <PathChart mono={mono} />
+          <div className="ana-pane-head">
+            <span className="ana-lab">{series.sym} · Intraday</span>
+            <span className={`ana-lab ana-num ${series.chg >= 0 ? "up" : "dn"}`}>
+              {series.last.toFixed(2)} {series.chg >= 0 ? "▲" : "▼"} {series.chg >= 0 ? "+" : ""}{series.chg.toFixed(2)}%
+            </span>
+          </div>
+          <PathChart candles={series.candles} mono={mono} />
         </div>
         <div className="ana-pane">
-          <div className="ana-pane-head"><span className="ana-lab">Tape volume</span><span className="ana-lab ana-num">1.42B shares</span></div>
-          <VolumeBars mono={mono} />
+          <div className="ana-pane-head">
+            <span className="ana-lab">{series.sym} · Intraday activity</span>
+            <span className="ana-lab">{series.real ? "Finnhub" : "sample"}</span>
+          </div>
+          <ActivityBars candles={series.candles} mono={mono} />
         </div>
       </div>
 
       <footer className="ana-status">
-        <span><span className="ana-accent">●</span> Stream 11 ms</span>
-        <span>Simulated data · preview</span>
+        <span><span className="ana-accent">●</span> {series.real ? "Finnhub · live data" : "Simulated data"}</span>
+        <span>Charts · {series.sym} · 1D</span>
         <span>Concierge · $100/mo tier</span>
         <span className="ana-status-r">Bramwell Analytic · v0.1</span>
       </footer>
@@ -221,18 +287,8 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
 
 /* ------------------------------------------------------------ mini charts */
 
-function PathChart({ mono }: { mono: boolean }) {
+function PathChart({ candles, mono }: { candles: Candle[]; mono: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const data = useMemo(() => {
-    const n = 120;
-    const pts: number[] = [];
-    let y = 0.5;
-    for (let k = 0; k < n; k++) {
-      y = Math.max(0.1, Math.min(0.9, y + (Math.random() - 0.48) * 0.05));
-      pts.push(y);
-    }
-    return pts;
-  }, []);
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
@@ -242,38 +298,45 @@ function PathChart({ mono }: { mono: boolean }) {
       c.width = Math.max(2, r.width * DPR);
       c.height = Math.max(2, r.height * DPR);
       const ctx = c.getContext("2d");
-      if (!ctx) return;
-      const W = c.width, Ht = c.height, pad = 8 * DPR, n = data.length;
+      if (!ctx || candles.length < 2) return;
+      const W = c.width, Ht = c.height, pad = 8 * DPR, n = candles.length;
+      const lo = Math.min(...candles.map((p) => p.c));
+      const hi = Math.max(...candles.map((p) => p.c)) || 1;
       ctx.clearRect(0, 0, W, Ht);
       ctx.strokeStyle = "rgba(255,255,255,0.05)";
       ctx.lineWidth = 1;
       for (let g = 1; g < 4; g++) { const yy = pad + (Ht - pad * 2) * g / 4; ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(W, yy); ctx.stroke(); }
       const xs = (k: number) => pad + (W - pad * 2) * k / (n - 1);
-      const ys = (v: number, k: number) => Ht - pad - (Ht - pad * 2) * (v * 0.7 + (k / n) * 0.25);
-      ctx.beginPath(); ctx.moveTo(xs(0), ys(data[0], 0));
-      for (let k = 1; k < n; k++) ctx.lineTo(xs(k), ys(data[k], k));
+      const ys = (v: number) => Ht - pad - (Ht - pad * 2) * ((v - lo) / (hi - lo || 1)) * 0.92 - 3 * DPR;
+      ctx.beginPath(); ctx.moveTo(xs(0), ys(candles[0].c));
+      for (let k = 1; k < n; k++) ctx.lineTo(xs(k), ys(candles[k].c));
       ctx.lineTo(xs(n - 1), Ht - pad); ctx.lineTo(xs(0), Ht - pad); ctx.closePath();
-      const line = mono ? "234,240,247" : "70,201,138";
+      const line = mono ? "234,240,247" : candles[n - 1].c >= candles[0].c ? "70,201,138" : "226,114,111";
       const grad = ctx.createLinearGradient(0, 0, 0, Ht);
       grad.addColorStop(0, `rgba(${line},0.16)`);
       grad.addColorStop(1, `rgba(${line},0)`);
       ctx.fillStyle = grad; ctx.fill();
-      ctx.beginPath(); ctx.moveTo(xs(0), ys(data[0], 0));
-      for (let k = 1; k < n; k++) ctx.lineTo(xs(k), ys(data[k], k));
-      ctx.strokeStyle = mono ? "#eaf0f7" : "#46c98a"; ctx.lineWidth = 1.4 * DPR; ctx.stroke();
-      const ex = xs(n - 1), ey = ys(data[n - 1], n - 1);
-      ctx.fillStyle = mono ? "#6fd1ff" : "#46c98a"; ctx.beginPath(); ctx.arc(ex, ey, 3 * DPR, 0, 6.28); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(xs(0), ys(candles[0].c));
+      for (let k = 1; k < n; k++) ctx.lineTo(xs(k), ys(candles[k].c));
+      ctx.strokeStyle = mono ? "#eaf0f7" : `rgb(${line})`; ctx.lineWidth = 1.4 * DPR; ctx.stroke();
+      const ex = xs(n - 1), ey = ys(candles[n - 1].c);
+      ctx.fillStyle = mono ? "#6fd1ff" : `rgb(${line})`; ctx.beginPath(); ctx.arc(ex, ey, 3 * DPR, 0, 6.28); ctx.fill();
     };
     draw();
     window.addEventListener("resize", draw);
     return () => window.removeEventListener("resize", draw);
-  }, [mono, data]);
+  }, [mono, candles]);
   return <canvas ref={ref} className="ana-canvas" />;
 }
 
-function VolumeBars({ mono }: { mono: boolean }) {
+/** Per-interval price movement — a proxy for intraday activity, from the same series. */
+function ActivityBars({ candles, mono }: { candles: Candle[]; mono: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const data = useMemo(() => Array.from({ length: 56 }, () => Math.random()), []);
+  const bars = useMemo(() => {
+    const d: { v: number; up: boolean }[] = [];
+    for (let k = 1; k < candles.length; k++) d.push({ v: Math.abs(candles[k].c - candles[k - 1].c), up: candles[k].c >= candles[k - 1].c });
+    return d;
+  }, [candles]);
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
@@ -283,16 +346,15 @@ function VolumeBars({ mono }: { mono: boolean }) {
       c.width = Math.max(2, r.width * DPR);
       c.height = Math.max(2, r.height * DPR);
       const ctx = c.getContext("2d");
-      if (!ctx) return;
-      const W = c.width, Ht = c.height, pad = 8 * DPR, n = data.length, bw = (W - pad * 2) / n;
+      if (!ctx || !bars.length) return;
+      const W = c.width, Ht = c.height, pad = 8 * DPR, n = bars.length, bw = (W - pad * 2) / n;
+      const mx = Math.max(...bars.map((b) => b.v)) || 1;
       ctx.clearRect(0, 0, W, Ht);
       for (let k = 0; k < n; k++) {
-        const mid = 1 - (Math.abs(k - n * 0.42) / n) * 1.4;
-        const h = Math.max(0.05, mid * (0.5 + data[k] * 0.6)) * (Ht - pad * 2);
-        const hot = k === ((n * 0.42) | 0) || k === ((n * 0.7) | 0);
-        ctx.fillStyle = hot
-          ? mono ? "rgba(111,209,255,0.85)" : "rgba(70,201,138,0.9)"
-          : `rgba(234,240,247,${0.18 + mid * 0.4})`;
+        const h = Math.max(1 * DPR, (bars[k].v / mx) * (Ht - pad * 2));
+        ctx.fillStyle = mono
+          ? `rgba(234,240,247,${0.22 + (bars[k].v / mx) * 0.5})`
+          : bars[k].up ? "rgba(70,201,138,0.75)" : "rgba(226,114,111,0.75)";
         ctx.fillRect(pad + k * bw, Ht - pad - h, Math.max(1, bw - 1.5 * DPR), h);
       }
       ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.beginPath(); ctx.moveTo(0, Ht - pad); ctx.lineTo(W, Ht - pad); ctx.stroke();
@@ -300,6 +362,6 @@ function VolumeBars({ mono }: { mono: boolean }) {
     draw();
     window.addEventListener("resize", draw);
     return () => window.removeEventListener("resize", draw);
-  }, [mono, data]);
+  }, [mono, bars]);
   return <canvas ref={ref} className="ana-canvas" />;
 }
