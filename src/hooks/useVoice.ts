@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Recognizer } from "../speech/recognition";
-import { Voice } from "../speech/synthesis";
+import { Speaker } from "../speech/speaker";
 
 /*
  * Wires speech recognition and synthesis to the app.
@@ -27,7 +27,7 @@ export function useVoice(onCommand: (text: string) => void, onWake?: () => void)
   const [error, setError] = useState("");
 
   const recRef = useRef<Recognizer | null>(null);
-  const voiceRef = useRef<Voice | null>(null);
+  const voiceRef = useRef<Speaker | null>(null);
   const enabledRef = useRef(false);
   const commandRef = useRef(onCommand);
   commandRef.current = onCommand;
@@ -35,7 +35,7 @@ export function useVoice(onCommand: (text: string) => void, onWake?: () => void)
   wakeRef.current = onWake;
 
   useEffect(() => {
-    voiceRef.current = Voice.supported() ? new Voice(setSpeaking) : null;
+    voiceRef.current = Speaker.supported() ? new Speaker(setSpeaking) : null;
     return () => {
       recRef.current?.stop();
       voiceRef.current?.cancel();

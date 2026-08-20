@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { CardContext } from "../cards/types";
 import { hasToken, getToken, setToken, clearToken } from "../feed/token";
+import {
+  hasEleven,
+  elevenKey,
+  elevenVoice,
+  setElevenKey,
+  setElevenVoice,
+  DEFAULT_VOICE,
+} from "../speech/eleven";
 import { currentTheme, setTheme, type Theme } from "../theme";
 import { chimeMuted, setChimeMuted } from "../chime";
 import { PortfolioCard } from "./cards/PortfolioCard";
@@ -66,6 +74,10 @@ export function AccountPanel({ ctx, onClose }: { ctx: CardContext; onClose: () =
 
         <Section title="Live data">
           <LiveDataSection />
+        </Section>
+
+        <Section title="Natural voice">
+          <VoiceKeySection />
         </Section>
 
         <Section title="Preferences">
@@ -153,6 +165,81 @@ function LiveDataSection() {
 function maskKey(k: string): string {
   if (k.length <= 6) return "••••";
   return `${k.slice(0, 4)}…${k.slice(-4)}`;
+}
+
+/* ---------------------------------------------------------- Natural voice */
+
+function VoiceKeySection() {
+  const [connected, setConnected] = useState(() => hasEleven());
+  const [key, setKey] = useState("");
+  const [voice, setVoice] = useState(() => (elevenVoice() === DEFAULT_VOICE ? "" : elevenVoice()));
+
+  function connect(e: React.FormEvent) {
+    e.preventDefault();
+    const k = key.trim();
+    if (!k) return;
+    setElevenKey(k);
+    setElevenVoice(voice.trim()); // empty → the default British voice
+    setKey("");
+    setConnected(true);
+  }
+
+  function disconnect() {
+    setElevenKey("");
+    setConnected(false);
+  }
+
+  if (connected) {
+    return (
+      <div className="account-live">
+        <p className="account-line">
+          <span className="live-dot" aria-hidden="true" /> Natural voice on
+          <span className="account-muted"> · {maskKey(elevenKey())}</span>
+        </p>
+        <p className="account-muted" style={{ margin: "4px 0 0", fontSize: "0.8rem" }}>
+          Voice: {elevenVoice() === DEFAULT_VOICE ? "George (default British)" : elevenVoice()}
+        </p>
+        <button type="button" className="chip" onClick={disconnect} style={{ marginTop: "8px" }}>
+          Turn off
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="account-live">
+      <p className="account-muted" style={{ margin: 0 }}>
+        Give Bramwell a natural voice with an{" "}
+        <a href="https://elevenlabs.io" target="_blank" rel="noreferrer" style={{ color: "var(--brass)" }}>
+          ElevenLabs
+        </a>{" "}
+        text-to-speech key. Use a TTS-only key with a spend cap — it's stored only in this browser.
+      </p>
+      <form onSubmit={connect} className="account-live-form">
+        <input
+          aria-label="ElevenLabs API key"
+          type="password"
+          placeholder="ElevenLabs API key"
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <input
+          aria-label="Voice ID (optional)"
+          type="text"
+          placeholder="Voice ID (optional)"
+          value={voice}
+          onChange={(e) => setVoice(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <button type="submit" className="btn" disabled={!key.trim()}>
+          Enable
+        </button>
+      </form>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------ Preferences */
