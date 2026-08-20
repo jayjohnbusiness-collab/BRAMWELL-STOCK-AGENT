@@ -102,6 +102,18 @@
 .ana-ledger tbody tr:hover { background: color-mix(in srgb, var(--live) 9%, transparent); }
 .ana-ledger tbody tr:hover .ana-sym { box-shadow: inset 2px 0 0 var(--live); }
 .ana-ledger tbody tr:focus-visible { outline: 2px solid var(--live); outline-offset: -2px; }
+/* The name currently driving the surface + charts. */
+.ana-ledger tbody tr.on { background: color-mix(in srgb, var(--live) 14%, transparent); }
+.ana-ledger tbody tr.on .ana-sym { color: var(--live); box-shadow: inset 2px 0 0 var(--live); }
+
+.ana-detail { width: 26px; }
+.ana-detail-btn {
+  background: none; border: none; cursor: pointer; padding: 2px 4px;
+  color: var(--faint); font-size: 13px; line-height: 1; border-radius: 4px;
+  transition: color 0.12s, background 0.12s;
+}
+.ana-detail-btn:hover { color: var(--live); background: color-mix(in srgb, var(--live) 16%, transparent); }
+.ana-detail-btn:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
 .ana-spark { display: block; margin-left: auto; }
 .ana-empty { color: var(--dim); text-align: center; padding: 22px 12px; }
 .ana-hint { flex: none; padding: 9px 15px; border-top: 1px solid var(--line); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }

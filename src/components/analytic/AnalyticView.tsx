@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CardContext } from "../../cards/types";
 import type { Candle } from "../../feed/types";
 import { hasToken } from "../../feed/token";
-import { Surface, type SurfaceType } from "./Surface";
+import { Surface, symSeed, type SurfaceType } from "./Surface";
 import "../../styles/analytic.css";
 
 /*
@@ -14,11 +14,35 @@ import "../../styles/analytic.css";
  * liquidity depth, correlation). Fits the viewport — nothing clips.
  */
 
-const SURFACES: Record<SurfaceType, { label: string; title: string; sub: string; ax: string; ay: string; tag: string; val: string }> = {
-  iv: { label: "Vol", title: "Implied Volatility Surface", sub: "SPX · 0–90 DTE · live", ax: "Strike →", ay: "Expiry →", tag: "peak σ", val: "41.8%" },
-  liquidity: { label: "Liquidity", title: "Liquidity Depth", sub: "SPX · top of book", ax: "Price →", ay: "Size →", tag: "book wall", val: "$5,412" },
-  correlation: { label: "Corr", title: "Correlation Surface", sub: "Your book · 20d", ax: "Asset →", ay: "Asset →", tag: "max ρ", val: "0.88" },
+const SURFACES: Record<SurfaceType, { label: string }> = {
+  iv: { label: "Vol" },
+  liquidity: { label: "Liquidity" },
+  correlation: { label: "Corr" },
 };
+
+/** Titles, axes, and the peak readout — all keyed to the selected symbol. */
+function surfaceMeta(
+  type: SurfaceType,
+  sym: string,
+  base: number,
+  chg: number,
+): { title: string; sub: string; ax: string; ay: string; tag: string; val: string } {
+  const seed = symSeed(sym);
+  if (type === "liquidity") {
+    return { title: `${sym} · Liquidity Depth`, sub: "top of book", ax: "Price →", ay: "Size →", tag: "book wall", val: `$${base.toFixed(2)}` };
+  }
+  if (type === "correlation") {
+    return { title: `${sym} · Correlation Surface`, sub: "20d · your book", ax: "Asset →", ay: "Asset →", tag: "max ρ", val: (0.5 + seed * 0.48).toFixed(2) };
+  }
+  return {
+    title: `${sym} · Implied Volatility`,
+    sub: "0–90 DTE · live",
+    ax: "Strike →",
+    ay: "Expiry →",
+    tag: "peak σ",
+    val: `${(20 + seed * 40 + Math.abs(chg) * 1.4).toFixed(1)}%`,
+  };
+}
 
 function useClock(): string {
   const [now, setNow] = useState(() => Date.now());
@@ -47,9 +71,7 @@ function synth(base: number): Candle[] {
  * otherwise). If the feed carries no intraday history (e.g. a free plan without
  * candles), we fall back to a local walk and label the source honestly.
  */
-function useSeries(ctx: CardContext): { sym: string; candles: Candle[]; last: number; chg: number; real: boolean } {
-  const held = ctx.market.held();
-  const sym = held[0]?.symbol ?? "SPY";
+function useSeries(ctx: CardContext, sym: string): { sym: string; candles: Candle[]; last: number; chg: number; real: boolean } {
   const base = ctx.market.bySymbol(sym)?.basePrice ?? 100;
   const [candles, setCandles] = useState<Candle[]>(() => synth(base));
   const [fromFeed, setFromFeed] = useState(false);
@@ -121,9 +143,18 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
     [held.length, held.map((i) => i.symbol).join(",")],
   );
 
+  // The name in focus — drives the surface, the intraday charts, and levels.
+  const [selected, setSelected] = useState<string>(() => held[0]?.symbol ?? "SPY");
+  // Keep the selection valid if the watchlist changes underneath it.
+  useEffect(() => {
+    if (held.length && !held.some((i) => i.symbol === selected)) setSelected(held[0].symbol);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [held.map((i) => i.symbol).join(",")]);
+
   const sparkColor = (up: boolean) => (mono ? (up ? "#eaf0f7" : "#737e8c") : up ? "#46c98a" : "#e2726f");
-  const S = SURFACES[surface];
-  const series = useSeries(ctx);
+  const series = useSeries(ctx, selected);
+  const selInst = ctx.market.bySymbol(selected);
+  const S = surfaceMeta(surface, selected, selInst?.basePrice ?? 100, selInst?.changePct ?? 0);
 
   return (
     <div className={`ana ${mono ? "ana-mono" : "ana-semantic"}`} role="dialog" aria-label="Bramwell Analytic">
@@ -172,7 +203,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
         <aside className="ana-col ana-ledger">
           <div className="ana-col-head">
             <span className="ana-lab">Order Flow</span>
-            <span className="ana-lab">Z · 60m</span>
+            <span className="ana-lab">60m</span>
           </div>
           <div className="ana-ledger-scroll">
             <table>
@@ -182,14 +213,14 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
                   <th className="r">Last</th>
                   <th className="r">Δ%</th>
                   <th className="r">Trend</th>
-                  <th className="r">Z</th>
+                  <th className="r" aria-label="Open detail"></th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.sym} onClick={() => ctx.openDetail(r.sym)} tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ctx.openDetail(r.sym); } }}
-                    title={`Open ${r.sym} detail`}>
+                  <tr key={r.sym} className={r.sym === selected ? "on" : ""} onClick={() => setSelected(r.sym)} tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(r.sym); } }}
+                    title={`Load ${r.sym} into the surface and charts`}>
                     <td className="ana-sym">{r.sym}</td>
                     <td className="r ana-num">{r.last.toFixed(2)}</td>
                     <td className={`r ana-num ${r.up ? "up" : "dn"}`}>{r.up ? "+" : ""}{r.chg.toFixed(2)}</td>
@@ -198,7 +229,16 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
                         <polyline points={r.spark} fill="none" stroke={sparkColor(r.up)} strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
                       </svg>
                     </td>
-                    <td className={`r ana-num ${Math.abs(r.z) >= 2 ? "ana-accent" : "dn"}`}>{r.z >= 0 ? "+" : ""}{r.z.toFixed(1)}</td>
+                    <td className="r ana-detail">
+                      <button
+                        type="button"
+                        className="ana-detail-btn"
+                        title={`Open ${r.sym} detail`}
+                        onClick={(e) => { e.stopPropagation(); ctx.openDetail(r.sym); }}
+                      >
+                        ↗
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {rows.length === 0 ? (
@@ -207,11 +247,11 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
               </tbody>
             </table>
           </div>
-          <div className="ana-hint">Click a symbol for its detail →</div>
+          <div className="ana-hint">Click a name to load it · ↗ for detail</div>
         </aside>
 
         <section className="ana-stage">
-          <Surface type={surface} mono={mono} />
+          <Surface type={surface} mono={mono} symbol={selected} bias={selInst?.changePct ?? 0} />
           <div className="ana-stage-head">
             <span className="ana-title">{S.title}</span>
             <span className="ana-lab">{S.sub}</span>
@@ -236,10 +276,10 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
             <div className="ana-meter"><i style={{ width: "68%" }} /></div>
           </div>
           <div className="ana-tile">
-            <span className="ana-lab">Key levels · SPX</span>
-            <div className="ana-kv"><span className="dn">Resistance</span><span className="ana-num">5,442</span></div>
-            <div className="ana-kv"><span className="dn">Pivot</span><span className="ana-num">5,408</span></div>
-            <div className="ana-kv"><span className="dn">Support</span><span className="ana-num">5,371</span></div>
+            <span className="ana-lab">Key levels · {selected}</span>
+            <div className="ana-kv"><span className="dn">Resistance</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 1.021).toFixed(2)}</span></div>
+            <div className="ana-kv"><span className="dn">Pivot</span><span className="ana-num">{(selInst?.basePrice ?? 100).toFixed(2)}</span></div>
+            <div className="ana-kv"><span className="dn">Support</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 0.979).toFixed(2)}</span></div>
           </div>
           <div className="ana-tile">
             <span className="ana-lab">Unusual flow</span>

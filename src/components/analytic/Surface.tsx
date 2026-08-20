@@ -20,6 +20,13 @@ function hash(i: number): number {
   return x - Math.floor(x);
 }
 
+/** A stable 0–1 seed from a symbol, so each name gets its own terrain. */
+export function symSeed(s: string): number {
+  let h = 0;
+  for (let k = 0; k < s.length; k++) h = (h * 31 + s.charCodeAt(k)) >>> 0;
+  return (h % 1000) / 1000;
+}
+
 function heightFor(type: SurfaceType, u: number, v: number): number {
   if (type === "liquidity") {
     // Two ridges (bid wall / ask wall) running along u, a trough between.
@@ -63,10 +70,20 @@ function heightFor(type: SurfaceType, u: number, v: number): number {
   return Math.max(0, s);
 }
 
-export function Surface({ type, mono }: { type: SurfaceType; mono: boolean }) {
+export function Surface({
+  type,
+  mono,
+  symbol,
+  bias,
+}: {
+  type: SurfaceType;
+  mono: boolean;
+  symbol: string;
+  bias: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cfg = useRef({ type, mono });
-  cfg.current = { type, mono };
+  const cfg = useRef({ type, mono, symbol, bias });
+  cfg.current = { type, mono, symbol, bias };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -75,21 +92,33 @@ export function Surface({ type, mono }: { type: SurfaceType; mono: boolean }) {
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const DPR = Math.min(2, window.devicePixelRatio || 1);
 
-    // Height field — rebuilt whenever the surface type changes.
+    // Height field — rebuilt whenever the surface type OR the selected symbol
+    // changes. Each symbol rotates the terrain by its own seed, scales its
+    // amplitude, and skews it by the day's direction (bias), so switching names
+    // visibly reshapes the surface.
     const H = new Float32Array(N * M);
     let HM = 0;
-    let builtFor: SurfaceType | null = null;
-    function build(type: SurfaceType) {
+    let builtKey: string | null = null;
+    function build(type: SurfaceType, symbol: string, bias: number) {
       HM = 0;
+      const seed = symSeed(symbol);
+      const ang = seed * Math.PI * 2;
+      const ca = Math.cos(ang);
+      const sa = Math.sin(ang);
+      const amp = 0.82 + seed * 0.5;
+      const skew = Math.max(-0.28, Math.min(0.28, bias * 0.02));
       for (let j = 0; j < M; j++)
         for (let i = 0; i < N; i++) {
           const u = (i / (N - 1)) * 2 - 1;
           const v = (j / (M - 1)) * 2 - 1;
-          const h = heightFor(type, u, v) + 0.05 * hash(i * 13 + j * 57);
+          const ru = u * ca - v * sa;
+          const rv = u * sa + v * ca;
+          let h = heightFor(type, ru, rv) * amp * (1 + skew * ru);
+          h = Math.max(0, h) + 0.05 * hash(i * 13 + j * 57);
           H[j * N + i] = h;
           if (h > HM) HM = h;
         }
-      builtFor = type;
+      builtKey = type + "|" + symbol;
     }
 
     function fit() {
@@ -107,7 +136,8 @@ export function Surface({ type, mono }: { type: SurfaceType; mono: boolean }) {
     const draw = (ts: number) => {
       if (!t0) t0 = ts;
       const t = ts - t0;
-      if (builtFor !== cfg.current.type) build(cfg.current.type);
+      if (builtKey !== cfg.current.type + "|" + cfg.current.symbol)
+        build(cfg.current.type, cfg.current.symbol, cfg.current.bias);
       const W = canvas!.width;
       const Ht = canvas!.height;
       const cx = W * 0.5;
