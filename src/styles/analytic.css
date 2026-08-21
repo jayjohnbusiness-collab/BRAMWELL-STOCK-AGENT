@@ -107,7 +107,7 @@
    transition into The Study: the wordmark lands at left 48 / top 38 and the mark
    at top 34, in an ~81px band — the same coordinates as the main page (whose
    header sits inside 48px side / 32px top page padding). */
-.ana-top { display: flex; align-items: center; gap: 20px; padding: 34px 48px 17px; background: var(--void); flex-wrap: wrap; }
+.ana-top { display: flex; align-items: center; gap: 20px; padding: 34px 48px 17px; background: var(--panel); flex-wrap: wrap; }
 /* The lockup matches the main page exactly: 22px wordmark + 30px Arch mark,
    12px gap, 0.14em tracking, ink. */
 .ana-brand { display: flex; align-items: center; gap: 12px; }
