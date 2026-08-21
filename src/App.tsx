@@ -732,22 +732,24 @@ export default function App() {
         <Bell size={30} tone="brass" />
         <span className="wordmark">Bramwell</span>
         <span className="tagline small state-note">Your market, kept in order.</span>
-        <div className="header-right">
+        {/* Market status sits top-right, across from the logo (its own row on
+            mobile; grouped with the actions on desktop). */}
+        <span
+          className={`mkt-pill ${mkt.phase}`}
+          title={`${mkt.label} · ${mkt.detail}`}
+        >
+          <span className="mkt-dot" aria-hidden="true" />
+          {mkt.label}
+        </span>
+        {liveDetail ? (
           <span
-            className={`mkt-pill ${mkt.phase}`}
-            title={`${mkt.label} · ${mkt.detail}`}
+            className="small live-detail"
+            style={{ color: liveError ? "var(--data-down)" : "var(--ink-soft)" }}
           >
-            <span className="mkt-dot" aria-hidden="true" />
-            {mkt.label}
+            {liveDetail}
           </span>
-          {liveDetail ? (
-            <span
-              className="small live-detail"
-              style={{ color: liveError ? "var(--data-down)" : "var(--ink-soft)" }}
-            >
-              {liveDetail}
-            </span>
-          ) : null}
+        ) : null}
+        <div className="header-right">
           {conciergeEnabled() ? (
             <button
               type="button"
