@@ -12,6 +12,7 @@ import {
   DEFAULT_VOICE,
   BRITISH_VOICE,
 } from "../speech/eleven";
+import { hasLLM, llmKey, setLLMKey, understand, llmLastError } from "../agent/understand";
 import { currentTheme, setTheme, type Theme } from "../theme";
 import { chimeMuted, setChimeMuted } from "../chime";
 import { PortfolioCard } from "./cards/PortfolioCard";
@@ -81,6 +82,10 @@ export function AccountPanel({ ctx, onClose }: { ctx: CardContext; onClose: () =
 
         <Section title="Natural voice">
           <VoiceKeySection />
+        </Section>
+
+        <Section title="AI understanding">
+          <UnderstandingSection />
         </Section>
 
         <Section title="Preferences">
@@ -278,6 +283,98 @@ function VoiceKeySection() {
           placeholder="Voice ID (optional)"
           value={voice}
           onChange={(e) => setVoice(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <button type="submit" className="btn" disabled={!key.trim()}>
+          Enable
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------- AI understanding */
+
+function UnderstandingSection() {
+  const [connected, setConnected] = useState(() => hasLLM());
+  const [key, setKey] = useState("");
+  const [testMsg, setTestMsg] = useState("");
+  const [testing, setTesting] = useState(false);
+
+  function connect(e: React.FormEvent) {
+    e.preventDefault();
+    const k = key.trim();
+    if (!k) return;
+    setLLMKey(k);
+    setKey("");
+    setConnected(true);
+    setTestMsg("");
+  }
+
+  function disconnect() {
+    setLLMKey("");
+    setConnected(false);
+    setTestMsg("");
+  }
+
+  async function testUnderstanding() {
+    setTesting(true);
+    setTestMsg("Testing…");
+    const canonical = await understand("any names worth keeping an eye on?");
+    setTesting(false);
+    setTestMsg(
+      canonical
+        ? `Working — understood that as “${canonical}”.`
+        : `Couldn't reach it — ${llmLastError() || "unknown error"}`,
+    );
+  }
+
+  if (connected) {
+    return (
+      <div className="account-live">
+        <p className="account-line">
+          <span className="live-dot" aria-hidden="true" /> AI understanding on
+          <span className="account-muted"> · {maskKey(llmKey())}</span>
+        </p>
+        <p className="account-muted" style={{ margin: "4px 0 0", fontSize: "0.8rem" }}>
+          Bramwell falls back to AI only when his built-in understanding can't place a request — so unfamiliar wording
+          still lands on a real answer. It classifies the request; it never invents market data.
+        </p>
+        <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+          <button type="button" className="btn" onClick={testUnderstanding} disabled={testing}>
+            {testing ? "Testing…" : "Test"}
+          </button>
+          <button type="button" className="chip" onClick={disconnect}>
+            Turn off
+          </button>
+        </div>
+        {testMsg ? (
+          <p className="account-muted" style={{ margin: "8px 0 0", fontSize: "0.8rem" }}>
+            {testMsg}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="account-live">
+      <p className="account-muted" style={{ margin: 0 }}>
+        Add an{" "}
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" style={{ color: "var(--brass)" }}>
+          Anthropic API key
+        </a>{" "}
+        so Bramwell can understand phrasings his built-in rules miss. Used only as a fallback; stored only in this
+        browser. Use a key with a spend cap.
+      </p>
+      <form onSubmit={connect} className="account-live-form">
+        <input
+          aria-label="Anthropic API key"
+          type="password"
+          placeholder="Anthropic API key (sk-ant-…)"
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
           autoComplete="off"
           spellCheck={false}
         />

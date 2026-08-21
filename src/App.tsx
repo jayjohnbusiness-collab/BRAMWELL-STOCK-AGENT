@@ -14,6 +14,7 @@ import {
 } from "./agent/nlu";
 import type { Instrument, ScreenPayload } from "./agent/types";
 import { learnedAnswer, teach } from "./agent/learned";
+import { hasLLM, understand } from "./agent/understand";
 import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
 import { useMarketFeed } from "./hooks/useMarketFeed";
@@ -193,83 +194,71 @@ export default function App() {
       return;
     }
 
-    // A standing alert ("tell me if NVDA drops below 200") is set here so it
-    // can resolve/track the name live and register a trigger.
+    runDispatch(text, { llmTried: false, original: text });
+  }
+  dispatchRef.current = handleSend;
+
+  // The routing core, shared by a fresh user message and by an AI-translated
+  // retry. `original` is the user's real wording — used for the teach-back
+  // question and for the AI translation — so an LLM re-route keeps the user's
+  // intent even though `text` may be a canonical rephrasing.
+  function runDispatch(text: string, opts: { llmTried: boolean; original: string }) {
+    // A standing alert ("tell me if NVDA drops below 200").
     const trig = parseTrigger(text);
-    if (trig) {
-      void setTriggerFromChat(trig);
-      return;
-    }
-
-    // A portfolio value/P&L question.
-    if (isPortfolioValueQuery(text)) {
-      answerPortfolio();
-      return;
-    }
-
-    // Recording a position ("I own 100 NVDA at 150").
+    if (trig) { void setTriggerFromChat(trig); return; }
+    if (isPortfolioValueQuery(text)) { answerPortfolio(); return; }
     const pos = parsePosition(text);
-    if (pos) {
-      void setPositionFromChat(pos);
-      return;
-    }
-
-    // "What's the recent news on Palantir?"
+    if (pos) { void setPositionFromChat(pos); return; }
     const newsAsk = parseNews(text);
-    if (newsAsk) {
-      void newsFromChat(newsAsk.namePhrase);
-      return;
-    }
-
-    // "How much dividend income will I get?"
-    if (isDividendQuery(text)) {
-      void answerDividends();
-      return;
-    }
-
-    // An "add / watch" command is handled here rather than in the (network-free)
-    // brain, so it can look a real ticker up live — exactly like the watchlist
-    // field. Everything else goes to Bramwell as before.
+    if (newsAsk) { void newsFromChat(newsAsk.namePhrase); return; }
+    if (isDividendQuery(text)) { void answerDividends(); return; }
     const intent = parse(text);
-    // "Brief me / the rundown" — the fuller briefing (book + earnings + alerts),
-    // assembled here where the portfolio and feed are reachable.
-    if (intent.kind === "brief") {
-      void briefFromChat();
-      return;
-    }
+    if (intent.kind === "brief") { void briefFromChat(); return; }
     if (intent.kind === "watch") {
       const target = watchTarget(text);
-      if (target) {
-        void addFromChat(target);
-        return;
-      }
+      if (target) { void addFromChat(target); return; }
     }
 
     setWorking(true);
-
     // Answer inside two seconds or show a quiet working state; no filler.
     window.setTimeout(() => {
       const reply = agent.respond(text);
+      // Couldn't place it locally → if AI understanding is on, ask the model to
+      // translate the ORIGINAL wording into a command and route that, once.
+      if (reply.learnable && !opts.llmTried && hasLLM()) {
+        understand(opts.original)
+          .then((canonical) => {
+            setWorking(false);
+            if (canonical && canonical.toLowerCase() !== text.toLowerCase()) {
+              runDispatch(canonical, { llmTried: true, original: opts.original });
+            } else {
+              finishReply(reply, opts.original);
+            }
+          })
+          .catch(() => { setWorking(false); finishReply(reply, opts.original); });
+        return;
+      }
       setWorking(false);
-      // Couldn't answer → offer to learn it. Remember the question; the user's
-      // next message becomes the answer (handled at the top of handleSend).
-      const spoken =
-        reply.learnable && reply.spoken.trim().length > 0
-          ? `${reply.spoken} If you tell me the answer, I'll remember it for next time.`
-          : reply.spoken;
-      if (reply.learnable) setTeachQ(text);
-      if (spoken.trim().length > 0) {
-        setMessages((prev) => [...prev, chatMsg("bramwell", spoken)]);
-        voice.speak(spoken); // spoken aloud only when voice is on
-      }
-      if (reply.screen && reply.screen.kind !== "none") {
-        setScreen(reply.screen);
-      }
-      setAwaitingChoice(Boolean(reply.awaitingChoice));
-      persist(); // Bramwell may have edited the watchlist ("watch Tesla")
+      finishReply(reply, opts.original);
     }, 650);
   }
-  dispatchRef.current = handleSend;
+
+  // Render one agent reply: speak it, show its screen payload, and — when
+  // nothing could answer — offer to learn the answer for next time.
+  function finishReply(reply: ReturnType<Bramwell["respond"]>, original: string) {
+    const spoken =
+      reply.learnable && reply.spoken.trim().length > 0
+        ? `${reply.spoken} If you tell me the answer, I'll remember it for next time.`
+        : reply.spoken;
+    if (reply.learnable) setTeachQ(original);
+    if (spoken.trim().length > 0) {
+      setMessages((prev) => [...prev, chatMsg("bramwell", spoken)]);
+      voice.speak(spoken); // spoken aloud only when voice is on
+    }
+    if (reply.screen && reply.screen.kind !== "none") setScreen(reply.screen);
+    setAwaitingChoice(Boolean(reply.awaitingChoice));
+    persist(); // Bramwell may have edited the watchlist ("watch Tesla")
+  }
 
   // The morning briefing: once prices have hydrated (first poll done), and at
   // most once per calendar day, Bramwell greets the user unprompted with the
