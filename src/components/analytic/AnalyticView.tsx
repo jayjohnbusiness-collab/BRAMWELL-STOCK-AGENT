@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CardContext } from "../../cards/types";
 import type { Candle, ChartRange } from "../../feed/types";
 import { hasToken } from "../../feed/token";
@@ -93,6 +93,9 @@ const DEFS = {
   correlation: "How tightly your holdings move together over the last 20 days (ρ, 0 to 1). High correlation means your book rises and falls as one — less diversified than it may look.",
   orderFlow: "Your watchlist as a live tape — last price, the day's change, and a mini trend for each name. Click a row to load it into the surface and charts.",
   volatility: "The recent range width — how far price has swung between high and low over a rolling window. Wider means choppier, more uncertain trade.",
+  momentum: "The Relative Strength Index (14) — a 0–100 gauge of recent up-moves vs. down-moves. Above 70 is often called overbought, below 30 oversold; the middle is neutral drift.",
+  trend: "How far the last price sits from its own rolling mean, in percent. Positive means it's stretched above 'fair', negative below — a read on how extended the move is.",
+  rangePos: "Where the last print sits inside the period's high–low, as a percentage. Near 100% is trading at the highs, near 0% at the lows.",
 } as const;
 
 /** The surface reading's definition, keyed to which surface is shown. */
@@ -400,13 +403,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
           <LuminousChannel candles={series.candles} mono={mono} symbol={series.sym} range={range} />
           <span className="ana-scrub-hint ana-lab">hover to scrub</span>
         </div>
-        <div className="ana-pane">
-          <div className="ana-pane-head">
-            <span className="ana-lab ana-with-help">{series.sym} · Volatility<HelpDot term="Volatility" def={DEFS.volatility} /></span>
-            <span className="ana-lab">{series.real ? "Finnhub · range" : "range width"}</span>
-          </div>
-          <VolatilityHaze candles={series.candles} mono={mono} symbol={series.sym} chg={series.chg} />
-        </div>
+        <Metrics candles={series.candles} mono={mono} symbol={series.sym} />
       </div>
 
       <footer className="ana-status">
@@ -646,83 +643,232 @@ function LuminousChannel({ candles, mono, symbol, range }: { candles: Candle[]; 
   return <canvas ref={ref} className="ana-canvas" aria-label="Intraday price, hover to scrub" />;
 }
 
-/*
- * Volatility panel — the rolling range width read as a field of dust whose
- * density tracks magnitude, capped by a ridge line. Same tinting rules.
+/* ------------------------------------------------------------- metrics
+ * Three price-derived reads that replace the old volatility panel, each drawn
+ * in the same dust + glow + live-bead motif and keyed to the selected symbol:
+ *   · Momentum — a 14-period RSI as a horizontal oscillator
+ *   · Trend Stretch — price vs. its rolling mean, a centred signed ribbon
+ *   · Range Position — where the last print sits in the period's high–low
+ * All derive from closes alone, so they work on any feed. Mono paints them
+ * cyan; semantic tints each by its own directional read (green up / red down).
  */
-function VolatilityHaze({ candles, mono, symbol, chg }: { candles: Candle[]; mono: boolean; symbol: string; chg: number }) {
+
+/** Wilder's RSI over `period`, aligned to the close array (warm-up back-filled). */
+function rsiSeries(closes: number[], period = 14): number[] {
+  const n = closes.length;
+  const out = new Array<number>(n).fill(50);
+  if (n < period + 1) return out;
+  let g = 0, l = 0;
+  for (let i = 1; i <= period; i++) { const ch = closes[i] - closes[i - 1]; if (ch > 0) g += ch; else l -= ch; }
+  g /= period; l /= period;
+  out[period] = 100 - 100 / (1 + g / (l || 1e-9));
+  for (let i = period + 1; i < n; i++) {
+    const ch = closes[i] - closes[i - 1], up = ch > 0 ? ch : 0, dn = ch < 0 ? -ch : 0;
+    g = (g * (period - 1) + up) / period; l = (l * (period - 1) + dn) / period;
+    out[i] = 100 - 100 / (1 + g / (l || 1e-9));
+  }
+  for (let i = 0; i < period; i++) out[i] = out[period];
+  return out;
+}
+
+type MetricStats = {
+  closes: number[]; rsi: number[]; stretch: number[]; meanL: number[];
+  rsiNow: number; rsiRising: boolean; stretchNow: number; rangePct: number; lo: number; hi: number;
+};
+
+function metricStats(candles: Candle[]): MetricStats {
+  const closes = candles.map((c) => c.c);
+  const n = closes.length;
+  const { meanL } = channelBands(closes);
+  const rsi = rsiSeries(closes);
+  const stretch = closes.map((c, i) => ((c - meanL[i]) / (meanL[i] || 1)) * 100);
+  const lo = Math.min(...closes), hi = Math.max(...closes);
+  return {
+    closes, rsi, stretch, meanL,
+    rsiNow: rsi[n - 1] ?? 50,
+    rsiRising: (rsi[n - 1] ?? 50) >= (rsi[n - 2] ?? 50),
+    stretchNow: stretch[n - 1] ?? 0,
+    rangePct: hi > lo ? ((closes[n - 1] - lo) / (hi - lo)) * 100 : 50,
+    lo, hi,
+  };
+}
+
+/** Card chrome shared by the three metrics: viz cell (graph + label + state)
+ * beside a readout cell (big number + unit), split so the number never sits
+ * over the graph. */
+function MetricShell(props: {
+  term: string; def: string; label: string; state: string; dir: number;
+  big: ReactNode; sub: string; canvas: ReactNode; ariaLabel: string;
+}) {
+  const cls = props.dir >= 0 ? "up" : "dn";
+  return (
+    <div className="ana-metric">
+      <div className="ana-metric-viz">
+        {props.canvas}
+        <span className="ana-lab ana-with-help ana-metric-top">{props.label}<HelpDot term={props.term} def={props.def} /></span>
+        <span className={`ana-metric-state ${cls}`}>{props.state}</span>
+      </div>
+      <div className="ana-metric-readout">
+        <span className={`ana-metric-big ana-num ${cls}`} aria-label={props.ariaLabel}>{props.big}</span>
+        <span className="ana-metric-sub">{props.sub}</span>
+      </div>
+    </div>
+  );
+}
+
+/** One animated canvas; `render` does the per-frame drawing. Rebuilds on
+ * symbol/candle change, recolours live on the mono toggle, honours reduced-motion. */
+function MetricCanvas({
+  candles, mono, symbol, setup, render,
+}: {
+  candles: Candle[]; mono: boolean; symbol: string;
+  setup: (n: number, dpr: number) => unknown;
+  render: (ctx: CanvasRenderingContext2D, W: number, H: number, t: number, mono: boolean, dpr: number, reduced: boolean, state: unknown) => void;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const monoRef = useRef(mono);
   monoRef.current = mono;
   useEffect(() => {
     const c = ref.current;
-    const vctx = c?.getContext("2d");
-    if (!c || !vctx || candles.length < 2) return;
+    const ctx = c?.getContext("2d");
+    if (!c || !ctx || candles.length < 2) return;
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const DPR = Math.min(2, window.devicePixelRatio || 1);
-    const N = candles.length;
-    const closes = candles.map((p) => p.c);
-    const { width } = channelBands(closes);
-    const maxW = Math.max(...width) || 1;
-    const up = chg >= 0;
-
-    const PAD = 8 * DPR;
+    const state = setup(candles.length, DPR);
     const fit = () => {
       const r = c.getBoundingClientRect();
       c.width = Math.max(2, Math.round(r.width * DPR));
       c.height = Math.max(2, Math.round(r.height * DPR));
     };
     fit();
-
-    const haze = Array.from({ length: 360 }, () => {
-      const fi = Math.random() * (N - 1);
-      return { fi, r: Math.random(), ph: Math.random() * 6.28, live: Math.random() < (lerp(width, fi) / maxW) * 1.1 };
-    }).filter((h) => h.live);
-
-    const xsv = (fi: number, W: number) => PAD + ((W - PAD * 2) * fi) / (N - 1);
-    const ysv = (v: number, H: number) => H - PAD - (H - PAD * 2) * (v / maxW) * 0.88;
-
     let raf = 0, t0 = 0;
     const draw = (ts: number) => {
       if (!t0) t0 = ts;
-      const t = ts - t0;
-      const m = monoRef.current;
-      const glow = m ? "111,209,255" : up ? "70,201,138" : "226,114,111";
-      const dust = m ? "150,205,255" : up ? "120,205,160" : "230,150,150";
-      const W = c.width, H = c.height;
-      vctx.clearRect(0, 0, W, H);
-      // ridge fill
-      vctx.beginPath(); vctx.moveTo(xsv(0, W), H - PAD);
-      for (let i = 0; i < N; i++) vctx.lineTo(xsv(i, W), ysv(width[i], H));
-      vctx.lineTo(xsv(N - 1, W), H - PAD); vctx.closePath();
-      const g = vctx.createLinearGradient(0, PAD, 0, H);
-      g.addColorStop(0, `rgba(${glow},0.08)`); g.addColorStop(1, `rgba(${glow},0)`);
-      vctx.fillStyle = g; vctx.fill();
-      // haze dust (density ~ width)
-      vctx.globalCompositeOperation = "lighter";
-      for (const hp of haze) {
-        if (!reduced) { hp.fi += 0.02; if (hp.fi > N - 1) hp.fi -= N - 1; }
-        const top = ysv(lerp(width, hp.fi), H), y = top + (H - PAD - top) * hp.r;
-        const tw = 0.4 + 0.6 * Math.sin(t * 0.003 + hp.ph);
-        vctx.fillStyle = `rgba(${dust},${0.05 + tw * 0.12})`;
-        vctx.fillRect(xsv(hp.fi, W), y, 1.2 * DPR, 1.2 * DPR);
-      }
-      // ridge line
-      vctx.strokeStyle = `rgba(${dust},0.6)`; vctx.lineWidth = 1.2 * DPR; vctx.beginPath();
-      for (let j = 0; j < N; j++) { const x = xsv(j, W), y = ysv(width[j], H); j === 0 ? vctx.moveTo(x, y) : vctx.lineTo(x, y); }
-      vctx.stroke();
-      vctx.globalCompositeOperation = "source-over";
+      render(ctx, c.width, c.height, ts - t0, monoRef.current, DPR, reduced, state);
       if (!reduced) raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     if (reduced) draw(0);
     const onResize = () => fit();
     window.addEventListener("resize", onResize);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
-    };
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candles, symbol]);
-  return <canvas ref={ref} className="ana-canvas" aria-label="Volatility range width" />;
+  return <canvas ref={ref} className="ana-metric-canvas" aria-hidden="true" />;
+}
+
+const glowFor = (mono: boolean, dir: number) => (mono ? "111,209,255" : dir >= 0 ? "70,201,138" : "226,114,111");
+const dustFor = (mono: boolean, dir: number) => (mono ? "150,200,255" : dir >= 0 ? "120,205,160" : "230,150,150");
+
+function Metrics({ candles, mono, symbol }: { candles: Candle[]; mono: boolean; symbol: string }) {
+  const s = useMemo(() => metricStats(candles), [candles]);
+  const momState = s.rsiNow > 70 ? "Overbought" : s.rsiNow < 30 ? "Oversold" : s.rsiRising ? "Firm · rising" : "Softening";
+  const trendState = Math.abs(s.stretchNow) < 0.3 ? "Near fair" : s.stretchNow > 0 ? "Extended up" : "Extended down";
+  const rangeState = s.rangePct > 80 ? "Near highs" : s.rangePct < 20 ? "Near lows" : "Mid-range";
+
+  // Momentum — horizontal RSI oscillator with 30/70 zones + dust + live bead.
+  const momCanvas = (
+    <MetricCanvas
+      candles={candles} mono={mono} symbol={symbol}
+      setup={(n) => Array.from({ length: 90 }, () => ({ fi: Math.random() * (n - 1), ph: Math.random() * 6.28 }))}
+      render={(ctx, W, H, t, m, DPR, reduced, st) => {
+        const dust = st as { fi: number; ph: number }[];
+        const rsi = s.rsi, rN = rsi.length;
+        const glow = glowFor(m, s.rsiRising ? 1 : -1), dcol = dustFor(m, s.rsiRising ? 1 : -1);
+        const padX = 15 * DPR, y0 = H * 0.74, amp = H * 0.5;
+        ctx.clearRect(0, 0, W, H);
+        const tW = W - padX * 2;
+        ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1; ctx.setLineDash([2 * DPR, 3 * DPR]);
+        [30, 70].forEach((z) => { const zx = padX + (tW * z) / 100; ctx.beginPath(); ctx.moveTo(zx, y0 - amp); ctx.lineTo(zx, y0 + 6 * DPR); ctx.stroke(); });
+        ctx.setLineDash([]);
+        ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.lineWidth = 1.5 * DPR; ctx.beginPath(); ctx.moveTo(padX, y0); ctx.lineTo(padX + tW, y0); ctx.stroke();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = `rgba(${glow},0.5)`; ctx.lineWidth = 1.4 * DPR; ctx.beginPath();
+        for (let i = 0; i < rN; i++) { const x = padX + (tW * i) / (rN - 1), yy = y0 - (rsi[i] / 100) * amp; i === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy); }
+        ctx.stroke();
+        for (const d of dust) { if (!reduced) { d.fi += 0.02; if (d.fi > rN - 1) d.fi -= rN - 1; } const x = padX + (tW * d.fi) / (rN - 1), top = y0 - (lerp(rsi, d.fi) / 100) * amp, yy = top + (y0 - top) * (0.15 + 0.8 * Math.abs(Math.sin(d.ph + t * 0.001))); const tw = 0.4 + 0.6 * Math.sin(t * 0.003 + d.ph); ctx.fillStyle = `rgba(${dcol},${0.05 + tw * 0.1})`; ctx.fillRect(x, yy, 1.1 * DPR, 1.1 * DPR); }
+        const cur = rsi[rN - 1], bx = padX + (tW * cur) / 100, by = y0 - (cur / 100) * amp, pulse = reduced ? 1 : 0.6 + 0.4 * Math.sin(t * 0.004);
+        const g = ctx.createRadialGradient(bx, by, 0, bx, by, 13 * DPR); g.addColorStop(0, `rgba(${glow},${0.6 * pulse})`); g.addColorStop(1, `rgba(${glow},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, 13 * DPR, 0, 6.28); ctx.fill();
+        ctx.fillStyle = "#eef3f9"; ctx.beginPath(); ctx.arc(bx, by, 2.6 * DPR, 0, 6.28); ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      }}
+    />
+  );
+
+  // Trend Stretch — centred signed ribbon of price-vs-mean, comet head at now.
+  const trendCanvas = (
+    <MetricCanvas
+      candles={candles} mono={mono} symbol={symbol}
+      setup={(n) => Array.from({ length: 80 }, () => ({ fi: Math.random() * (n - 1), ph: Math.random() * 6.28 }))}
+      render={(ctx, W, H, t, m, DPR, reduced, st) => {
+        const dust = st as { fi: number; ph: number }[];
+        const stretch = s.stretch, N = stretch.length;
+        let sMax = 0.6; for (let i = 0; i < N; i++) sMax = Math.max(sMax, Math.abs(stretch[i]));
+        const cy = H * 0.6, cx = W * 0.5, half = W * 0.4, amp = H * 0.34;
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx, cy - 18 * DPR); ctx.lineTo(cx, cy + 12 * DPR); ctx.stroke();
+        ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.beginPath(); ctx.moveTo(cx - half, cy); ctx.lineTo(cx + half, cy); ctx.stroke();
+        ctx.globalCompositeOperation = "lighter";
+        const glow = glowFor(m, s.stretchNow);
+        ctx.strokeStyle = `rgba(${glow},0.42)`; ctx.lineWidth = 1.3 * DPR; ctx.beginPath();
+        for (let i = 0; i < N; i++) { const x = cx - half + (2 * half * i) / (N - 1), yy = cy - (stretch[i] / sMax) * amp; i === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy); }
+        ctx.stroke();
+        for (const d of dust) { if (!reduced) { d.fi += 0.02; if (d.fi > N - 1) d.fi -= N - 1; } const x = cx - half + (2 * half * d.fi) / (N - 1), v = lerp(stretch, d.fi), yy = cy - (v / sMax) * amp; const tw = 0.4 + 0.6 * Math.sin(t * 0.003 + d.ph); ctx.fillStyle = `rgba(${dustFor(m, v)},${0.05 + tw * 0.1})`; ctx.fillRect(x, yy, 1.1 * DPR, 1.1 * DPR); }
+        const cur = stretch[N - 1], bx = cx + half, by = cy - (cur / sMax) * amp, pulse = reduced ? 1 : 0.6 + 0.4 * Math.sin(t * 0.004);
+        const g = ctx.createRadialGradient(bx, by, 0, bx, by, 13 * DPR); g.addColorStop(0, `rgba(${glow},${0.6 * pulse})`); g.addColorStop(1, `rgba(${glow},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, 13 * DPR, 0, 6.28); ctx.fill();
+        ctx.fillStyle = "#eef3f9"; ctx.beginPath(); ctx.arc(bx, by, 2.6 * DPR, 0, 6.28); ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      }}
+    />
+  );
+
+  // Range Position — vertical thermometer, bead in the right half, clear of label.
+  const rangeCanvas = (
+    <MetricCanvas
+      candles={candles} mono={mono} symbol={symbol}
+      setup={() => Array.from({ length: 70 }, () => ({ f: Math.random(), off: Math.random() - 0.5, ph: Math.random() * 6.28 }))}
+      render={(ctx, W, H, t, m, DPR, reduced, st) => {
+        const dust = st as { f: number; off: number; ph: number }[];
+        const pos = s.rangePct / 100;
+        const glow = glowFor(m, s.rangePct - 50), dcol = dustFor(m, s.rangePct - 50);
+        const x0 = W * 0.66, top = H * 0.34, bot = H * 0.84, colH = bot - top;
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.lineWidth = 1; [top, bot].forEach((yy) => { ctx.beginPath(); ctx.moveTo(x0 - 10 * DPR, yy); ctx.lineTo(x0 + 10 * DPR, yy); ctx.stroke(); });
+        ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0, bot); ctx.stroke();
+        ctx.globalCompositeOperation = "lighter";
+        const py = bot - colH * pos;
+        const grad = ctx.createLinearGradient(0, bot, 0, py); grad.addColorStop(0, `rgba(${glow},0)`); grad.addColorStop(1, `rgba(${glow},0.35)`); ctx.strokeStyle = grad; ctx.lineWidth = 3 * DPR; ctx.beginPath(); ctx.moveTo(x0, bot); ctx.lineTo(x0, py); ctx.stroke();
+        for (const d of dust) { if (!reduced) { d.f += 0.004; if (d.f > 1) d.f -= 1; } const yy = bot - colH * d.f * pos, xx = x0 + d.off * 9 * DPR; const tw = 0.4 + 0.6 * Math.sin(t * 0.003 + d.ph); ctx.fillStyle = `rgba(${dcol},${0.05 + tw * 0.1})`; ctx.fillRect(xx, yy, 1.2 * DPR, 1.2 * DPR); }
+        const pulse = reduced ? 1 : 0.6 + 0.4 * Math.sin(t * 0.004);
+        const g = ctx.createRadialGradient(x0, py, 0, x0, py, 14 * DPR); g.addColorStop(0, `rgba(${glow},${0.6 * pulse})`); g.addColorStop(1, `rgba(${glow},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x0, py, 14 * DPR, 0, 6.28); ctx.fill();
+        ctx.fillStyle = "#eef3f9"; ctx.beginPath(); ctx.arc(x0, py, 2.8 * DPR, 0, 6.28); ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      }}
+    />
+  );
+
+  return (
+    <div className="ana-metrics" aria-label="Price metrics">
+      <MetricShell
+        term="Momentum · RSI 14" def={DEFS.momentum} label="Momentum · RSI 14"
+        state={momState} dir={s.rsiRising ? 1 : -1}
+        big={s.rsiNow.toFixed(0)} sub="of 100" canvas={momCanvas}
+        ariaLabel={`Momentum RSI ${s.rsiNow.toFixed(0)} of 100`}
+      />
+      <MetricShell
+        term="Trend Stretch" def={DEFS.trend} label="Trend Stretch · vs mean"
+        state={trendState} dir={s.stretchNow}
+        big={`${s.stretchNow >= 0 ? "+" : ""}${s.stretchNow.toFixed(1)}%`}
+        sub={s.stretchNow >= 0 ? "above fair" : "below fair"} canvas={trendCanvas}
+        ariaLabel={`Trend stretch ${s.stretchNow.toFixed(1)} percent from mean`}
+      />
+      <MetricShell
+        term="Range Position" def={DEFS.rangePos} label="Range Position · session"
+        state={rangeState} dir={s.rangePct - 50}
+        big={<>{s.rangePct.toFixed(0)}<span className="ana-metric-pct">%</span></>}
+        sub="of hi–lo" canvas={rangeCanvas}
+        ariaLabel={`Range position ${s.rangePct.toFixed(0)} percent of high-low`}
+      />
+    </div>
+  );
 }
