@@ -1,4 +1,5 @@
 import { detectWake } from "./wakeword";
+import { langBcp47 } from "../agent/lang";
 
 /*
  * A thin wrapper over the browser SpeechRecognition API.
@@ -62,7 +63,9 @@ export class Recognizer {
     const rec = new Ctor();
     rec.continuous = true;
     rec.interimResults = true; // needed for the live transcript on the surface
-    rec.lang = "en-US";
+    // Transcribe in the client's chosen language (read at start; changing it in
+    // Account takes effect the next time the mic starts).
+    rec.lang = langBcp47();
     rec.onspeechstart = () => this.h.onSpeechStart?.();
     rec.onresult = (ev: any) => {
       const result = ev.results?.[ev.results.length - 1];

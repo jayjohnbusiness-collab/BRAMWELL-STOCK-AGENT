@@ -17,6 +17,7 @@
  */
 
 import { UNDERSTAND_PROXY } from "../config";
+import { langName, type LangCode } from "./lang";
 
 const KEY = "bramwell.llm.key";
 const ENDPOINT = "https://api.anthropic.com/v1/messages";
@@ -146,6 +147,91 @@ export async function understand(utterance: string): Promise<string | null> {
     const data = (await res.json()) as { content?: { text?: string }[] };
     lastError = "";
     return cleanCommand(data.content?.[0]?.text ?? "");
+  } catch (e) {
+    if ((e as { name?: string })?.name === "AbortError") lastError = "Timed out.";
+    else lastError = String((e as { message?: string })?.message || e);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* ------------------------------------------------------------------------- *
+ * Translation — the other half of speaking a client's language.
+ *
+ * understand() carries a FOREIGN request INTO the English pipeline; translate()
+ * carries the English reply BACK OUT into the client's tongue, using the same
+ * Concierge (managed proxy or a user's key). Numbers, tickers, and company
+ * names pass through untouched. On any failure the caller keeps the English —
+ * Bramwell is never left mute.
+ * ------------------------------------------------------------------------- */
+
+function translateSystem(target: LangCode): string {
+  return `Translate the text into ${langName(target)}. It is a short spoken reply from a stock butler named Bramwell to his client. Keep his warm, concise, composed tone. Leave numbers, percentages, ticker symbols, and company names exactly as written. Output ONLY the translation — no quotes, no notes.`;
+}
+
+function cleanText(raw: string): string | null {
+  const out = raw.trim().replace(/^["'`]|["'`]$/g, "");
+  return out.length > 0 ? out : null;
+}
+
+/**
+ * Translate a finished English reply into `target`. Returns the translated
+ * string, or null when translation is unavailable or fails (caller keeps
+ * English). English target is a no-op that returns the text unchanged.
+ */
+export async function translate(text: string, target: LangCode): Promise<string | null> {
+  const t = text.trim();
+  if (!t) return null;
+  if (target === "en") return t;
+  if (!understandingEnabled()) return null;
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 8000);
+  try {
+    if (usingManagedProxy()) {
+      const res = await fetch(UNDERSTAND_PROXY, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ task: "translate", text: t, target }),
+        signal: abort.signal,
+      });
+      if (!res.ok) {
+        lastError = `Translation proxy error ${res.status}.`;
+        return null;
+      }
+      const data = (await res.json()) as { text?: string | null };
+      lastError = "";
+      return data.text ? cleanText(data.text) : null;
+    }
+
+    const key = llmKey();
+    if (!key) {
+      lastError = "No key set.";
+      return null;
+    }
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 400,
+        system: translateSystem(target),
+        messages: [{ role: "user", content: t }],
+      }),
+      signal: abort.signal,
+    });
+    if (!res.ok) {
+      lastError = `Translation error ${res.status}.`;
+      return null;
+    }
+    const data = (await res.json()) as { content?: { text?: string }[] };
+    lastError = "";
+    return cleanText(data.content?.[0]?.text ?? "");
   } catch (e) {
     if ((e as { name?: string })?.name === "AbortError") lastError = "Timed out.";
     else lastError = String((e as { message?: string })?.message || e);

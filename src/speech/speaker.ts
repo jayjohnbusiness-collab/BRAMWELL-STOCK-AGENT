@@ -7,6 +7,7 @@
 import { Voice } from "./synthesis";
 import { ElevenVoice, hasEleven } from "./eleven";
 import { forSpeech } from "./normalize";
+import { isEnglish } from "../agent/lang";
 
 export class Speaker {
   static supported(): boolean {
@@ -27,7 +28,9 @@ export class Speaker {
     if (!text.trim()) return;
     // Expand compact units ("8h 30m" → "8 hours 30 minutes") so whichever engine
     // speaks reads them naturally. The on-screen text keeps its compact form.
-    const spoken = forSpeech(text);
+    // English only — the expansions are English words, and a translated reply is
+    // already spelled out for its own language.
+    const spoken = isEnglish() ? forSpeech(text) : text;
     if (hasEleven()) {
       if (!this.eleven) this.eleven = new ElevenVoice(this.onSpeakingChange);
       // Stop the browser voice in case it was mid-line, then speak naturally;

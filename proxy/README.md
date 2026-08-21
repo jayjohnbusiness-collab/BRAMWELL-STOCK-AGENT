@@ -1,24 +1,34 @@
 # Bramwell understanding proxy
 
 A tiny serverless endpoint that holds **one** Anthropic API key server-side so
-Bramwell's AI-understanding fallback works for **every** user — no one brings
-their own key. The browser only ever sends the user's phrase; the proxy builds
-the whole model request and returns a single canonical command.
+Bramwell's AI-understanding **and** multilingual replies work for **every**
+user — no one brings their own key. It serves two tasks, both with the proxy
+(not the caller) fixing the model and prompt so it can't be abused.
 
 **Contract**
 
 ```
+# 1) Understand — turn any phrasing into one canonical command
 POST <proxy-url>
-Content-Type: application/json
 { "utterance": "any names worth keeping an eye on?" }
 
 200 OK
 { "command": "top gainers today" }   // or { "command": null }
+
+
+# 2) Translate — carry an English reply into the client's language
+POST <proxy-url>
+{ "task": "translate", "text": "Meridian leads, up 3.2%.", "target": "es" }
+
+200 OK
+{ "text": "Meridian encabeza, sube 3,2%." }   // or { "text": null }
 ```
 
-Because the proxy — not the caller — fixes the model, system prompt, and a tiny
-`max_tokens`, the endpoint can only ever return a short stock command. It can't
-be used as a free general-purpose Claude, and each call costs ~$0.0003.
+`target` is one of `es` `fr` `de` `pt` `it` (`en` is a passthrough). Because the
+proxy fixes the model, system prompt, and a tiny `max_tokens`, understand can
+only ever return a short stock command and translate only a short reply — it
+can't be used as a free general-purpose Claude, and each call costs a fraction
+of a cent.
 
 ---
 

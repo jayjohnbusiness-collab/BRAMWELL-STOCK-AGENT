@@ -12,7 +12,8 @@ import {
   DEFAULT_VOICE,
   BRITISH_VOICE,
 } from "../speech/eleven";
-import { hasLLMKey, llmKey, setLLMKey, understand, llmLastError, usingManagedProxy } from "../agent/understand";
+import { hasLLMKey, llmKey, setLLMKey, understand, llmLastError, usingManagedProxy, understandingEnabled } from "../agent/understand";
+import { LANGS, getLang, setLang, isLangPinned, detectLang, langName, type LangCode } from "../agent/lang";
 import { currentTheme, setTheme, type Theme } from "../theme";
 import { chimeMuted, setChimeMuted } from "../chime";
 import { PortfolioCard } from "./cards/PortfolioCard";
@@ -86,6 +87,10 @@ export function AccountPanel({ ctx, onClose }: { ctx: CardContext; onClose: () =
 
         <Section title="AI understanding">
           <UnderstandingSection />
+        </Section>
+
+        <Section title="Language">
+          <LanguageSection />
         </Section>
 
         <Section title="Preferences">
@@ -407,6 +412,53 @@ function UnderstandingSection() {
           Enable
         </button>
       </form>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- Language */
+
+function LanguageSection() {
+  const [, force] = useState(0);
+  const enabled = understandingEnabled();
+  const pinned = isLangPinned();
+  const current = getLang();
+  const detected = detectLang();
+
+  function choose(v: string) {
+    setLang(v === "auto" ? "auto" : (v as LangCode));
+    force((n) => n + 1);
+  }
+
+  return (
+    <div className="account-live">
+      <p className="account-muted" style={{ margin: 0 }}>
+        Bramwell listens and replies in your language. It follows your device by default — change it any time.
+      </p>
+      <label className="account-lang-field">
+        <span className="account-muted" style={{ fontSize: "0.8rem" }}>
+          Speak &amp; reply in
+        </span>
+        <select
+          className="account-select"
+          aria-label="Language"
+          value={pinned ? current : "auto"}
+          onChange={(e) => choose(e.target.value)}
+        >
+          <option value="auto">Auto-detect (now: {langName(detected)})</option>
+          {LANGS.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.native} — {l.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {current !== "en" && !enabled ? (
+        <p className="account-muted" style={{ margin: "8px 0 0", fontSize: "0.8rem" }}>
+          To understand and reply in {langName(current)}, turn on <strong>AI understanding</strong> above. Without it
+          Bramwell will still hear you in {langName(current)}, but answer in English.
+        </p>
+      ) : null}
     </div>
   );
 }

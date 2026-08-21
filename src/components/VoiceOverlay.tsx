@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { VoiceOrb } from "./VoiceOrb";
+import { ui } from "../agent/lang";
 import "../styles/voice.css";
 
 /*
@@ -38,20 +39,21 @@ export function VoiceOverlay({
     return () => window.removeEventListener("keydown", onKey);
   }, [onExit]);
 
+  const t = ui();
   const label = error
     ? ""
     : working
       ? ""
       : interim.trim()
-        ? "Listening"
+        ? t.listening
         : lastReply
           ? "Bramwell"
-          : "Listening";
+          : t.listening;
 
   return (
     <div className="voice-overlay" role="dialog" aria-modal="true" aria-label="Voice mode">
       <button ref={exitRef} type="button" className="voice-exit" onClick={onExit}>
-        Done
+        {t.done}
       </button>
 
       <div className="voice-orb-wrap">
@@ -82,7 +84,7 @@ export function VoiceOverlay({
         ) : lastReply ? (
           <p className="voice-answer">{lastReply}</p>
         ) : (
-          <p className="voice-transcript">Listening — just ask your question.</p>
+          <p className="voice-transcript">{t.prompt}</p>
         )}
       </div>
     </div>

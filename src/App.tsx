@@ -14,7 +14,8 @@ import {
 } from "./agent/nlu";
 import type { Instrument, ScreenPayload } from "./agent/types";
 import { learnedAnswer, teach } from "./agent/learned";
-import { understandingEnabled, understand } from "./agent/understand";
+import { understandingEnabled, understand, translate } from "./agent/understand";
+import { getLang, isEnglish } from "./agent/lang";
 import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
 import { useMarketFeed } from "./hooks/useMarketFeed";
@@ -254,10 +255,7 @@ export default function App() {
         ? `${reply.spoken} If you tell me the answer, I'll remember it for next time.`
         : reply.spoken;
     if (reply.learnable) setTeachQ(original);
-    if (spoken.trim().length > 0) {
-      setMessages((prev) => [...prev, chatMsg("bramwell", spoken)]);
-      voice.speak(spoken); // spoken aloud only when voice is on
-    }
+    if (spoken.trim().length > 0) emit(spoken);
     if (reply.screen && reply.screen.kind !== "none") setScreen(reply.screen);
     setAwaitingChoice(Boolean(reply.awaitingChoice));
     persist(); // Bramwell may have edited the watchlist ("watch Tesla")
@@ -273,10 +271,7 @@ export default function App() {
     if (loadBriefedOn() === today) return; // already greeted today
     void buildBriefing(true).then(({ text }) => {
       saveBriefedOn(today);
-      if (text) {
-        setMessages((prev) => [...prev, chatMsg("bramwell", text)]);
-        voice.speak(text); // a no-op unless voice mode is already on
-      }
+      if (text) emit(text);
     });
     // buildBriefing reads stable refs; run once, when prices first hydrate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,8 +281,7 @@ export default function App() {
   wakeAckRef.current = () => {
     voice.cancel();
     const line = "At your service. What can I do for you?";
-    setMessages((prev) => [...prev, chatMsg("bramwell", line)]);
-    voice.speak(line);
+    emit(line);
   };
 
   // A fired trigger: Bramwell speaks up in chat, and (if allowed) a browser
@@ -298,8 +292,7 @@ export default function App() {
       const i = market.bySymbol(t.symbol);
       const q = { price: i?.basePrice ?? t.value, changePct: i?.changePct ?? 0 };
       const line = firedLine(t, q);
-      setMessages((prev) => [...prev, chatMsg("bramwell", line)]);
-      voice.speak(line);
+      emit(line);
       fireNotification("Bramwell", line);
     }
     forceRender((n) => n + 1);
@@ -318,8 +311,7 @@ export default function App() {
     const inst = r.instrument;
     if (!inst) {
       const msg = r.ok ? "I couldn't quite place that name." : r.message;
-      setMessages((prev) => [...prev, chatMsg("bramwell", msg)]);
-      voice.speak(msg);
+      emit(msg);
       return;
     }
     let kind: TriggerKind = spec.kind === "cross" ? "above" : spec.kind;
@@ -332,15 +324,41 @@ export default function App() {
       kind === "move"
         ? `Very good — I'll let you know if ${name} moves ${spec.value}% either way.`
         : `Very good — I'll tell you the moment ${name} goes ${kind} ${spec.value}.`;
-    setMessages((prev) => [...prev, chatMsg("bramwell", line)]);
-    voice.speak(line);
+    emit(line);
     setScreen({ kind: "quote", instrument: inst });
     forceRender((n) => n + 1);
   }
 
-  function say(text: string) {
+  // Put an English reply on screen and speak it, verbatim.
+  function pushReply(text: string) {
     setMessages((prev) => [...prev, chatMsg("bramwell", text)]);
-    voice.speak(text);
+    voice.speak(text); // spoken aloud only when voice is on
+  }
+
+  // Every Bramwell reply flows through here. In English it shows immediately;
+  // in another language it is translated first (a brief working state), then
+  // shown and spoken in that tongue. If translation is unavailable or fails,
+  // the English stands — Bramwell is never left mute.
+  function emit(text: string) {
+    if (!text.trim()) return;
+    if (isEnglish() || !understandingEnabled()) {
+      pushReply(text);
+      return;
+    }
+    setWorking(true);
+    translate(text, getLang())
+      .then((tr) => {
+        setWorking(false);
+        pushReply(tr || text);
+      })
+      .catch(() => {
+        setWorking(false);
+        pushReply(text);
+      });
+  }
+
+  function say(text: string) {
+    emit(text);
   }
 
   // Record a position from chat, resolving/tracking the name first. A missing
@@ -503,8 +521,7 @@ export default function App() {
     setWorking(false);
     const line =
       text ?? "Nothing on your watch just yet — add a few names and I'll keep the book for you.";
-    setMessages((prev) => [...prev, chatMsg("bramwell", line)]);
-    voice.speak(line);
+    emit(line);
     if (heldRows.length) setScreen({ kind: "table", title: "Your holdings", rows: heldRows });
   }
 
@@ -637,10 +654,7 @@ export default function App() {
       ? `Of course. I'll keep an eye on ${cap(r.instrument.name)} for you.`
       : r.message;
 
-    if (spoken.trim().length > 0) {
-      setMessages((prev) => [...prev, chatMsg("bramwell", spoken)]);
-      voice.speak(spoken);
-    }
+    if (spoken.trim().length > 0) emit(spoken);
     if (r.instrument) setScreen({ kind: "quote", instrument: r.instrument });
     setAwaitingChoice(false);
   }

@@ -134,6 +134,32 @@
   border-color: var(--brass);
 }
 
+/* --- Language --- */
+.account-lang-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+.account-select {
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.account-select:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-color: var(--brass);
+}
+
 /* --- Preferences --- */
 .account-prefs {
   display: flex;
