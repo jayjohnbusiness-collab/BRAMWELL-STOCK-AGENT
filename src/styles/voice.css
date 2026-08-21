@@ -14,8 +14,14 @@
   /* Always a dark surface, so text is a fixed parchment — never the theme's
      --paper (which is dark in dark mode and would vanish here). */
   color: #eef2f7;
+  /* "Obsidian": the orb is the star. A near-black ground with a single soft,
+     cool lift directly behind the orb (centred on 50% 40%, where the orb sits)
+     so it floats free, and a dark vignette that keeps the edges — and the Done
+     control and readout — clean. Nothing here moves; only the orb breathes. */
   background:
-    radial-gradient(circle at 50% 40%, #1c2836 0%, #16202e 46%, #0c121b 100%);
+    radial-gradient(68% 58% at 50% 40%, rgba(32, 54, 76, 0.55) 0%, rgba(22, 40, 58, 0.22) 45%, rgba(22, 40, 58, 0) 72%),
+    radial-gradient(130% 118% at 50% 40%, rgba(5, 7, 11, 0) 40%, rgba(5, 7, 11, 0.55) 76%, #05070b 100%),
+    #05070b;
   animation: voice-fade-in 320ms ease;
 }
 
