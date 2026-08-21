@@ -21,10 +21,14 @@
 
 .wordmark {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 26px;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  font-size: 22px;
+  /* Meridian: institutional, uppercase, wide-tracked. */
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   line-height: 1;
+  /* the tracking adds trailing space; nudge back so the lockup stays tight */
+  padding-left: 0.14em;
 }
 
 /* The market pill takes the leading auto-margin so the whole right cluster

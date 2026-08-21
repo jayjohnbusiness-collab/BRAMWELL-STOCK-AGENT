@@ -10,7 +10,7 @@ shareable version lives as an artifact; this is the copy that ships with the cod
 Structured on the Harvard Business School Online brand-identity framework
 (persona · value proposition · visual standards · voice, anchored in core
 values). All values are drawn from the live product — `src/styles/tokens.css`,
-`src/brand/Bell.tsx`, `src/styles/typography.css`, and Bramwell's own voice.
+`src/brand/Mark.tsx`, `src/styles/typography.css`, and Bramwell's own voice.
 
 ---
 
@@ -97,13 +97,14 @@ he can't help, he demurs gracefully — never an error, never an apology loop.
 
 ## 06 · The mark
 
-A butler's call bell — the small domed bell on a hall desk. It means *summon and
-notify*, reads cleanly at 16px, and quietly rhymes with **bellwether**. It sits to
-the right of the wordmark. Two tones: brass (the accent) for brand use, ink for
-monochrome. Source: `src/brand/Bell.tsx`.
+**The Arch** — the vault, the portico, the threshold you're admitted through:
+banking's oldest symbol of stability and custody. The old call bell's dome still
+lives in its curve (Bramwell began as a butler's bell; "bellwether" endures in
+the name), now distilled to exact geometry. It sits to the right of the wordmark.
+Two tones: accent for brand use, ink for monochrome. Source: `src/brand/Mark.tsx`.
 
-- Never animated as a ringing bell. **Bramwell does not jingle.**
-- Never tilted, multiplied, or filled with gradients.
+- Never animated. Bramwell keeps the watch; he does not fuss.
+- Never tilted, outlined, or filled with gradients — one solid fill.
 - Give it room — the wordmark and mark are one lockup.
 
 ## 07 · Typography
@@ -112,6 +113,10 @@ monochrome. Source: `src/brand/Bell.tsx`.
 grotesque that stays composed at every size. Hierarchy comes from weight (400 /
 500 / 600 / 700) and scale, not a second face. Numbers use tabular figures so
 columns align.
+
+**The wordmark** is set apart: **BRAMWELL** in Archivo 700, **uppercase and
+wide-tracked** (~0.14em) — the institutional, private-bank register. Screen text
+stays sentence-case; only the wordmark is set this way.
 
 ## 08 · Color — two rooms, one house
 
@@ -129,8 +134,8 @@ values, never as décor.
 | Ink | `#1B2430` |
 | Ink-soft | `#5B6672` |
 | Rule | `#E4E9EF` |
-| Accent | `#2563A8` |
-| Accent (pressed) | `#1F5493` |
+| Accent (Meridian navy) | `#2B4A74` |
+| Accent (pressed) | `#1B3557` |
 
 **Night · workspace (dark)**
 
@@ -139,7 +144,7 @@ values, never as décor.
 | Ground | `#0F141B` |
 | Paper | `#182029` |
 | Ink | `#E8EEF4` |
-| Accent | `#4A97E0` |
+| Accent | `#5F93CF` |
 
 **Obsidian · voice sanctum & data**
 
@@ -164,7 +169,7 @@ values, never as décor.
 - Never give financial advice, tips, or price targets — report, don't recommend.
 - Never manufacture urgency: no rockets, klaxons, exclamation storms, or FOMO.
 - Never leave the client mute — if a reply fails, fall back gracefully.
-- Never ring or animate the bell; never neon-ify the palette; never add a second typeface.
+- Never animate or outline the mark; never neon-ify the palette; never add a second typeface.
 - Never dump jargon on the client — plain words, with a quiet definition on request.
 - Never let translation flatten the butler — his manner survives every language.
 

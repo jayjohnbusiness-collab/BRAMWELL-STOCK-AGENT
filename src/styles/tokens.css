@@ -14,9 +14,10 @@
   --ink-soft: #5b6672; /* secondary text, labels */
   --rule: #e4e9ef; /* hairlines, dividers, card borders */
 
-  /* The single accent — a calm slate-blue. Used freely now, not rationed. */
-  --brass: #2563a8; /* (token name kept; value is the new accent) */
-  --brass-strong: #1f5493; /* hover / pressed */
+  /* The single accent — Meridian's sober institutional navy (deeper and
+     graver than the old slate-blue), used for the mark, links, and controls. */
+  --brass: #2b4a74; /* (token name kept; value is the Meridian accent) */
+  --brass-strong: #1b3557; /* hover / pressed */
   --accent-tint: #eaf1f9; /* soft accent wash for the alert card */
   --accent-line: #cfe0f2; /* accent-tinted border */
   --oxblood: #7a2e2e; /* rare deep emphasis */
@@ -80,8 +81,9 @@
   --ink-soft: #99a6b4;
   --rule: #28323f;
 
-  --brass: #4a97e0;
-  --brass-strong: #66a9ea;
+  /* Meridian accent on the dark ground — a sober steel-blue, legible but grave. */
+  --brass: #5f93cf;
+  --brass-strong: #82abdc;
   --accent-tint: #14273a;
   --accent-line: #2c4a66;
   --oxblood: #cf7a7a;

@@ -29,7 +29,7 @@ import { playChime } from "./chime";
 import { PortfolioStore } from "./portfolio/store";
 import { valuePosition, portfolioTotals } from "./portfolio/types";
 import { money } from "./components/cards/parts";
-import { Bell } from "./brand/Bell";
+import { Mark } from "./brand/Mark";
 import { Conversation, type ChatMessage } from "./components/Conversation";
 import { Composer } from "./components/Composer";
 import { CardBoard } from "./components/CardBoard";
@@ -744,7 +744,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <span className="wordmark">Bramwell</span>
-        <Bell size={30} tone="brass" />
+        <Mark size={30} tone="brass" />
         <span className="tagline small state-note">Your market, kept in order.</span>
         {/* Market status sits top-right, across from the logo (its own row on
             mobile; grouped with the actions on desktop). */}

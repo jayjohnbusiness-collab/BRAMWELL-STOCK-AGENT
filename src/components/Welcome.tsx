@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Bell } from "../brand/Bell";
+import { Mark } from "../brand/Mark";
 import { hasToken } from "../feed/token";
 import "../styles/welcome.css";
 
@@ -38,7 +38,7 @@ export function Welcome({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="welcome-mark">
-          <Bell size={34} tone="brass" />
+          <Mark size={34} tone="brass" />
           <span className="welcome-word">Bramwell</span>
         </div>
 

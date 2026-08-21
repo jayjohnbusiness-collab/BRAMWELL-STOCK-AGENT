@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell } from "../brand/Bell";
+import { Mark } from "../brand/Mark";
 import { hasRequestedAccess, looksLikeEmail, submitWaitlist } from "../waitlist";
 import "../styles/earlyaccess.css";
 
@@ -64,7 +64,7 @@ export function EarlyAccess({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="ea-mark">
-          <Bell size={30} tone="brass" />
+          <Mark size={30} tone="brass" />
           <span className="ea-word">Bramwell Concierge</span>
         </div>
 

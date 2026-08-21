@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell } from "../brand/Bell";
+import { Mark } from "../brand/Mark";
 import { VoiceOrb } from "./VoiceOrb";
 import { Login } from "./Login";
 import { EarlyAccess } from "./EarlyAccess";
@@ -107,7 +107,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       {/* ---------------------------------------------------------- Nav */}
       <header className="lp-nav">
         <a className="lp-brand" href="#home">
-          <Bell size={26} tone="brass" />
+          <Mark size={26} tone="brass" />
           <span className="lp-word">Bramwell</span>
         </a>
         <nav className="lp-links">
@@ -283,7 +283,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       {/* ------------------------------------------------------ Footer */}
       <footer className="lp-footer">
         <div className="lp-brand">
-          <Bell size={22} tone="brass" />
+          <Mark size={22} tone="brass" />
           <span className="lp-word">Bramwell</span>
         </div>
         <span className="lp-foot-tag">Your market, kept in order.</span>
@@ -306,7 +306,7 @@ function Preview() {
     <div className="lp-preview card">
       <div className="lp-preview-head">
         <span className="lp-preview-word">Bramwell</span>
-        <Bell size={20} tone="brass" />
+        <Mark size={20} tone="brass" />
         <span className="lp-preview-tag">Your market, kept in order.</span>
       </div>
       <div className="lp-preview-rows">

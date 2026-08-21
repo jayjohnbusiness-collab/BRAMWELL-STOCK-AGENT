@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell } from "../brand/Bell";
+import { Mark } from "../brand/Mark";
 import { checkLogin } from "../auth";
 import "../styles/login.css";
 
@@ -56,7 +56,7 @@ export function Login({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="login-mark">
-          <Bell size={30} tone="brass" />
+          <Mark size={30} tone="brass" />
           <span className="login-word">Bramwell</span>
         </div>
 
