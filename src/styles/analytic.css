@@ -87,7 +87,7 @@
   pointer-events: none;
 }
 .ana-help-card b {
-  display: block; color: var(--live); font-family: "Archivo", system-ui, sans-serif;
+  display: block; color: var(--live); font-family: var(--font-display);
   font-weight: 700; font-size: 11px; letter-spacing: 0.02em; text-transform: none; margin-bottom: 4px;
 }
 .ana-help-card span {
@@ -103,14 +103,15 @@
 .ana-semantic .dn { color: var(--ana-down); }
 
 /* -------------------------------------------------------------- top strip */
-/* The header band matches the main page's: the main sits inside 32px of page
-   padding over a 49px header (~81px of visible band), so give the top strip the
-   same total presence with the lockup centred. */
-.ana-top { display: flex; align-items: center; gap: 20px; padding: 25px 28px; background: var(--void); flex-wrap: wrap; }
+/* Match the dashboard header exactly so the lockup doesn't move on the
+   transition into The Study: the wordmark lands at left 48 / top 38 and the mark
+   at top 34, in an ~81px band — the same coordinates as the main page (whose
+   header sits inside 48px side / 32px top page padding). */
+.ana-top { display: flex; align-items: center; gap: 20px; padding: 34px 48px 17px; background: var(--void); flex-wrap: wrap; }
 /* The lockup matches the main page exactly: 22px wordmark + 30px Arch mark,
    12px gap, 0.14em tracking, ink. */
 .ana-brand { display: flex; align-items: center; gap: 12px; }
-.ana-brand b { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 22px; line-height: 1; letter-spacing: 0.14em; text-transform: uppercase; padding-left: 0.14em; }
+.ana-brand b { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1; letter-spacing: 0.14em; text-transform: uppercase; padding-left: 0.14em; }
 .ana-brand .ana-accent { letter-spacing: 0.22em; font-size: 10px; text-transform: uppercase; }
 .ana-live { display: inline-flex; align-items: center; gap: 8px; }
 .ana-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); box-shadow: 0 0 10px var(--live); animation: ana-blink 2.2s ease-in-out infinite; }
@@ -178,7 +179,7 @@
 .ana-stage { background: var(--panel); position: relative; overflow: hidden; min-width: 0; }
 .ana-surface-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .ana-stage-head { position: absolute; top: 13px; left: 16px; right: 16px; display: flex; justify-content: space-between; gap: 10px; z-index: 2; pointer-events: none; }
-.ana-title { font-family: "Archivo", system-ui, sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 0.01em; }
+.ana-title { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: 0.01em; }
 .ana-peak { position: absolute; top: 22%; left: 55%; z-index: 2; pointer-events: none; }
 .ana-peak-tag { color: var(--live); font-size: 11px; }
 .ana-peak-val { display: block; font-family: var(--m); font-weight: 700; font-size: 18px; }
