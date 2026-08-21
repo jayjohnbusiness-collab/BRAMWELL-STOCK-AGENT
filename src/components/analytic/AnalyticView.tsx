@@ -289,9 +289,8 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Risk appetite<HelpDot term="Risk appetite" def={DEFS.riskAppetite} /></span>
-            <p className="ana-read">Money's leaning into risk — and still widening.</p>
             <div className="ana-big ana-num">68<span className="ana-big-sub">/100</span></div>
-            <span className="ana-lab ana-accent">Risk-on · expanding</span>
+            <span className="ana-lab ana-accent">Risk-on · expanding — and widening</span>
             <div className="ana-meter"><i style={{ width: "68%" }} /></div>
           </div>
           <div className="ana-tile">
