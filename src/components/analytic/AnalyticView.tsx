@@ -243,7 +243,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
       <header className="ana-top">
         <div className="ana-brand">
           <b>BRAMWELL</b>
-          <Mark size={22} tone="ink" title="Bramwell" />
+          <Mark size={30} tone="ink" title="Bramwell" />
           <span className="ana-lab ana-accent">The Study</span>
         </div>
         <span className="ana-live">

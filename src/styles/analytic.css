@@ -103,9 +103,11 @@
 .ana-semantic .dn { color: var(--ana-down); }
 
 /* -------------------------------------------------------------- top strip */
-.ana-top { display: flex; align-items: center; gap: 20px; padding: 11px 18px; background: var(--void); flex-wrap: wrap; }
-.ana-brand { display: flex; align-items: center; gap: 9px; }
-.ana-brand b { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 0.14em; text-transform: uppercase; padding-left: 0.14em; }
+.ana-top { display: flex; align-items: center; gap: 20px; padding: 9px 18px; background: var(--void); flex-wrap: wrap; }
+/* The lockup matches the main page exactly: 22px wordmark + 30px Arch mark,
+   12px gap, 0.14em tracking, ink. */
+.ana-brand { display: flex; align-items: center; gap: 12px; }
+.ana-brand b { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 22px; line-height: 1; letter-spacing: 0.14em; text-transform: uppercase; padding-left: 0.14em; }
 .ana-brand .ana-accent { letter-spacing: 0.22em; font-size: 10px; text-transform: uppercase; }
 .ana-live { display: inline-flex; align-items: center; gap: 8px; }
 .ana-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); box-shadow: 0 0 10px var(--live); animation: ana-blink 2.2s ease-in-out infinite; }
