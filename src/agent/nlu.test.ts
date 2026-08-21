@@ -44,6 +44,26 @@ describe("parse — watch intent", () => {
   });
 });
 
+describe("parse — my top/highest performers reads the watchlist", () => {
+  it("classifies 'my highest performing stocks' as watchlist gainers", () => {
+    const i = parse("tell me my highest performing stocks of the day");
+    expect(i.kind).toBe("query");
+    expect(i.metric).toBe("gainers");
+    expect(i.universe).toBe("watchlist");
+  });
+
+  it("handles 'my best performers today' and 'my top movers'", () => {
+    expect(parse("what are my best performers today")).toMatchObject({ metric: "gainers", universe: "watchlist" });
+    expect(parse("show my strongest names")).toMatchObject({ metric: "gainers", universe: "watchlist" });
+  });
+
+  it("still reads whole-market gainers when not possessive", () => {
+    const i = parse("who are today's top performers");
+    expect(i.metric).toBe("gainers");
+    expect(i.universe).toBeUndefined();
+  });
+});
+
 describe("watchTarget — name extraction", () => {
   const cases: Array<[string, string]> = [
     ["can you add Shell to my stock", "Shell"],

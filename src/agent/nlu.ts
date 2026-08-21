@@ -47,7 +47,7 @@ const HELP =
   /\b(what can you do|who are you|what are you|how do you work|help me understand|what do you (do|watch|follow))\b/i;
 
 const GAINERS =
-  /\b(gainers?|top performers?|best performers?|winners?|leading|leaders|carrying|who'?s up|up the most|biggest gains?|advancers?)\b/i;
+  /\b(gainers?|top performers?|best performers?|highest[\s-]?performing|best[\s-]?performing|top[\s-]?performing|highest performers?|strongest|winners?|leading|leaders|carrying|who'?s up|up the most|biggest gains?|advancers?)\b/i;
 
 const LOSERS =
   /\b(losers?|worst performers?|laggards?|falling|dragging|who'?s down|what'?s down|down the most|biggest (losses|drops)|decliners?)\b/i;
@@ -63,6 +63,12 @@ const FILTER =
 // A whole-portfolio question — a status read when no metric is present.
 const PORTFOLIO =
   /\b(my (portfolio|holdings?|positions?|watchlist)|how('s| is| are) (my|things|we|the portfolio)|my (names?|stuff))\b/i;
+
+// Possessive scoping: "my highest performing stocks", "my top names" — "my"
+// followed (possibly with words between) by a holdings noun means the user's
+// own watchlist, not the whole market.
+const MINE =
+  /\bmy\b[\w\s'-]*\b(stocks?|shares?|holdings?|portfolio|positions?|names?|watch\s?list|book|winners?|losers?|performers?|gainers?|movers?)\b/i;
 
 const NASDAQ = /\b(nasdaq|the market|overall|broadly|today'?s market)\b/i;
 
@@ -290,7 +296,7 @@ export function parse(input: string): Intent {
       : undefined;
 
   const filter = FILTER.test(body);
-  const portfolio = PORTFOLIO.test(body);
+  const portfolio = PORTFOLIO.test(body) || MINE.test(body);
   const universe: Universe | undefined =
     filter || portfolio ? "watchlist" : NASDAQ.test(body) ? "nasdaq" : undefined;
 
