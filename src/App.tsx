@@ -769,7 +769,7 @@ export default function App() {
               type="button"
               className="chip account-btn analytic-btn"
               onClick={() => setAnalyticOpen(true)}
-              title="The Study — Concierge research room"
+              title="The Study — an optional research room for members"
             >
               <span aria-hidden="true" className="analytic-arch">
                 <Mark size={15} tone="brass" title="The Study" />

@@ -32,10 +32,16 @@ their own time over dashboards and dopamine.
 
 **Not for**
 
-- Active day-traders and options desks who want depth, ladders, and speed.
+- Active day-traders and options desks who want a primary trading terminal.
 - Anyone seeking signals, tips, or "what should I buy" — Bramwell reports, he
   doesn't advise.
 - Teams needing multi-seat dashboards and alerts-as-a-service.
+
+**The Study — optional depth, for members.** Members who want more can step into
+**The Study**, a deeper research room (the Concierge tier). It is strictly
+opt-in, always translated into plain words, and the core experience never
+requires it. Offering depth on request does not change who Bramwell is for — it's
+the butler opening a door for a member who asks, not a trading desk bolted on.
 
 ## 03 · What we say
 
