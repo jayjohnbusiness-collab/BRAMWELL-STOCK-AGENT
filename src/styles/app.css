@@ -42,6 +42,12 @@
   gap: var(--space-4);
 }
 
+/* The Study button carries the Arch mark; keep it centred with the label. */
+.analytic-arch {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* Sits just after the wordmark, set off by a hairline divider. */
 .tagline {
   max-width: 40ch;

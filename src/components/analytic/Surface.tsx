@@ -248,7 +248,7 @@ export function Surface({
           const bk = Math.max(0, Math.min(BUCKETS - 1, (bght * BUCKETS) | 0));
           buckets[bk].push(sx, sy);
         }
-      const accent = cfg.current.mono ? "180,224,255" : "84,224,140";
+      const accent = cfg.current.mono ? "150,186,230" : "84,224,140";
       for (let bb = 0; bb < BUCKETS; bb++) {
         const arr = buckets[bb];
         if (!arr.length) continue;

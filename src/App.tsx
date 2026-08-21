@@ -769,9 +769,12 @@ export default function App() {
               type="button"
               className="chip account-btn analytic-btn"
               onClick={() => setAnalyticOpen(true)}
-              title="Bramwell Analytic — Concierge tier"
+              title="The Study — Concierge research room"
             >
-              <span aria-hidden="true">◭</span> <span className="btn-label">Analytic</span>
+              <span aria-hidden="true" className="analytic-arch">
+                <Mark size={15} tone="brass" title="The Study" />
+              </span>{" "}
+              <span className="btn-label">The Study</span>
             </button>
           ) : null}
           <button

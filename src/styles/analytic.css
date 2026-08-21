@@ -1,21 +1,26 @@
 /*
- * Bramwell Analytic Layout — a self-contained monochrome terminal (its own dark
- * palette, independent of the app theme). Fits the viewport as a fixed grid so
- * nothing clips; the ledger columns are fixed-width so the table never scrolls
- * sideways. Semantic colour mode tints gains/losses green/red via .ana-semantic.
+ * The Study — Bramwell's research room. A focused, dark environment that lives
+ * in the house's own Night palette (aligned to the app's dark theme) with the
+ * Meridian steel accent and Archivo throughout; monospace is reserved for
+ * figures alone — the ledger hand. Fits the viewport as a fixed grid so nothing
+ * clips; ledger columns are fixed-width so the table never scrolls sideways.
+ * Semantic colour mode tints gains/losses green/red via .ana-semantic.
  */
 
 .ana {
-  --void: #04060b;
-  --panel: #080b12;
-  --ink: #eef3f9;
-  --dim: #9aa5b3;
-  --faint: #6b7682;
-  --line: rgba(255, 255, 255, 0.07);
-  --line-2: rgba(255, 255, 255, 0.12);
-  --live: #6fd1ff;
+  /* Night palette — the same house, its study lit low. */
+  --void: #0b0f16;
+  --panel: #151c26;
+  --ink: #e8eef4;
+  --dim: #99a6b4;
+  --faint: #67707d;
+  --line: rgba(255, 255, 255, 0.06);
+  --line-2: rgba(255, 255, 255, 0.11);
+  /* The Meridian steel accent, not the voice sanctum's cyan. */
+  --live: #5f93cf;
   --ana-up: #46c98a;
   --ana-down: #e2726f;
+  /* Figures only — aligned numerals in a quiet ledger hand. */
   --m: "Space Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   position: fixed;
@@ -29,9 +34,10 @@
   gap: 1px;
   /* Opaque so the app board never bleeds through; the grid gaps show this as
      subtle hairlines between the panels. */
-  background: #141922;
+  background: #10161f;
   color: var(--ink);
-  font-family: var(--m);
+  /* Archivo carries the room; only figures fall back to the mono ledger hand. */
+  font-family: "Archivo", "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -44,6 +50,18 @@
 
 .ana-lab { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
 
+/* The butler's read — one plain-English line atop a panel, above the figures.
+   Archivo (inherited), sentence case, a shade warmer than the dim labels. */
+.ana-read {
+  margin: 6px 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  color: color-mix(in srgb, var(--ink) 72%, var(--faint));
+  max-width: 34ch;
+}
+
 /* -------------------------------------------------------- help ("?") dots */
 /* keep the label and its dot together as one inline group */
 .ana-with-help { display: inline-flex; align-items: center; }
@@ -51,19 +69,19 @@
 .ana-help-dot {
   margin-left: 6px; width: 14px; height: 14px; flex: none; border-radius: 50%;
   border: 1px solid var(--line-2); background: none; color: var(--dim);
-  font-family: var(--m); font-size: 9px; line-height: 1; cursor: help; padding: 0;
+  font-size: 9px; line-height: 1; cursor: help; padding: 0;
   display: inline-flex; align-items: center; justify-content: center;
   letter-spacing: 0; text-transform: none;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
 .ana-help-dot:hover,
 .ana-help-dot:focus-visible {
-  color: #05121c; background: var(--live); border-color: var(--live); outline: none;
+  color: #0b1017; background: var(--live); border-color: var(--live); outline: none;
 }
 .ana-help-card {
   position: fixed; transform: translateX(-50%); z-index: 120;
   display: block; max-width: 250px; width: max-content; padding: 10px 12px;
-  background: #0b0f18; border: 1px solid color-mix(in srgb, var(--live) 42%, var(--line-2));
+  background: #141b24; border: 1px solid color-mix(in srgb, var(--live) 42%, var(--line-2));
   border-radius: 10px; box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
   pointer-events: none;
 }
@@ -72,10 +90,10 @@
   font-weight: 700; font-size: 11px; letter-spacing: 0.02em; text-transform: none; margin-bottom: 4px;
 }
 .ana-help-card span {
-  display: block; color: var(--ink); font-family: var(--m); font-size: 11px;
+  display: block; color: var(--ink); font-size: 11px;
   line-height: 1.5; letter-spacing: 0; text-transform: none;
 }
-.ana-num { font-variant-numeric: tabular-nums; }
+.ana-num { font-family: var(--m); font-variant-numeric: tabular-nums; }
 .ana-accent { color: var(--live); }
 /* Colour mode: up/down are brightness in mono, green/red in semantic. */
 .ana-mono .up { color: var(--ink); }
@@ -85,9 +103,9 @@
 
 /* -------------------------------------------------------------- top strip */
 .ana-top { display: flex; align-items: center; gap: 20px; padding: 11px 18px; background: var(--void); flex-wrap: wrap; }
-.ana-brand { display: flex; align-items: baseline; gap: 9px; }
-.ana-brand b { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
-.ana-brand .ana-accent { letter-spacing: 0.14em; font-size: 10px; text-transform: uppercase; }
+.ana-brand { display: flex; align-items: center; gap: 9px; }
+.ana-brand b { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; }
+.ana-brand .ana-accent { letter-spacing: 0.22em; font-size: 10px; text-transform: uppercase; }
 .ana-live { display: inline-flex; align-items: center; gap: 8px; }
 .ana-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); box-shadow: 0 0 10px var(--live); animation: ana-blink 2.2s ease-in-out infinite; }
 @keyframes ana-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -95,15 +113,15 @@
 
 .ana-seg { display: inline-flex; gap: 2px; padding: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; }
 .ana-seg button {
-  font-family: var(--m); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+  font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--dim); background: none; border: none; border-radius: 999px; padding: 5px 12px; cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
 .ana-seg button:hover { color: var(--ink); }
-.ana-seg button.on { color: #05121c; background: var(--live); }
+.ana-seg button.on { color: #0b1017; background: var(--live); }
 .ana-seg button:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
 .ana-close {
-  font-family: var(--m); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+  font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--dim); background: none; border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 13px; cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
@@ -157,7 +175,7 @@
 .ana-title { font-family: "Archivo", system-ui, sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 0.01em; }
 .ana-peak { position: absolute; top: 22%; left: 55%; z-index: 2; pointer-events: none; }
 .ana-peak-tag { color: var(--live); font-size: 11px; }
-.ana-peak-val { display: block; font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 18px; }
+.ana-peak-val { display: block; font-family: var(--m); font-weight: 700; font-size: 18px; }
 .ana-peak::before { content: ""; position: absolute; left: -12px; top: 6px; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--live); box-shadow: 0 0 8px var(--live); }
 .ana-axis { position: absolute; z-index: 2; pointer-events: none; }
 .ana-drag-hint { position: absolute; bottom: 14px; right: 16px; z-index: 2; pointer-events: none; opacity: 0.55; }
@@ -167,7 +185,7 @@
 /* tiles */
 .ana-tiles { overflow-y: auto; }
 .ana-tile { padding: 14px 15px; border-bottom: 1px solid var(--line); }
-.ana-big { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 42px; line-height: 1; margin: 6px 0 2px; letter-spacing: -0.01em; }
+.ana-big { font-family: var(--m); font-weight: 700; font-size: 40px; line-height: 1; margin: 6px 0 2px; letter-spacing: -0.02em; }
 .ana-big-sub { font-size: 17px; color: var(--dim); }
 .ana-meter { height: 4px; background: var(--line-2); border-radius: 2px; margin-top: 11px; overflow: hidden; }
 .ana-meter i { display: block; height: 100%; background: var(--live); box-shadow: 0 0 8px var(--live); }
@@ -192,19 +210,19 @@
 .ana-metric-top { position: absolute; top: 9px; left: 14px; z-index: 2; }
 .ana-metric-state { position: absolute; bottom: 9px; left: 14px; z-index: 2; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
 .ana-metric-readout { border-left: 1px solid var(--line); display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding: 0 14px; gap: 3px; text-align: right; }
-.ana-metric-big { font-family: "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 22px; line-height: 1; letter-spacing: -0.01em; color: var(--ink); }
+.ana-metric-big { font-family: var(--m); font-weight: 700; font-size: 21px; line-height: 1; letter-spacing: -0.02em; color: var(--ink); }
 .ana-metric-pct { font-size: 13px; margin-left: 1px; }
 .ana-metric-sub { font-size: 10px; letter-spacing: 0.05em; color: var(--dim); }
 
 /* interval selector — a compact segmented control in the intraday head */
 .ana-iv { display: inline-flex; gap: 1px; padding: 1px; background: var(--void); border: 1px solid var(--line); border-radius: 7px; }
 .ana-iv button {
-  font-family: var(--m); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--dim); background: none; border: none; border-radius: 6px; padding: 3px 8px; cursor: pointer;
   transition: color 0.14s, background 0.14s;
 }
 .ana-iv button:hover { color: var(--ink); }
-.ana-iv button.on { color: #05121c; background: var(--live); }
+.ana-iv button.on { color: #0b1017; background: var(--live); }
 .ana-iv button:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
 
 /* status */

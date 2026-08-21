@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CardContext } from "../../cards/types";
 import type { Candle, ChartRange } from "../../feed/types";
 import { hasToken } from "../../feed/token";
+import { Mark } from "../../brand/Mark";
 import { Surface, symSeed, type SurfaceType } from "./Surface";
 import "../../styles/analytic.css";
 
 /*
- * The Bramwell Analytic Layout — the Concierge tier's pro cockpit. A monochrome
- * terminal built around the point-cloud market surface, framed by an order-flow
+ * The Study — the Concierge tier's research room. Bramwell's own Night palette
+ * and Archivo (monospace for figures only), built around the point-cloud market
+ * surface, framed by an order-flow
  * ledger of the user's real watchlist (click a symbol for its detail), a regime
  * readout, and an intraday path + tape-volume band. Two viewer toggles: colour
  * (monochrome ↔ semantic green/red) and what the surface reads (implied vol,
@@ -236,12 +238,13 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
   const S = surfaceMeta(surface, selected, selInst?.basePrice ?? 100, selInst?.changePct ?? 0);
 
   return (
-    <div className={`ana ${mono ? "ana-mono" : "ana-semantic"}`} role="dialog" aria-label="Bramwell Analytic">
+    <div className={`ana ${mono ? "ana-mono" : "ana-semantic"}`} role="dialog" aria-label="Bramwell — The Study">
       {/* top strip */}
       <header className="ana-top">
         <div className="ana-brand">
           <b>BRAMWELL</b>
-          <span className="ana-lab ana-accent">Analytic</span>
+          <Mark size={19} tone="ink" title="Bramwell" />
+          <span className="ana-lab ana-accent">The Study</span>
         </div>
         <span className="ana-live">
           <span className="ana-dot" />
@@ -286,24 +289,28 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Risk appetite<HelpDot term="Risk appetite" def={DEFS.riskAppetite} /></span>
+            <p className="ana-read">The market's leaning toward risk, and that appetite is still widening.</p>
             <div className="ana-big ana-num">68<span className="ana-big-sub">/100</span></div>
             <span className="ana-lab ana-accent">Risk-on · expanding</span>
             <div className="ana-meter"><i style={{ width: "68%" }} /></div>
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Key levels · {selected}<HelpDot term="Key levels" def={DEFS.keyLevels} /></span>
+            <p className="ana-read">Where {selected} has tended to turn — a ceiling above, a floor below.</p>
             <div className="ana-kv"><span className="dn">Resistance</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 1.021).toFixed(2)}</span></div>
             <div className="ana-kv"><span className="dn">Pivot</span><span className="ana-num">{(selInst?.basePrice ?? 100).toFixed(2)}</span></div>
             <div className="ana-kv"><span className="dn">Support</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 0.979).toFixed(2)}</span></div>
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Unusual flow<HelpDot term="Unusual flow" def={DEFS.unusualFlow} /></span>
+            <p className="ana-read">Bigger-than-usual options bets — a positioning tell, not a verdict.</p>
             <div className="ana-kv"><span>NVDA</span><span className="ana-num up">+4.2σ calls</span></div>
             <div className="ana-kv"><span>TSLA</span><span className="ana-num dn">−2.1σ puts</span></div>
             <div className="ana-kv"><span>AAPL</span><span className="ana-num up">+1.6σ calls</span></div>
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Correlation · 20d<HelpDot term="Correlation" def={DEFS.correlation} /></span>
+            <p className="ana-read">Your names move largely as one — more concentrated in tech than it looks.</p>
             <div className="ana-kv"><span className="dn">Your book ρ</span><span className="ana-num">0.74</span></div>
             <div className="ana-kv"><span className="dn">Concentration</span><span className="ana-num">61% tech</span></div>
           </div>
@@ -409,8 +416,8 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
       <footer className="ana-status">
         <span><span className="ana-accent">●</span> {series.real ? "Finnhub · live data" : "Simulated data"}</span>
         <span>Charts · {series.sym} · {range}</span>
-        <span>Concierge · $100/mo tier</span>
-        <span className="ana-status-r">Bramwell Analytic · v0.1</span>
+        <span>The Study · Concierge tier</span>
+        <span className="ana-status-r">These readings describe the market — they never advise.</span>
       </footer>
     </div>
   );
@@ -508,7 +515,7 @@ function LuminousChannel({ candles, mono, symbol, range }: { candles: Candle[]; 
       const t = ts - t0;
       const m = monoRef.current;
       // atmosphere tints by mode/direction; the core line stays white for legibility
-      const glow = m ? "111,209,255" : up ? "70,201,138" : "226,114,111";
+      const glow = m ? "122,170,226" : up ? "70,201,138" : "226,114,111";
       const dust = m ? "150,200,255" : up ? "120,205,160" : "230,150,150";
       const W = c.width, H = c.height;
       // Clear to transparent so the pane's own --panel background shows through,
@@ -757,7 +764,7 @@ function MetricCanvas({
   return <canvas ref={ref} className="ana-metric-canvas" aria-hidden="true" />;
 }
 
-const glowFor = (mono: boolean, dir: number) => (mono ? "111,209,255" : dir >= 0 ? "70,201,138" : "226,114,111");
+const glowFor = (mono: boolean, dir: number) => (mono ? "122,170,226" : dir >= 0 ? "70,201,138" : "226,114,111");
 const dustFor = (mono: boolean, dir: number) => (mono ? "150,200,255" : dir >= 0 ? "120,205,160" : "230,150,150");
 
 function Metrics({ candles, mono, symbol }: { candles: Candle[]; mono: boolean; symbol: string }) {
