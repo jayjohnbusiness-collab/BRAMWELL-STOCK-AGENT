@@ -951,6 +951,37 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Mobile-only controls — hidden on desktop, shown in the ≤860px block. */
+.chat-toggle,
+.conv-drawer-head {
+  display: none;
+}
+.orb-fab {
+  display: none;
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 65;
+  width: 66px;
+  height: 66px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.4));
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+}
+.orb-fab .voice-orb-canvas {
+  width: 66px;
+  height: 66px;
+  display: block;
+}
+.orb-fab:active {
+  transform: scale(0.93);
+}
+
 @media (max-width: 860px) {
   .card-board {
     grid-template-columns: 1fr;
@@ -970,32 +1001,65 @@
     grid-template-rows: none;
     margin-top: var(--space-4);
   }
-  /* Lead with the conversation so talking to Bramwell is the first thing on
-     screen; the market cards follow below (order:0, not -1). The composer is
-     pinned to the bottom of the viewport so "Ask Bramwell" is always at hand
-     without scrolling. */
-  .conv-pane {
-    min-height: calc(100dvh - 148px);
-    order: 0;
-  }
-  .messages {
-    overflow: visible;
-  }
-  .composer {
-    position: sticky;
-    bottom: 0;
-    z-index: 20;
-    margin-top: auto;
-    background: var(--ground);
-    padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
-  }
-  .screen-pane {
-    overflow: visible;
-    order: 1;
-    padding-right: 0;
-    margin-top: var(--space-6);
-  }
   .tagline {
     display: none;
+  }
+
+  /* Compact, icon-only header actions so they fit a phone width. */
+  .header-right {
+    gap: var(--space-2);
+  }
+  .account-btn .btn-label {
+    display: none;
+  }
+  .account-btn {
+    padding: 8px 10px;
+  }
+
+  /* The market cards are the main view; leave room for the floating orb. */
+  .screen-pane {
+    overflow: visible;
+    padding-right: 0;
+    padding-bottom: 92px;
+  }
+
+  /* The chat is a full-screen slide-up drawer, opened from the header Chat
+     button and closed with Done; off-screen until then. */
+  .conv-pane {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    min-height: 0;
+    background: var(--ground);
+    padding: var(--space-4) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom));
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.18);
+    transform: translateY(100%);
+    transition: transform 0.28s ease;
+  }
+  .conv-pane.open {
+    transform: translateY(0);
+  }
+  .conv-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: none;
+    margin-bottom: var(--space-3);
+  }
+  .messages {
+    overflow-y: auto;
+    flex: 1;
+  }
+  /* Voice lives in the floating orb now — hide the inline mic in the drawer. */
+  .composer .mic {
+    display: none;
+  }
+
+  /* Show the mobile-only controls. */
+  .chat-toggle {
+    display: inline-flex;
+  }
+  .orb-fab {
+    display: block;
   }
 }

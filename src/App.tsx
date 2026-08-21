@@ -38,6 +38,7 @@ import { AccountPanel } from "./components/AccountPanel";
 import { Welcome } from "./components/Welcome";
 import { hasWelcomed, markWelcomed } from "./welcome";
 import { VoiceOverlay } from "./components/VoiceOverlay";
+import { VoiceOrb } from "./components/VoiceOrb";
 import { AnalyticView } from "./components/analytic/AnalyticView";
 import { conciergeEnabled } from "./analytic/gate";
 import "./styles/global.css";
@@ -130,6 +131,8 @@ export default function App() {
   const [awaitingChoice, setAwaitingChoice] = useState(false);
   // A question Bramwell couldn't answer and is waiting to be taught the answer to.
   const [teachQ, setTeachQ] = useState<string | null>(null);
+  // Mobile: the chat lives in a slide-up drawer (cards are the main view).
+  const [chatOpen, setChatOpen] = useState(false);
   // The symbol whose detail drawer is open, if any.
   const [detailSymbol, setDetailSymbol] = useState<string | null>(null);
   // Whether the Account panel (holdings, watchlist, settings) is open.
@@ -752,7 +755,7 @@ export default function App() {
               onClick={() => setAnalyticOpen(true)}
               title="Bramwell Analytic — Concierge tier"
             >
-              ◭ Analytic
+              <span aria-hidden="true">◭</span> <span className="btn-label">Analytic</span>
             </button>
           ) : null}
           <button
@@ -761,14 +764,28 @@ export default function App() {
             onClick={() => setAccountOpen(true)}
             title="Holdings, watchlist, and settings"
           >
-            <AccountIcon /> Account
+            <AccountIcon /> <span className="btn-label">Account</span>
+          </button>
+          {/* Mobile-only: open the chat drawer (cards are the main view). */}
+          <button
+            type="button"
+            className="chip account-btn chat-toggle"
+            onClick={() => setChatOpen(true)}
+            title="Ask Bramwell"
+            aria-label="Ask Bramwell"
+          >
+            <ChatIcon /> <span className="btn-label">Chat</span>
           </button>
         </div>
       </header>
       <hr className="rule" />
 
       <div className="app-grid">
-        <section className="conv-pane" aria-label="Conversation">
+        <section className={`conv-pane${chatOpen ? " open" : ""}`} aria-label="Conversation">
+          <div className="conv-drawer-head">
+            <span className="small state-note">Ask Bramwell</span>
+            <button type="button" className="chip" onClick={() => setChatOpen(false)}>Done</button>
+          </div>
           <Conversation messages={messages} working={working} />
           <Composer
             onSend={handleSend}
@@ -788,6 +805,19 @@ export default function App() {
           <CardBoard ctx={cardCtx} />
         </div>
       </div>
+
+      {/* Mobile-only: the Bramwell orb floats bottom-right and starts voice. */}
+      {voice.available && !voice.enabled && !chatOpen && !accountOpen && !analyticOpen && !detailSymbol && !showWelcome ? (
+        <button
+          type="button"
+          className="orb-fab"
+          onClick={() => voice.toggle()}
+          aria-label="Talk to Bramwell"
+          title="Talk to Bramwell"
+        >
+          <VoiceOrb speaking={voice.speaking} working={working} listening={voice.listening} />
+        </button>
+      ) : null}
 
       {analyticOpen ? (
         <AnalyticView ctx={cardCtx} onClose={() => setAnalyticOpen(false)} />
@@ -848,6 +878,21 @@ export default function App() {
         />
       ) : null}
     </div>
+  );
+}
+
+/** A speech-bubble glyph for the mobile "Chat" button. */
+function ChatIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H9l-4 3.5V17H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
   );
 }
 
