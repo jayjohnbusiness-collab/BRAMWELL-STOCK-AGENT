@@ -12,7 +12,7 @@ import {
   DEFAULT_VOICE,
   BRITISH_VOICE,
 } from "../speech/eleven";
-import { hasLLM, llmKey, setLLMKey, understand, llmLastError } from "../agent/understand";
+import { hasLLMKey, llmKey, setLLMKey, understand, llmLastError, usingManagedProxy } from "../agent/understand";
 import { currentTheme, setTheme, type Theme } from "../theme";
 import { chimeMuted, setChimeMuted } from "../chime";
 import { PortfolioCard } from "./cards/PortfolioCard";
@@ -297,7 +297,8 @@ function VoiceKeySection() {
 /* -------------------------------------------------------- AI understanding */
 
 function UnderstandingSection() {
-  const [connected, setConnected] = useState(() => hasLLM());
+  const managed = usingManagedProxy();
+  const [connected, setConnected] = useState(() => hasLLMKey());
   const [key, setKey] = useState("");
   const [testMsg, setTestMsg] = useState("");
   const [testing, setTesting] = useState(false);
@@ -327,6 +328,30 @@ function UnderstandingSection() {
       canonical
         ? `Working — understood that as “${canonical}”.`
         : `Couldn't reach it — ${llmLastError() || "unknown error"}`,
+    );
+  }
+
+  // Managed proxy: understanding is on for everyone, no key to enter.
+  if (managed) {
+    return (
+      <div className="account-live">
+        <p className="account-line">
+          <span className="live-dot" aria-hidden="true" /> AI understanding on
+          <span className="account-muted"> · managed by Bramwell</span>
+        </p>
+        <p className="account-muted" style={{ margin: "4px 0 0", fontSize: "0.8rem" }}>
+          Bramwell understands unfamiliar phrasing automatically — nothing to set up. It's used only as a fallback when
+          his built-in understanding can't place a request, and it never invents market data.
+        </p>
+        <div style={{ marginTop: "8px" }}>
+          <button type="button" className="btn" onClick={testUnderstanding} disabled={testing}>
+            {testing ? "Testing…" : "Test"}
+          </button>
+        </div>
+        {testMsg ? (
+          <p className="account-muted" style={{ margin: "8px 0 0", fontSize: "0.8rem" }}>{testMsg}</p>
+        ) : null}
+      </div>
     );
   }
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { hasLLM, llmKey, setLLMKey } from "./understand";
+import { hasLLMKey, llmKey, setLLMKey } from "./understand";
 
 class MemStore {
   private m = new Map<string, string>();
@@ -14,19 +14,19 @@ describe("understand — key config", () => {
   beforeEach(() => localStorage.clear());
 
   it("is off with no key", () => {
-    expect(hasLLM()).toBe(false);
+    expect(hasLLMKey()).toBe(false);
     expect(llmKey()).toBe("");
   });
 
   it("stores and trims a key, turning understanding on", () => {
     setLLMKey("  sk-ant-abc123  ");
     expect(llmKey()).toBe("sk-ant-abc123");
-    expect(hasLLM()).toBe(true);
+    expect(hasLLMKey()).toBe(true);
   });
 
   it("clears the key when set empty", () => {
     setLLMKey("sk-ant-abc123");
     setLLMKey("  ");
-    expect(hasLLM()).toBe(false);
+    expect(hasLLMKey()).toBe(false);
   });
 });

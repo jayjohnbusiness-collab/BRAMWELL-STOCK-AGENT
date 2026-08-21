@@ -14,7 +14,7 @@ import {
 } from "./agent/nlu";
 import type { Instrument, ScreenPayload } from "./agent/types";
 import { learnedAnswer, teach } from "./agent/learned";
-import { hasLLM, understand } from "./agent/understand";
+import { understandingEnabled, understand } from "./agent/understand";
 import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
 import { useMarketFeed } from "./hooks/useMarketFeed";
@@ -225,7 +225,7 @@ export default function App() {
       const reply = agent.respond(text);
       // Couldn't place it locally → if AI understanding is on, ask the model to
       // translate the ORIGINAL wording into a command and route that, once.
-      if (reply.learnable && !opts.llmTried && hasLLM()) {
+      if (reply.learnable && !opts.llmTried && understandingEnabled()) {
         understand(opts.original)
           .then((canonical) => {
             setWorking(false);
