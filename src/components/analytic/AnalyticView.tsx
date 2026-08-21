@@ -243,7 +243,7 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
       <header className="ana-top">
         <div className="ana-brand">
           <b>BRAMWELL</b>
-          <Mark size={19} tone="ink" title="Bramwell" />
+          <Mark size={22} tone="ink" title="Bramwell" />
           <span className="ana-lab ana-accent">The Study</span>
         </div>
         <span className="ana-live">
@@ -289,28 +289,28 @@ export function AnalyticView({ ctx, onClose }: { ctx: CardContext; onClose: () =
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Risk appetite<HelpDot term="Risk appetite" def={DEFS.riskAppetite} /></span>
-            <p className="ana-read">The market's leaning toward risk, and that appetite is still widening.</p>
+            <p className="ana-read">Money's leaning into risk — and still widening.</p>
             <div className="ana-big ana-num">68<span className="ana-big-sub">/100</span></div>
             <span className="ana-lab ana-accent">Risk-on · expanding</span>
             <div className="ana-meter"><i style={{ width: "68%" }} /></div>
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Key levels · {selected}<HelpDot term="Key levels" def={DEFS.keyLevels} /></span>
-            <p className="ana-read">Where {selected} has tended to turn — a ceiling above, a floor below.</p>
+            <p className="ana-read">Where {selected} has tended to turn.</p>
             <div className="ana-kv"><span className="dn">Resistance</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 1.021).toFixed(2)}</span></div>
             <div className="ana-kv"><span className="dn">Pivot</span><span className="ana-num">{(selInst?.basePrice ?? 100).toFixed(2)}</span></div>
             <div className="ana-kv"><span className="dn">Support</span><span className="ana-num">{((selInst?.basePrice ?? 100) * 0.979).toFixed(2)}</span></div>
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Unusual flow<HelpDot term="Unusual flow" def={DEFS.unusualFlow} /></span>
-            <p className="ana-read">Bigger-than-usual options bets — a positioning tell, not a verdict.</p>
+            <p className="ana-read">Outsized options bets — a tell, not a verdict.</p>
             <div className="ana-kv"><span>NVDA</span><span className="ana-num up">+4.2σ calls</span></div>
             <div className="ana-kv"><span>TSLA</span><span className="ana-num dn">−2.1σ puts</span></div>
             <div className="ana-kv"><span>AAPL</span><span className="ana-num up">+1.6σ calls</span></div>
           </div>
           <div className="ana-tile">
             <span className="ana-lab ana-with-help">Correlation · 20d<HelpDot term="Correlation" def={DEFS.correlation} /></span>
-            <p className="ana-read">Your names move largely as one — more concentrated in tech than it looks.</p>
+            <p className="ana-read">Your names move largely as one.</p>
             <div className="ana-kv"><span className="dn">Your book ρ</span><span className="ana-num">0.74</span></div>
             <div className="ana-kv"><span className="dn">Concentration</span><span className="ana-num">61% tech</span></div>
           </div>
