@@ -83,31 +83,11 @@
   transition: scale 0.4s cubic-bezier(0.2, 0, 0, 1), filter 0.4s ease;
 }
 
-/* Hover: the orb expands and breathes, with a warm amber bloom. */
+/* Hover: only a pointer affordance — no glow, no scale, no animation. The orb
+   breathes on its own; the cursor should not disturb it. */
 @media (hover: hover) {
   .voice-orb-canvas:hover {
     cursor: pointer;
-    animation: orb-pulse 1.8s ease-in-out infinite;
-  }
-}
-
-@keyframes orb-pulse {
-  0%,
-  100% {
-    scale: 1.05;
-    filter: drop-shadow(0 0 16px rgba(255, 168, 70, 0.35));
-  }
-  50% {
-    scale: 1.12;
-    filter: drop-shadow(0 0 32px rgba(255, 168, 70, 0.6));
-  }
-}
-
-/* Reduced motion: a gentle static expand, no breathing. */
-@media (prefers-reduced-motion: reduce) {
-  .voice-orb-canvas:hover {
-    animation: none;
-    scale: 1.06;
   }
 }
 
