@@ -27,13 +27,15 @@ export function Mark({
       fill="none"
     >
       <title>{title}</title>
-      {/* the arch — two legs, a rounded span, hollow centre */}
+      {/* the arch — two legs, a rounded span, hollow centre. The whole mark
+         (arch + plinth) is vertically centred in the 32×32 box so it sits on
+         the wordmark's optical centre, not low. */}
       <path
-        d="M7 25 L7 16 A9 9 0 0 1 25 16 L25 25 L20.5 25 L20.5 16 A4.5 4.5 0 0 0 11.5 16 L11.5 25 Z"
+        d="M7 23 L7 15 A9 9 0 0 1 25 15 L25 23 L20.5 23 L20.5 15 A4.5 4.5 0 0 0 11.5 15 L11.5 23 Z"
         fill={fill}
       />
       {/* the plinth it stands on */}
-      <rect x="4" y="25.4" width="24" height="2.7" rx="1.35" fill={fill} />
+      <rect x="4" y="23.4" width="24" height="2.7" rx="1.35" fill={fill} />
     </svg>
   );
 }

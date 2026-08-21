@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Bramwell">
   <rect width="32" height="32" rx="7" fill="#10233f"/>
-  <g transform="translate(4.6 5) scale(0.72)" fill="#f2f5fa">
-    <path d="M7 25 L7 16 A9 9 0 0 1 25 16 L25 25 L20.5 25 L20.5 16 A4.5 4.5 0 0 0 11.5 16 L11.5 25 Z"/>
-    <rect x="4" y="25.4" width="24" height="2.7" rx="1.35"/>
+  <g transform="translate(4.5 4.4) scale(0.72)" fill="#f2f5fa">
+    <path d="M7 23 L7 15 A9 9 0 0 1 25 15 L25 23 L20.5 23 L20.5 15 A4.5 4.5 0 0 0 11.5 15 L11.5 23 Z"/>
+    <rect x="4" y="23.4" width="24" height="2.7" rx="1.35"/>
   </g>
 </svg>
