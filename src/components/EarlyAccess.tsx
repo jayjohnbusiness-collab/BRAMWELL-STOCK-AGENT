@@ -64,7 +64,7 @@ export function EarlyAccess({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="ea-mark">
-          <Mark size={30} tone="brass" />
+          <Mark size={30} tone="ink" />
           <span className="ea-word">Bramwell Concierge</span>
         </div>
 

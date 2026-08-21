@@ -107,7 +107,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       {/* ---------------------------------------------------------- Nav */}
       <header className="lp-nav">
         <a className="lp-brand" href="#home">
-          <Mark size={26} tone="brass" />
+          <Mark size={26} tone="ink" />
           <span className="lp-word">Bramwell</span>
         </a>
         <nav className="lp-links">
@@ -283,7 +283,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       {/* ------------------------------------------------------ Footer */}
       <footer className="lp-footer">
         <div className="lp-brand">
-          <Mark size={22} tone="brass" />
+          <Mark size={22} tone="ink" />
           <span className="lp-word">Bramwell</span>
         </div>
         <span className="lp-foot-tag">Your market, kept in order.</span>
@@ -306,7 +306,7 @@ function Preview() {
     <div className="lp-preview card">
       <div className="lp-preview-head">
         <span className="lp-preview-word">Bramwell</span>
-        <Mark size={20} tone="brass" />
+        <Mark size={20} tone="ink" />
         <span className="lp-preview-tag">Your market, kept in order.</span>
       </div>
       <div className="lp-preview-rows">

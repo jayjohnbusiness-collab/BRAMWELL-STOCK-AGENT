@@ -744,7 +744,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <span className="wordmark">Bramwell</span>
-        <Mark size={30} tone="brass" />
+        <Mark size={30} tone="ink" />
         <span className="tagline small state-note">Your market, kept in order.</span>
         {/* Market status sits top-right, across from the logo (its own row on
             mobile; grouped with the actions on desktop). */}

@@ -56,7 +56,7 @@ export function Login({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="login-mark">
-          <Mark size={30} tone="brass" />
+          <Mark size={30} tone="ink" />
           <span className="login-word">Bramwell</span>
         </div>
 

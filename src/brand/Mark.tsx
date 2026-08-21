@@ -7,13 +7,15 @@
  */
 export function Mark({
   size = 24,
-  tone = "brass",
+  tone = "ink",
   title = "Bramwell",
 }: {
   size?: number;
   tone?: "brass" | "ink";
   title?: string;
 }) {
+  // Default is ink, so the mark matches the wordmark in the lockup; the accent
+  // tone stays available for monochrome-on-colour uses.
   const fill = tone === "brass" ? "var(--brass)" : "var(--ink)";
   return (
     <svg

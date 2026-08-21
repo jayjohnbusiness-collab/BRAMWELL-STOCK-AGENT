@@ -38,7 +38,7 @@ export function Welcome({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="welcome-mark">
-          <Mark size={34} tone="brass" />
+          <Mark size={34} tone="ink" />
           <span className="welcome-word">Bramwell</span>
         </div>
 

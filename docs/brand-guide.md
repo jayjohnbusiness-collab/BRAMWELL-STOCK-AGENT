@@ -100,8 +100,9 @@ he can't help, he demurs gracefully — never an error, never an apology loop.
 **The Arch** — the vault, the portico, the threshold you're admitted through:
 banking's oldest symbol of stability and custody. The old call bell's dome still
 lives in its curve (Bramwell began as a butler's bell; "bellwether" endures in
-the name), now distilled to exact geometry. It sits to the right of the wordmark.
-Two tones: accent for brand use, ink for monochrome. Source: `src/brand/Mark.tsx`.
+the name), now distilled to exact geometry. It sits to the right of the wordmark
+and **shares its ink colour** so the lockup reads as one unit; an accent tone
+stays available for monochrome-on-colour uses. Source: `src/brand/Mark.tsx`.
 
 - Never animated. Bramwell keeps the watch; he does not fuss.
 - Never tilted, outlined, or filled with gradients — one solid fill.
