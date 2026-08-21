@@ -6,6 +6,7 @@
  */
 import { Voice } from "./synthesis";
 import { ElevenVoice, hasEleven } from "./eleven";
+import { forSpeech } from "./normalize";
 
 export class Speaker {
   static supported(): boolean {
@@ -24,15 +25,18 @@ export class Speaker {
 
   speak(text: string): void {
     if (!text.trim()) return;
+    // Expand compact units ("8h 30m" → "8 hours 30 minutes") so whichever engine
+    // speaks reads them naturally. The on-screen text keeps its compact form.
+    const spoken = forSpeech(text);
     if (hasEleven()) {
       if (!this.eleven) this.eleven = new ElevenVoice(this.onSpeakingChange);
       // Stop the browser voice in case it was mid-line, then speak naturally;
       // fall back to the browser voice if the request fails.
       this.web?.cancel();
-      void this.eleven.speak(text, () => this.web?.speak(text));
+      void this.eleven.speak(spoken, () => this.web?.speak(spoken));
     } else {
       this.eleven?.cancel();
-      this.web?.speak(text);
+      this.web?.speak(spoken);
     }
   }
 
