@@ -117,6 +117,9 @@ export function useVoice(onCommand: (text: string) => void, onWake?: () => void)
       setListening(false);
     } else {
       setError("");
+      // This runs inside the user's tap — unlock audio now so the ElevenLabs
+      // reply is allowed to play later (autoplay policy blocks a cold play()).
+      voiceRef.current?.unlock();
       ensureRecognizer().start();
       enabledRef.current = true;
       setEnabled(true);

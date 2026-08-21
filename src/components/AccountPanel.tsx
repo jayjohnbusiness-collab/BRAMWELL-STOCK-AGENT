@@ -7,6 +7,8 @@ import {
   elevenVoice,
   setElevenKey,
   setElevenVoice,
+  elevenLastError,
+  ElevenVoice,
   DEFAULT_VOICE,
 } from "../speech/eleven";
 import { currentTheme, setTheme, type Theme } from "../theme";
@@ -173,6 +175,27 @@ function VoiceKeySection() {
   const [connected, setConnected] = useState(() => hasEleven());
   const [key, setKey] = useState("");
   const [voice, setVoice] = useState(() => (elevenVoice() === DEFAULT_VOICE ? "" : elevenVoice()));
+  const [testMsg, setTestMsg] = useState("");
+  const [testing, setTesting] = useState(false);
+
+  // Runs inside the click, so audio playback is unlocked. Confirms the key works
+  // and the natural voice actually plays — or reports exactly why it can't.
+  async function testVoice() {
+    setTesting(true);
+    setTestMsg("Testing…");
+    const v = new ElevenVoice();
+    v.unlock();
+    let failed = false;
+    await v.speak("Good evening. Bramwell here, at your service.", () => {
+      failed = true;
+    });
+    setTesting(false);
+    setTestMsg(
+      failed
+        ? `Couldn't use ElevenLabs — ${elevenLastError() || "unknown error"}`
+        : "Playing now — you should hear the natural voice.",
+    );
+  }
 
   function connect(e: React.FormEvent) {
     e.preventDefault();
@@ -199,9 +222,19 @@ function VoiceKeySection() {
         <p className="account-muted" style={{ margin: "4px 0 0", fontSize: "0.8rem" }}>
           Voice: {elevenVoice() === DEFAULT_VOICE ? "George (default British)" : elevenVoice()}
         </p>
-        <button type="button" className="chip" onClick={disconnect} style={{ marginTop: "8px" }}>
-          Turn off
-        </button>
+        <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+          <button type="button" className="btn" onClick={testVoice} disabled={testing}>
+            {testing ? "Testing…" : "Test voice"}
+          </button>
+          <button type="button" className="chip" onClick={disconnect}>
+            Turn off
+          </button>
+        </div>
+        {testMsg ? (
+          <p className="account-muted" style={{ margin: "8px 0 0", fontSize: "0.8rem" }}>
+            {testMsg}
+          </p>
+        ) : null}
       </div>
     );
   }

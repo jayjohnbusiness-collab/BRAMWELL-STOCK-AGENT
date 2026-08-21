@@ -36,6 +36,14 @@ export class Speaker {
     }
   }
 
+  /** Unlock audio playback inside a user gesture (autoplay policy). Called when
+   * the user enters voice mode, so the ElevenLabs reply can actually play. */
+  unlock(): void {
+    if (!hasEleven()) return;
+    if (!this.eleven) this.eleven = new ElevenVoice(this.onSpeakingChange);
+    this.eleven.unlock();
+  }
+
   cancel(): void {
     this.eleven?.cancel();
     this.web?.cancel();

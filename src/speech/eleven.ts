@@ -55,17 +55,64 @@ export function setElevenVoice(v: string): void {
   }
 }
 
+/** The reason the last ElevenLabs attempt fell back to the browser voice, for
+ * diagnostics (surfaced by the Account panel's "Test" button). "" = no failure. */
+let lastError = "";
+export function elevenLastError(): string {
+  return lastError;
+}
+
 /**
  * Speaks one line at a time via ElevenLabs, cancelable mid-word for barge-in.
  * Mirrors the Voice interface (speak/cancel + a speaking callback). On any
- * failure it calls onFail so the caller can fall back to the browser voice.
+ * failure it records why and calls onFail so the caller can fall back.
+ *
+ * Playback goes through the Web Audio API, not an <audio> element. A reply is
+ * spoken from a speech-recognition callback — not a direct click — so the
+ * browser's autoplay policy blocks a bare Audio.play(); an AudioContext that was
+ * resumed inside the user's tap (unlock(), called when voice mode is entered)
+ * stays allowed to play afterwards. Without this the natural voice silently fell
+ * back to the browser voice every time.
  */
 export class ElevenVoice {
-  private audio: HTMLAudioElement | null = null;
+  private ctx: AudioContext | null = null;
+  private src: AudioBufferSourceNode | null = null;
   private abort: AbortController | null = null;
   private gen = 0; // bumped to supersede an in-flight request
 
   constructor(private readonly onSpeakingChange?: (speaking: boolean) => void) {}
+
+  private audioCtx(): AudioContext | null {
+    if (this.ctx) return this.ctx;
+    const AC =
+      typeof window !== "undefined"
+        ? window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        : undefined;
+    if (!AC) return null;
+    try {
+      this.ctx = new AC();
+    } catch {
+      return null;
+    }
+    return this.ctx;
+  }
+
+  /** Resume the audio context inside a user gesture so later playback is allowed. */
+  unlock(): void {
+    const ctx = this.audioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") void ctx.resume();
+    // A one-sample silent blip fully satisfies stricter policies (iOS Safari).
+    try {
+      const b = ctx.createBuffer(1, 1, 22050);
+      const s = ctx.createBufferSource();
+      s.buffer = b;
+      s.connect(ctx.destination);
+      s.start(0);
+    } catch {
+      /* ignore */
+    }
+  }
 
   async speak(text: string, onFail?: () => void): Promise<void> {
     const t = text.trim();
@@ -73,8 +120,22 @@ export class ElevenVoice {
     this.cancel();
     const key = elevenKey();
     if (!key) {
+      lastError = "No API key set.";
       onFail?.();
       return;
+    }
+    const ctx = this.audioCtx();
+    if (!ctx) {
+      lastError = "Web Audio isn't available in this browser.";
+      onFail?.();
+      return;
+    }
+    if (ctx.state === "suspended") {
+      try {
+        await ctx.resume();
+      } catch {
+        /* played later may still work */
+      }
     }
     const my = ++this.gen;
     const abort = new AbortController();
@@ -92,41 +153,41 @@ export class ElevenVoice {
           body: JSON.stringify({
             text: t,
             model_id: "eleven_turbo_v2_5",
-            voice_settings: {
-              stability: 0.45,
-              similarity_boost: 0.8,
-              style: 0,
-              use_speaker_boost: true,
-            },
+            voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0, use_speaker_boost: true },
           }),
           signal: abort.signal,
         },
       );
       if (my !== this.gen) return; // superseded while awaiting
       if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        lastError =
+          res.status === 401
+            ? "Key rejected (401). Check the ElevenLabs API key."
+            : `ElevenLabs error ${res.status}. ${body.slice(0, 120)}`;
         onFail?.();
         return;
       }
-      const url = URL.createObjectURL(await res.blob());
-      if (my !== this.gen) {
-        URL.revokeObjectURL(url);
-        return;
-      }
-      const a = new Audio(url);
-      this.audio = a;
-      const done = () => {
-        this.onSpeakingChange?.(false);
-        URL.revokeObjectURL(url);
+      const bytes = await res.arrayBuffer();
+      if (my !== this.gen) return;
+      const buffer = await ctx.decodeAudioData(bytes);
+      if (my !== this.gen) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      this.src = src;
+      src.onended = () => {
+        if (this.src === src) {
+          this.src = null;
+          this.onSpeakingChange?.(false);
+        }
       };
-      a.onplay = () => this.onSpeakingChange?.(true);
-      a.onended = done;
-      a.onerror = done;
-      await a.play().catch(() => {
-        done();
-        onFail?.();
-      });
+      this.onSpeakingChange?.(true);
+      src.start(0);
+      lastError = "";
     } catch (e) {
       if ((e as { name?: string })?.name === "AbortError") return;
+      lastError = String((e as { message?: string })?.message || e);
       onFail?.();
     }
   }
@@ -135,10 +196,18 @@ export class ElevenVoice {
     this.gen++; // any in-flight request/response is now stale
     this.abort?.abort();
     this.abort = null;
-    if (this.audio) {
-      this.audio.pause();
-      this.audio.src = "";
-      this.audio = null;
+    if (this.src) {
+      try {
+        this.src.stop();
+      } catch {
+        /* already stopped */
+      }
+      try {
+        this.src.disconnect();
+      } catch {
+        /* ignore */
+      }
+      this.src = null;
     }
     this.onSpeakingChange?.(false);
   }
