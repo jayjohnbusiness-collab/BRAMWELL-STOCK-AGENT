@@ -70,5 +70,6 @@ export function AllocationCard({ ctx, size }: { ctx: CardContext; size: CardSize
   );
 }
 
-// Stepped shades of the accent, so slices read as one family without a rainbow.
-const SLICE = ["#2563a8", "#3f7cc0", "#5f97d1", "#86b3e0", "#aecdec", "#cfe0f2"];
+// Stepped shades of the Meridian accent, so slices read as one navy family
+// without a rainbow.
+const SLICE = ["#2b4a74", "#3f6595", "#5c82b0", "#7fa0c9", "#a6c0dd", "#cbdcec"];
