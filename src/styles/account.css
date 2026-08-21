@@ -117,6 +117,7 @@
 }
 .acc-item.open .acc-row {
   background: var(--accent-tint);
+  padding-bottom: 8px;
 }
 .acc-row:focus-visible {
   outline: none;
@@ -151,7 +152,7 @@
   align-items: center;
 }
 .acc-detail {
-  padding: 2px 13px 14px;
+  padding: 0 13px 14px;
 }
 
 .acc-live {
