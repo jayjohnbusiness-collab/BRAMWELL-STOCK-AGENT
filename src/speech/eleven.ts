@@ -12,8 +12,14 @@
 
 const KEY = "bramwell.elevenlabs.key";
 const VOICE = "bramwell.elevenlabs.voice";
-/** "George" — a warm, composed British voice; a fitting butler default. */
-export const DEFAULT_VOICE = "JBFqnCBsd6RMkjVDRZzb";
+/**
+ * "Adam" — a deep, composed premade voice. Premade voices work on ElevenLabs'
+ * FREE tier via the API; the warmer British "George" is a Voice Library voice
+ * and needs a paid plan, so it's offered as an override rather than the default.
+ */
+export const DEFAULT_VOICE = "pNInz6obpgDQGcFmaJgB";
+/** The British butler voice (Voice Library) — usable on a paid ElevenLabs plan. */
+export const BRITISH_VOICE = "JBFqnCBsd6RMkjVDRZzb"; // "George"
 
 export function elevenKey(): string {
   try {
@@ -164,7 +170,9 @@ export class ElevenVoice {
         lastError =
           res.status === 401
             ? "Key rejected (401). Check the ElevenLabs API key."
-            : `ElevenLabs error ${res.status}. ${body.slice(0, 120)}`;
+            : res.status === 402
+              ? "This voice needs a paid ElevenLabs plan (free plans allow premade voices only). Clear the Voice ID to use the free premade default, or upgrade to use library voices like George."
+              : `ElevenLabs error ${res.status}. ${body.slice(0, 120)}`;
         onFail?.();
         return;
       }

@@ -10,6 +10,7 @@ import {
   elevenLastError,
   ElevenVoice,
   DEFAULT_VOICE,
+  BRITISH_VOICE,
 } from "../speech/eleven";
 import { currentTheme, setTheme, type Theme } from "../theme";
 import { chimeMuted, setChimeMuted } from "../chime";
@@ -220,7 +221,7 @@ function VoiceKeySection() {
           <span className="account-muted"> · {maskKey(elevenKey())}</span>
         </p>
         <p className="account-muted" style={{ margin: "4px 0 0", fontSize: "0.8rem" }}>
-          Voice: {elevenVoice() === DEFAULT_VOICE ? "George (default British)" : elevenVoice()}
+          Voice: {elevenVoice() === DEFAULT_VOICE ? "Adam (free premade default)" : elevenVoice()}
         </p>
         <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
           <button type="button" className="btn" onClick={testVoice} disabled={testing}>
@@ -251,6 +252,10 @@ function VoiceKeySection() {
       <p className="account-muted" style={{ margin: "6px 0 0", fontSize: "0.78rem" }}>
         Paste the <b>full secret key</b> (it starts with <code>sk_</code>), shown when you create the key in
         ElevenLabs → Settings → API Keys — not the key's ID.
+      </p>
+      <p className="account-muted" style={{ margin: "6px 0 0", fontSize: "0.78rem" }}>
+        Leave Voice ID blank for the free premade default (Adam). ElevenLabs’ free plan only allows premade voices via
+        the API — the British butler voice “George” (<code>{BRITISH_VOICE}</code>) needs a paid plan.
       </p>
       {key.trim() && !key.trim().startsWith("sk_") ? (
         <p className="account-muted" style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "var(--down, #e2726f)" }}>
