@@ -305,8 +305,8 @@ function Preview() {
   return (
     <div className="lp-preview card">
       <div className="lp-preview-head">
-        <Bell size={20} tone="brass" />
         <span className="lp-preview-word">Bramwell</span>
+        <Bell size={20} tone="brass" />
         <span className="lp-preview-tag">Your market, kept in order.</span>
       </div>
       <div className="lp-preview-rows">

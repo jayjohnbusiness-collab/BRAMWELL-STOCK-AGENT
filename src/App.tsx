@@ -729,8 +729,8 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <Bell size={30} tone="brass" />
         <span className="wordmark">Bramwell</span>
+        <Bell size={30} tone="brass" />
         <span className="tagline small state-note">Your market, kept in order.</span>
         {/* Market status sits top-right, across from the logo (its own row on
             mobile; grouped with the actions on desktop). */}
