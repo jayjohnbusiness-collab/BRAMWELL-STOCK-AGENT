@@ -103,11 +103,11 @@
 .ana-semantic .dn { color: var(--ana-down); }
 
 /* -------------------------------------------------------------- top strip */
-/* Match the dashboard header exactly so the lockup doesn't move on the
-   transition into The Study: the wordmark lands at left 48 / top 38 and the mark
-   at top 34, in an ~81px band — the same coordinates as the main page (whose
-   header sits inside 48px side / 32px top page padding). */
-.ana-top { display: flex; align-items: center; gap: 20px; padding: 34px 48px 17px; background: var(--panel); flex-wrap: wrap; }
+/* The wordmark aligns with the cockpit's own 15px content gutter, so it sits
+   directly over the Regime column beneath it (as the dashboard's wordmark sits
+   over its content). Vertical padding keeps the lockup at the dashboard's top
+   38 / mark 34 in an ~81px band. */
+.ana-top { display: flex; align-items: center; gap: 20px; padding: 34px 15px 17px; background: var(--panel); flex-wrap: wrap; }
 /* The lockup matches the main page exactly: 22px wordmark + 30px Arch mark,
    12px gap, 0.14em tracking, ink. */
 .ana-brand { display: flex; align-items: center; gap: 12px; }
