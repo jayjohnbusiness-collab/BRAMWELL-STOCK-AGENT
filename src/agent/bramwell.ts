@@ -1,6 +1,6 @@
 import type { Instrument, Reply, Session, Subject } from "./types";
 import { Market, type Resolution } from "./market";
-import { parse, watchTarget, type Day, type Intent, type Metric } from "./nlu";
+import { looseIntent, parse, watchTarget, type Day, type Intent, type Metric } from "./nlu";
 import {
   direction,
   magnitudeInWords,
@@ -38,6 +38,10 @@ export class Bramwell {
   }
 
   respond(utterance: string): Reply {
+    // A word of thanks or a greeting is met in kind — a butler acknowledges it.
+    const courtesy = courtesyReply(utterance);
+    if (courtesy) return { spoken: courtesy, screen: { kind: "none" } };
+
     // A pending disambiguation takes precedence: the user is answering it.
     if (this.pending) {
       const options = this.pending;
@@ -127,6 +131,20 @@ export class Bramwell {
     const res = this.market.resolve(text);
     if (res.status === "ok") return this.quoteReply(res.instrument.symbol, "today");
     if (res.status === "ambiguous") return this.ask(res.options);
+    // Before giving up: read the phrasing loosely against what he can already
+    // answer, so unfamiliar wording ("any names worth watching?") still lands on
+    // a real answer instead of a shrug — no teaching required. But if the user
+    // clearly named a specific thing (a proper noun, or a near-miss ticker like
+    // "Meridian"), that's a name miss to echo back, not a fuzzy list request.
+    const named = properNoun(text) !== null || (res.status === "none" && res.nearMiss === true);
+    if (!named) {
+      const loose = looseIntent(text);
+      if (loose && (loose.metric || loose.universe)) {
+        const universe = loose.universe ?? "nasdaq";
+        const metric: Metric = loose.metric ?? (universe === "watchlist" ? "status" : "gainers");
+        return metric === "status" ? this.statusReply("today") : this.moversReply(universe, metric, "today");
+      }
+    }
     return this.notUnderstood(text, res);
   }
 
@@ -466,8 +484,55 @@ export class Bramwell {
     return {
       spoken: "That's a little outside what I follow, I'm afraid.",
       screen: { kind: "none" },
+      // Nothing in Bramwell's knowledge answered this — the app may offer to
+      // learn the answer so he can give it next time.
+      learnable: true,
     };
   }
+}
+
+/*
+ * A courtesy reply to thanks or a greeting — returned before anything else so a
+ * bare "thank you, Bramwell" is met in kind rather than parsed as a query.
+ * Returns null when the utterance is doing real work (e.g. "thanks, how's NVDA?"),
+ * so only a standalone pleasantry is answered this way.
+ */
+const THANKS_RE =
+  /\b(thank you|thanks|thank u|thankyou|much appreciated|appreciate (it|that|you)|cheers|nice one|good stuff|well done|you'?re a (star|gem|legend)|ta)\b/i;
+const GREET_RE = /\b(good morning|good afternoon|good evening|good day|hello|hi there|hey there|greetings|howdy)\b/i;
+const THANKS_REPLIES = [
+  "My pleasure.",
+  "At your service.",
+  "Happy to help — any time.",
+  "Of course. That's what I'm here for.",
+  "Delighted to be of use.",
+];
+
+function courtesyReply(utterance: string): string | null {
+  // Strip the wake word and any address to Bramwell, then anything that isn't a
+  // letter — what's left is the bare pleasantry, if that's all it was.
+  const bare = utterance
+    .replace(/^\s*(hey\s+|hi\s+|ok\s+|okay\s+)?bramwell\b/i, " ")
+    .replace(/\bbramwell\b/gi, " ")
+    .replace(/[^a-zA-Z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!bare) return null;
+  const words = bare.split(" ");
+  // Only treat it as a pleasantry when that's essentially the whole message —
+  // a longer sentence is a real request that happens to open with "thanks".
+  if (words.length > 5) return null;
+
+  if (THANKS_RE.test(bare)) {
+    // Rotate deterministically by length so it varies without Math.random.
+    return THANKS_REPLIES[bare.length % THANKS_REPLIES.length];
+  }
+  if (GREET_RE.test(bare) || /^(morning|afternoon|evening|hello|hi|hey|yo)$/.test(bare)) {
+    const h = new Date().getHours();
+    const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    return `${part}. How can I help?`;
+  }
+  return null;
 }
 
 // --- Pure helpers ---------------------------------------------------------
@@ -577,6 +642,11 @@ const STOP = new Set(
     "into", "onto", "it", "them", "me", "please", "nasdaq", "bramwell", "hey",
     "show", "tell", "give", "list", "stock", "stocks", "share", "shares",
     "portfolio", "holdings", "holding", "positions", "position", "names", "name",
+    // Leading quantifiers/fillers that begin a fuzzy request — never a ticker,
+    // so they don't get echoed as "I heard 'Any'".
+    "any", "anything", "some", "something", "which", "there", "worth", "out",
+    "eyes", "eye", "looking", "look", "watching", "keeping", "about", "for",
+
     // Command verbs, so "Watch Meridian" echoes "Meridian", not "Watch".
     "watch", "follow", "add", "track", "remove", "drop", "stop", "unwatch",
     "unfollow", "keep", "start", "take", "get",

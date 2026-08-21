@@ -13,6 +13,7 @@ import {
   watchTarget,
 } from "./agent/nlu";
 import type { Instrument, ScreenPayload } from "./agent/types";
+import { learnedAnswer, teach } from "./agent/learned";
 import { createFeed } from "./feed";
 import { createAttributor } from "./attribution";
 import { useMarketFeed } from "./hooks/useMarketFeed";
@@ -126,6 +127,8 @@ export default function App() {
   const [working, setWorking] = useState(false);
   const [screen, setScreen] = useState<ScreenPayload>({ kind: "none" });
   const [awaitingChoice, setAwaitingChoice] = useState(false);
+  // A question Bramwell couldn't answer and is waiting to be taught the answer to.
+  const [teachQ, setTeachQ] = useState<string | null>(null);
   // The symbol whose detail drawer is open, if any.
   const [detailSymbol, setDetailSymbol] = useState<string | null>(null);
   // Whether the Account panel (holdings, watchlist, settings) is open.
@@ -166,6 +169,29 @@ export default function App() {
   function handleSend(text: string) {
     voice.cancel(); // a new request stops Bramwell mid-word
     setMessages((prev) => [...prev, chatMsg("user", text)]);
+
+    // Learning — teach-back. If Bramwell just asked to be taught an answer, this
+    // message IS the answer (unless the user waves it off). Remember it so he can
+    // give it next time.
+    if (teachQ) {
+      const q = teachQ;
+      setTeachQ(null);
+      if (/\b(never mind|nevermind|forget it|cancel|skip|don'?t worry|no thanks?)\b/i.test(text)) {
+        say("As you wish.");
+        return;
+      }
+      teach(q, text.trim());
+      say("Noted — I'll remember that. Ask me again whenever you like.");
+      return;
+    }
+
+    // Learning — recall. A previously-taught answer to this question wins over a
+    // shrug; it only exists for questions he couldn't answer before.
+    const recalled = learnedAnswer(text);
+    if (recalled) {
+      say(recalled);
+      return;
+    }
 
     // A standing alert ("tell me if NVDA drops below 200") is set here so it
     // can resolve/track the name live and register a trigger.
@@ -225,12 +251,16 @@ export default function App() {
     window.setTimeout(() => {
       const reply = agent.respond(text);
       setWorking(false);
-      if (reply.spoken.trim().length > 0) {
-        setMessages((prev) => [
-          ...prev,
-          chatMsg("bramwell", reply.spoken),
-        ]);
-        voice.speak(reply.spoken); // spoken aloud only when voice is on
+      // Couldn't answer → offer to learn it. Remember the question; the user's
+      // next message becomes the answer (handled at the top of handleSend).
+      const spoken =
+        reply.learnable && reply.spoken.trim().length > 0
+          ? `${reply.spoken} If you tell me the answer, I'll remember it for next time.`
+          : reply.spoken;
+      if (reply.learnable) setTeachQ(text);
+      if (spoken.trim().length > 0) {
+        setMessages((prev) => [...prev, chatMsg("bramwell", spoken)]);
+        voice.speak(spoken); // spoken aloud only when voice is on
       }
       if (reply.screen && reply.screen.kind !== "none") {
         setScreen(reply.screen);

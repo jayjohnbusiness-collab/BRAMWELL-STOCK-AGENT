@@ -320,3 +320,53 @@ export function parse(input: string): Intent {
 
   return { kind: "unknown", explicit: false, text: body };
 }
+
+/*
+ * A forgiving fallback classifier.
+ *
+ * The strict parser above is precise but literal; users phrase the same request
+ * a hundred ways ("what's ripping today", "any names worth watching", "how's my
+ * book holding up"). Rather than make them learn Bramwell's wording, this scores
+ * an utterance against the vocabulary of the things he can ALREADY answer and
+ * routes to the closest one. It's only consulted after the strict parse and a
+ * ticker lookup both come up empty, so a real quote or command is never
+ * second-guessed. Returns null when nothing scores — then it's genuinely unknown.
+ */
+// Bare "up"/"down" are intentionally NOT here — they appear in non-directional
+// phrases ("holding up", "what's up") and the strict parser already catches the
+// real movers wordings. The fuzzy net leans on richer, less ambiguous words.
+const LOOSE_UP =
+  /\b(gain(?:ing|ers|ed|s)?|best|top|highest|winning|winners?|lead(?:ing|ers)?|strong(?:est)?|soar(?:ing)?|surg(?:e|ing)|ripping|rally(?:ing)?|green|flying|climb(?:ing)?|moon(?:ing)?|pump(?:ing)?|outperform(?:ing|ers)?|standouts?|crushing it|killing it|on fire|rocketing|popping)\b/gi;
+const LOOSE_DOWN =
+  /\b(los(?:ing|ers|es|s|t)?|worst|laggards?|weak(?:est)?|tank(?:ing|ed)?|drop(?:ping|ped|s)?|fall(?:ing|en)?|sink(?:ing)?|slid(?:e|ing)?|bleed(?:ing)?|dump(?:ing|ed)?|crash(?:ing|ed)?|plung(?:e|ing)?|underperform(?:ing|ers)?|strugg(?:le|ling)|hurting|crushed|hammered|smashed|slaughtered|getting killed|selling off|sell-?off)\b/gi;
+// "What's worth watching?" — a request for the day's notable names.
+const LOOSE_NOTABLE =
+  /\b(keep(?:ing)? (?:an? )?eye|eyes? (?:out|on|peeled)|watch(?:ing)? (?:out|for)|worth watching|on (?:my|your|the) radar|notable|interesting|standouts?|anything (?:worth|good|interesting|happening|moving)|any (?:ideas?|plays?|names?|stocks?|opportunit)|opportunit(?:y|ies)|should i (?:watch|look at|keep)|what should i|look out for)\b/gi;
+const LOOSE_STATUS =
+  /\b(portfolio|holdings?|positions?|my book|watchlist|overall|everything|how(?:'?s| is| are| am| do)|doing|standing|holding up|looking|shaping up|my (?:stocks?|names?|stuff|account|money))\b/gi;
+
+function hits(re: RegExp, s: string): number {
+  return (s.match(re) || []).length;
+}
+
+export function looseIntent(text: string): { metric?: Metric; universe?: Universe } | null {
+  const t = text.toLowerCase();
+  const up = hits(LOOSE_UP, t);
+  const down = hits(LOOSE_DOWN, t);
+  const notable = hits(LOOSE_NOTABLE, t);
+  const status = hits(LOOSE_STATUS, t);
+
+  const universe: Universe | undefined = MINE.test(text)
+    ? "watchlist"
+    : NASDAQ.test(text)
+      ? "nasdaq"
+      : undefined;
+
+  // Pick the strongest signal. Notable/"worth watching" reads as the day's
+  // leaders. A status/portfolio question with no direction is a health read.
+  if (down > up && down > 0) return { metric: "losers", universe };
+  if (up > 0) return { metric: "gainers", universe };
+  if (notable > 0) return { metric: "gainers", universe };
+  if (status > 0) return { metric: "status", universe: universe ?? "watchlist" };
+  return null;
+}

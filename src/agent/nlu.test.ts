@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   isPortfolioValueQuery,
+  looseIntent,
   parse,
   parseNews,
   parsePosition,
@@ -61,6 +62,27 @@ describe("parse — my top/highest performers reads the watchlist", () => {
     const i = parse("who are today's top performers");
     expect(i.metric).toBe("gainers");
     expect(i.universe).toBeUndefined();
+  });
+});
+
+describe("looseIntent — forgiving fallback for unfamiliar phrasing", () => {
+  it("routes 'any stocks I should be keeping my eyes out on?' to the day's leaders", () => {
+    expect(looseIntent("any stocks I should be keeping my eyes out on?")).toMatchObject({ metric: "gainers" });
+  });
+
+  it("reads colloquial up/down phrasings", () => {
+    expect(looseIntent("what's ripping today")).toMatchObject({ metric: "gainers" });
+    expect(looseIntent("anything getting crushed")).toMatchObject({ metric: "losers" });
+    expect(looseIntent("what's tanking")).toMatchObject({ metric: "losers" });
+  });
+
+  it("reads a health check on my book", () => {
+    expect(looseIntent("how's my book holding up")).toMatchObject({ metric: "status", universe: "watchlist" });
+  });
+
+  it("returns null for a genuinely unknown, non-market question", () => {
+    expect(looseIntent("what is the wash sale rule")).toBeNull();
+    expect(looseIntent("what's the capital of France")).toBeNull();
   });
 });
 

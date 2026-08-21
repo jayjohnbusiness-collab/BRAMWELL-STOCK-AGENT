@@ -67,6 +67,8 @@ export interface Reply {
   screen?: ScreenPayload;
   /** True when Bramwell is asking a genuine either/or, not guessing. */
   awaitingChoice?: boolean;
+  /** True when nothing answered the question — the app may offer to learn it. */
+  learnable?: boolean;
 }
 
 export type ScreenPayload =
