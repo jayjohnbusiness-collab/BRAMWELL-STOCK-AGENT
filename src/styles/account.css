@@ -72,19 +72,100 @@
   margin-top: 2px;
 }
 
-.account-section {
+/* --- Grouped accordion: Your Book · Connections · Preferences --- */
+.acc-group {
   margin-top: var(--space-5);
-  border-top: var(--hairline) solid var(--rule);
-  padding-top: var(--space-4);
+}
+.acc-group:first-of-type {
+  margin-top: var(--space-4);
+}
+.acc-glab {
+  margin: 0 0 var(--space-2);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
-.account-section-title {
-  display: block;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.acc-item {
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-2);
+  background: var(--paper);
+  overflow: hidden;
+}
+.acc-item.open {
+  border-color: var(--accent-line);
+}
+
+.acc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 11px 13px;
+  font: inherit;
+  color: var(--ink);
+}
+.acc-row:hover {
+  background: color-mix(in srgb, var(--brass) 6%, transparent);
+}
+.acc-item.open .acc-row {
+  background: var(--accent-tint);
+}
+.acc-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* A caret drawn from two borders: points right when closed, down when open. */
+.acc-chev {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--ink-soft);
+  border-bottom: 2px solid var(--ink-soft);
+  transform: rotate(-45deg);
+  transition: transform 0.16s ease;
+  margin: 0 2px;
+}
+.acc-item.open .acc-chev {
+  transform: rotate(45deg);
+  border-color: var(--brass);
+}
+
+.acc-label {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.acc-summary {
+  margin-left: auto;
+  font-size: 0.82rem;
   color: var(--ink-soft);
-  margin-bottom: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+}
+.acc-detail {
+  padding: 2px 13px 14px;
+}
+
+.acc-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--data-up);
+  font-weight: 600;
+}
+.acc-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--data-up);
 }
 
 .account-line {

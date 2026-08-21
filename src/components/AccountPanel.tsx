@@ -59,55 +59,112 @@ export function AccountPanel({ ctx, onClose }: { ctx: CardContext; onClose: () =
           </button>
         </header>
 
-        <Section title="Holdings">
-          <PortfolioCard ctx={ctx} size="lg" />
-        </Section>
+        <Group label="Your Book">
+          <Panel title="Holdings" summary={countLabel(ctx.portfolio.all().length, "position", "None")} defaultOpen>
+            <PortfolioCard ctx={ctx} size="lg" />
+          </Panel>
+          <Panel title="Watchlist" summary={countLabel(ctx.market.held().length, "name", "Empty")}>
+            <WatchlistManager
+              watched={ctx.market.held()}
+              onAdd={ctx.watchAdd}
+              onRemove={ctx.watchRemove}
+              onSuggest={ctx.watchSuggest}
+              size="lg"
+            />
+          </Panel>
+          <Panel title="Alerts & triggers" summary={countLabel(ctx.triggers.all().length, "alert", "None")}>
+            <TriggersCard ctx={ctx} size="lg" hideControls />
+          </Panel>
+        </Group>
 
-        <Section title="Watchlist">
-          <WatchlistManager
-            watched={ctx.market.held()}
-            onAdd={ctx.watchAdd}
-            onRemove={ctx.watchRemove}
-            onSuggest={ctx.watchSuggest}
-            size="lg"
-          />
-        </Section>
+        <Group label="Connections">
+          <Panel title="Live market data" summary={hasToken() ? <Live>Connected</Live> : "Not connected"}>
+            <LiveDataSection />
+          </Panel>
+          <Panel title="Natural voice" summary={hasEleven() ? <Live>On</Live> : "Off"}>
+            <VoiceKeySection />
+          </Panel>
+          <Panel
+            title="AI understanding"
+            summary={usingManagedProxy() ? <Live>Managed</Live> : hasLLMKey() ? <Live>Your key</Live> : "Off"}
+          >
+            <UnderstandingSection />
+          </Panel>
+        </Group>
 
-        <Section title="Alerts & triggers">
-          <TriggersCard ctx={ctx} size="lg" hideControls />
-        </Section>
-
-        <Section title="Live data">
-          <LiveDataSection />
-        </Section>
-
-        <Section title="Natural voice">
-          <VoiceKeySection />
-        </Section>
-
-        <Section title="AI understanding">
-          <UnderstandingSection />
-        </Section>
-
-        <Section title="Language">
-          <LanguageSection />
-        </Section>
-
-        <Section title="Preferences">
-          <Preferences ctx={ctx} />
-        </Section>
+        <Group label="Preferences">
+          <Panel title="Language" summary={langName(getLang())}>
+            <LanguageSection />
+          </Panel>
+          <Panel title="Appearance & alerts" summary={themeLabel(currentTheme())}>
+            <Preferences ctx={ctx} />
+          </Panel>
+        </Group>
       </aside>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/* A labelled group of collapsible panels (Your Book · Connections · Preferences). */
+function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <section className="account-section">
-      <span className="account-section-title">{title}</span>
+    <section className="acc-group" aria-label={label}>
+      <h3 className="acc-glab">{label}</h3>
       {children}
     </section>
   );
+}
+
+/* One collapsible panel: a header row (label + status summary + chevron) that
+   expands to reveal the full section. Keeps the sidebar a tidy list; you open
+   only what you need. */
+function Panel({
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  summary?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className={`acc-item ${open ? "open" : ""}`}>
+      <button
+        type="button"
+        className="acc-row"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="acc-chev" aria-hidden="true" />
+        <span className="acc-label">{title}</span>
+        {summary != null ? <span className="acc-summary">{summary}</span> : null}
+      </button>
+      {open ? <div className="acc-detail">{children}</div> : null}
+    </div>
+  );
+}
+
+/* A status summary with a live dot ("Connected", "Managed", "On"). */
+function Live({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="acc-live">
+      <span className="acc-live-dot" aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
+/* "3 positions" / "1 name" / an empty-state word when the count is zero. */
+function countLabel(n: number, noun: string, empty: string): string {
+  if (n === 0) return empty;
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+}
+
+function themeLabel(t: Theme): string {
+  return t === "light" ? "Light" : t === "glass" ? "Glass" : "Dark";
 }
 
 /* -------------------------------------------------------------- Live data */
