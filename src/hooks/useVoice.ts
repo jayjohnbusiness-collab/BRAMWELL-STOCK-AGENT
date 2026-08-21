@@ -34,8 +34,23 @@ export function useVoice(onCommand: (text: string) => void, onWake?: () => void)
   const wakeRef = useRef(onWake);
   wakeRef.current = onWake;
 
+  // Self-echo guard. Bramwell's spoken reply plays through the speakers, and on
+  // any device without headphones the microphone hears it. Without this the
+  // recognizer treats his own voice as the user talking — barging in to cut him
+  // off mid-word, and even feeding his words back as a fresh command (an endless
+  // loop). So while he is speaking — and for a short tail afterwards, to swallow
+  // the last of the echo — the mic's input is ignored.
+  const speakingRef = useRef(false);
+  const muteUntilRef = useRef(0);
+  const selfEcho = () => speakingRef.current || Date.now() < muteUntilRef.current;
+
   useEffect(() => {
-    voiceRef.current = Speaker.supported() ? new Speaker(setSpeaking) : null;
+    const onSpeaking = (s: boolean) => {
+      speakingRef.current = s;
+      if (!s) muteUntilRef.current = Date.now() + 700; // tail after he stops
+      setSpeaking(s);
+    };
+    voiceRef.current = Speaker.supported() ? new Speaker(onSpeaking) : null;
     return () => {
       recRef.current?.stop();
       voiceRef.current?.cancel();
@@ -47,15 +62,23 @@ export function useVoice(onCommand: (text: string) => void, onWake?: () => void)
     recRef.current = new Recognizer(
       {
         onCommand: (text) => {
+          if (selfEcho()) return; // his own reply echoing back — not a command
           setError("");
           setInterim("");
           voiceRef.current?.cancel(); // stop any current line before answering
           commandRef.current(text);
         },
-        onInterim: setInterim,
+        onInterim: (text) => {
+          if (selfEcho()) return; // don't show his own words as the user's transcript
+          setInterim(text);
+        },
         onListeningChange: setListening,
-        onSpeechStart: () => voiceRef.current?.cancel(), // barge-in, mid-word
+        onSpeechStart: () => {
+          if (selfEcho()) return; // don't barge in on his own voice
+          voiceRef.current?.cancel(); // real barge-in, mid-word
+        },
         onWake: () => {
+          if (selfEcho()) return;
           setError("");
           setInterim("");
           wakeRef.current?.();
