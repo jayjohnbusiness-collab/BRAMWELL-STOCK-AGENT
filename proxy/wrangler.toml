@@ -1,0 +1,18 @@
+# Cloudflare Worker config for the Bramwell Concierge proxy.
+#
+# Deploy (from this /proxy folder):
+#   npx wrangler login
+#   npx wrangler secret put ANTHROPIC_API_KEY   # paste your key when prompted
+#   npx wrangler deploy
+#
+# The deploy prints your Worker URL — that's the value for the site's
+# VITE_UNDERSTAND_PROXY variable. The API key is a SECRET (never in this file).
+
+name = "bramwell-understand"
+main = "understand-worker.js"
+compatibility_date = "2024-11-01"
+
+# Origins allowed to call the proxy. Keep this to your site so the endpoint
+# isn't open to the world; use "*" only for quick local testing.
+[vars]
+ALLOWED_ORIGINS = "https://jayjohnbusiness-collab.github.io"

@@ -31,6 +31,11 @@ jobs:
         run: npm run build
         env:
           SINGLE_FILE: "1"
+          # The Concierge proxy URL (see /proxy). Set it under
+          # Settings → Secrets and variables → Actions → Variables as
+          # VITE_UNDERSTAND_PROXY to turn on AI understanding and multilingual
+          # replies for everyone. Empty (unset) simply keeps those off.
+          VITE_UNDERSTAND_PROXY: ${{ vars.VITE_UNDERSTAND_PROXY }}
       - uses: actions/configure-pages@v5
         with:
           # Enable Pages automatically on first run (works for public repos, or

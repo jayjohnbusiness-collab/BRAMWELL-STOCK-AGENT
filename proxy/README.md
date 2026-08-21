@@ -39,15 +39,9 @@ of a cent.
    npm install -g wrangler
    wrangler login
    ```
-2. From this `proxy/` folder, create `wrangler.toml`:
-   ```toml
-   name = "bramwell-understand"
-   main = "understand-worker.js"
-   compatibility_date = "2024-11-01"
-
-   [vars]
-   ALLOWED_ORIGINS = "https://jayjohnbusiness-collab.github.io"
-   ```
+2. This folder already ships a `wrangler.toml` (name, entry file, and
+   `ALLOWED_ORIGINS` set to the GitHub Pages origin). Edit `ALLOWED_ORIGINS`
+   only if your site lives somewhere else.
 3. Add your Anthropic key as a secret (never commit it):
    ```bash
    wrangler secret put ANTHROPIC_API_KEY
@@ -74,22 +68,22 @@ of a cent.
 
 ## Point the app at the proxy
 
-Set the proxy URL for the app build. Either:
+The Pages build already reads a repo variable, so no code change is needed:
 
-- **Edit `src/config.ts`** and hard-code the URL, **or**
-- **Set `VITE_UNDERSTAND_PROXY`** at build time. For the GitHub Pages deploy,
-  add it to `.github/workflows/deploy-pages.yml` on the build step:
-  ```yaml
-        - name: Build self-contained single-file bundle
-          run: npm run build
-          env:
-            SINGLE_FILE: "1"
-            VITE_UNDERSTAND_PROXY: "https://bramwell-understand.<you>.workers.dev"
-  ```
+1. On GitHub → **Settings → Secrets and variables → Actions → Variables →
+   New repository variable**.
+2. Name `VITE_UNDERSTAND_PROXY`, value your proxy URL (the Worker URL, or the
+   Vercel `…/api/understand` URL).
+3. Re-run the deploy: **Actions → Deploy to GitHub Pages → Run workflow**
+   (or just push any commit to `main`).
 
-Rebuild/redeploy. In the app, **Account → AI understanding** now reads
-"managed by Bramwell" with no key field — the feature is on for everyone, and
-still only fires when the free local understanding can't place a request.
+(Prefer to hard-code it instead? Set the URL in `src/config.ts`.)
+
+Once redeployed, **Account → AI understanding** reads "managed by Bramwell"
+with no key field, and **Account → Language** drops its "turn on AI
+understanding" note — understanding and multilingual replies are on for
+everyone, still firing only when the free local understanding can't place a
+request.
 
 ---
 
