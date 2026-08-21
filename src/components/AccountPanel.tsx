@@ -248,6 +248,15 @@ function VoiceKeySection() {
         </a>{" "}
         text-to-speech key. Use a TTS-only key with a spend cap — it's stored only in this browser.
       </p>
+      <p className="account-muted" style={{ margin: "6px 0 0", fontSize: "0.78rem" }}>
+        Paste the <b>full secret key</b> (it starts with <code>sk_</code>), shown when you create the key in
+        ElevenLabs → Settings → API Keys — not the key's ID.
+      </p>
+      {key.trim() && !key.trim().startsWith("sk_") ? (
+        <p className="account-muted" style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "var(--down, #e2726f)" }}>
+          That doesn't look like a secret key — it should start with <code>sk_</code>. You may have copied the key ID.
+        </p>
+      ) : null}
       <form onSubmit={connect} className="account-live-form">
         <input
           aria-label="ElevenLabs API key"
