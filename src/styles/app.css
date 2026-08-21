@@ -970,16 +970,30 @@
     grid-template-rows: none;
     margin-top: var(--space-4);
   }
+  /* Lead with the conversation so talking to Bramwell is the first thing on
+     screen; the market cards follow below (order:0, not -1). The composer is
+     pinned to the bottom of the viewport so "Ask Bramwell" is always at hand
+     without scrolling. */
   .conv-pane {
-    min-height: 60vh;
+    min-height: calc(100dvh - 148px);
+    order: 0;
   }
   .messages {
     overflow: visible;
   }
+  .composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    margin-top: auto;
+    background: var(--ground);
+    padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  }
   .screen-pane {
     overflow: visible;
-    order: -1;
+    order: 1;
     padding-right: 0;
+    margin-top: var(--space-6);
   }
   .tagline {
     display: none;
