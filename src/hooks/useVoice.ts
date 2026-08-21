@@ -41,13 +41,21 @@ export function useVoice(onCommand: (text: string) => void, onWake?: () => void)
   // loop). So while he is speaking — and for a short tail afterwards, to swallow
   // the last of the echo — the mic's input is ignored.
   const speakingRef = useRef(false);
+  const speakStartRef = useRef(0);
   const muteUntilRef = useRef(0);
-  const selfEcho = () => speakingRef.current || Date.now() < muteUntilRef.current;
+  // Cap how long "speaking" can suppress the mic. Some browsers occasionally
+  // drop the end-of-speech event; without this cap a single dropped event would
+  // mute Bramwell's ears forever (he'd answer once, then ignore everything).
+  const MAX_SPEAK_MS = 30_000;
+  const selfEcho = () =>
+    (speakingRef.current && Date.now() - speakStartRef.current < MAX_SPEAK_MS) ||
+    Date.now() < muteUntilRef.current;
 
   useEffect(() => {
     const onSpeaking = (s: boolean) => {
       speakingRef.current = s;
-      if (!s) muteUntilRef.current = Date.now() + 700; // tail after he stops
+      if (s) speakStartRef.current = Date.now();
+      else muteUntilRef.current = Date.now() + 700; // tail after he stops
       setSpeaking(s);
     };
     voiceRef.current = Speaker.supported() ? new Speaker(onSpeaking) : null;
@@ -88,10 +96,11 @@ export function useVoice(onCommand: (text: string) => void, onWake?: () => void)
           if (message) setError(message);
         },
       },
-      // Bramwell only acts when addressed: an utterance must open with
-      // "Hey Bramwell" (a short follow-up window then stays open for "and
-      // yesterday?" without repeating his name).
-      { requireWake: true },
+      // Explicit voice mode: tapping the mic IS addressing Bramwell, so every
+      // utterance is treated as a question and answered — no need to prefix each
+      // one with "Hey Bramwell" (a leading wake word is simply stripped if the
+      // user says it out of habit).
+      { requireWake: false },
     );
     return recRef.current;
   }
